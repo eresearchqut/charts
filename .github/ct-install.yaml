@@ -1,0 +1,8 @@
+# https://github.com/helm/chart-testing#configuration
+---
+chart-dirs:
+  - stable
+excluded-charts:
+  - common
+remote: origin
+target-branch: main
