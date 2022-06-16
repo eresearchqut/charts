@@ -1,0 +1,21 @@
+---
+kind: Service
+apiVersion: v1
+metadata:
+  name: {{ include "ssh.fullname" . }}
+  labels:
+    {{- include "ssh.labels" . | nindent 4 }}
+  {{- with .Values.serviceAnnotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+spec:
+  type: {{ .Values.service.type }}
+  selector:
+    {{- include "ssh.selectorLabels" . | nindent 4 }}
+  ports:
+    - name: ssh
+      protocol: TCP
+      port: {{ .Values.service.port }}
+      nodePort: {{ .Values.service.port }}
+      targetPort: ssh

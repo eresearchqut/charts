@@ -1,0 +1,40 @@
+image:
+  repository: panubo/sshd
+  pullPolicy: IfNotPresent
+  tag: latest
+
+service:
+  type: NodePort
+  port: 30022
+
+imagePullSecrets: []
+nameOverride: ""
+fullnameOverride: ""
+
+podAnnotations: {}
+
+serviceAnnotations: {}
+
+podSecurityContext: {}
+
+securityContext: {}
+
+resources: {}
+
+nodeSelector: {}
+
+tolerations: []
+
+affinity: {}
+
+persistentVolumeClaim: ''
+
+authorizedKeys: []
+enablePassword_auth: false
+enableRootPasswordAuth: false
+motd: 'Web server transfer shell'
+user:
+  name: user
+  uid: 1000
+  gid: 1000
+  shell: /bin/bash
