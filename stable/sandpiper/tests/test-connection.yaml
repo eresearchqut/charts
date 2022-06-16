@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: "{{ include "sandpiper.fullname" . }}-test-connection"
+  labels:
+    {{- include "sandpiper.labels" . | nindent 4 }}
+  annotations:
+    "helm.sh/hook": test
+spec:
+  containers:
+    - name: wget
+      image: busybox
+      command: ['wget']
+      args: ['{{ include "sandpiper.fullname" . }}:{{ .Values.web.service.port }}']
+  restartPolicy: Never
