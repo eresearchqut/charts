@@ -5,29 +5,32 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: checkout
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
         with:
           fetch-depth: 0
       - name: set up Helm
-        uses: azure/setup-helm@v1
+        uses: azure/setup-helm@v3
         with:
-          version: v3.8.1
-      - uses: actions/setup-python@v2
+          version: v3.12.2
+      - uses: actions/setup-python@v4
         with:
-          python-version: 3.7
+          check-latest: true
+          python-version: '3.10'
       - name: set up chart-testing
-        uses: helm/chart-testing-action@v2.2.1
+        uses: helm/chart-testing-action@v2.4.0
       - name: run chart-testing (list-changed)
         id: list-changed
         run: |
-          changed=$(ct list-changed --config .github/ct-lint.yaml)
+          changed=$(ct list-changed --config .github/ct-lint.yaml }})
           if [[ -n "$changed" ]]; then
-            echo "::set-output name=changed::true"
+            echo "changed=true" >> "$GITHUB_OUTPUT"
           fi
-      - name: run chart-testing (lint)
-        run: ct lint --config .github/ct-lint.yaml
-      - name: create kind cluster
-        uses: helm/kind-action@v1.2.0
+      - name: Run chart-testing (lint)
         if: steps.list-changed.outputs.changed == 'true'
+        run: ct lint --config .github/ct-lint.yaml
+      - name: Create kind cluster
+        if: steps.list-changed.outputs.changed == 'true'
+        uses: helm/kind-action@v1.7.0
       - name: Run chart-testing (install)
+        if: steps.list-changed.outputs.changed == 'true'
         run: ct install --config .github/ct-install.yaml

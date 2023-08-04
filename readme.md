@@ -10,7 +10,7 @@
 ## Usage
 
 ```shell
-helm repo add eresearchqut https://eresearchqut.github.io/helm-charts
+helm repo add eresearchqut https://eresearchqut.github.io/charts
 helm search repo eresearchqut
 helm install <release> eresearchqut/<chart>
 ```
