@@ -1,0 +1,71 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "collator.fullnameRabbitmq" . }}
+  labels:
+    {{- include "collator.labelsRabbitmq" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.rabbitmq.replicaCount | default 1 }}
+  selector:
+    matchLabels:
+      {{- include "collator.selectorLabelsRabbitmq" . | nindent 6 }}
+  template:
+    metadata:
+      {{- $annotations := merge .Values.commonPodAnnotations .Values.rabbitmq.podAnnotations }}
+      {{- with $annotations }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      labels:
+        {{- include "collator.labelsRabbitmq" . | nindent 8 }}
+        {{- with .Values.rabbitmq.podLabels }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+    spec:
+      {{- with .Values.rabbitmq.imagePullSecrets | default .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      serviceAccountName: {{ include "collator.serviceAccountName" . }}
+      securityContext:
+        {{- toYaml .Values.rabbitmq.podSecurityContext | default .Values.podSecurityContext | nindent 8 }}
+      containers:
+        - name: {{ .Chart.Name }}
+          securityContext:
+            {{- toYaml .Values.rabbitmq.securityContext | default .Values.securityContext | nindent 12 }}
+          image: "{{ .Values.rabbitmq.image.repository }}:{{ .Values.rabbitmq.image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.rabbitmq.image.pullPolicy }}
+          ports:
+            - name: http
+              containerPort: {{ .Values.rabbitmq.service.port }}
+              protocol: TCP
+          {{- if .Values.rabbitmq.livenessProbe }}
+          livenessProbe:
+            {{- toYaml .Values.rabbitmq.livenessProbe | nindent 12 }}
+          {{- end }}
+          {{- if .Values.rabbitmq.readinessProbe }}
+          readinessProbe:
+            {{- toYaml .Values.rabbitmq.readinessProbe | nindent 12 }}
+          {{- end }}
+          resources:
+            {{- toYaml .Values.rabbitmq.resources | nindent 12 }}
+          {{- with .Values.rabbitmq.volumeMounts }}
+          volumeMounts:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+      {{- with .Values.rabbitmq.volumes }}
+      volumes:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}

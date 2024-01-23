@@ -1,0 +1,21 @@
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: {{ include "collator.fullnameEngine" . }}
+  labels:
+    {{- include "collator.labelsEngine" . | nindent 4 }}
+spec:
+  egress:
+    - to:
+      - podSelector:
+          matchLabels:
+            {{- include "collator.selectorLabelsRabbitmq" . | nindent 12 }}
+      ports:
+        - protocol: TCP
+          port: {{ .Values.rabbitmq.service.port }}
+  podSelector:
+    matchLabels:
+      {{- include "collator.selectorLabelsRabbitmq" . | nindent 6 }}
+  policyTypes:
+    - Egress

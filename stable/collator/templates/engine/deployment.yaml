@@ -1,0 +1,72 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "collator.fullnameEngine" . }}
+  labels:
+    {{- include "collator.labelsEngine" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.engine.replicaCount | default 1 }}
+  selector:
+    matchLabels:
+      {{- include "collator.selectorLabelsEngine" . | nindent 6 }}
+  template:
+    metadata:
+      {{- $annotations := merge .Values.commonPodAnnotations .Values.engine.podAnnotations }}
+      {{- with $annotations }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      labels:
+        {{- include "collator.labelsEngine" . | nindent 8 }}
+        {{- with .Values.engine.podLabels }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+    spec:
+      {{- with .Values.engine.imagePullSecrets | default .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      serviceAccountName: {{ include "collator.serviceAccountName" . }}
+      securityContext:
+        {{- toYaml .Values.engine.podSecurityContext | default .Values.podSecurityContext | nindent 8 }}
+      containers:
+        - name: {{ .Chart.Name }}
+          securityContext:
+            {{- toYaml .Values.engine.securityContext | default .Values.securityContext | nindent 12 }}
+          image: "{{ .Values.engine.image.repository }}:{{ .Values.engine.image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.engine.image.pullPolicy }}
+          env:
+            - name: RABBITMQ_HOST
+              value: {{ include "collator.fullnameRabbitmq" . }}
+            - name: RABBITMQ_PORT
+              value: {{ .Values.rabbitmq.service.port | quote }}
+          {{- if .Values.engine.livenessProbe }}
+          livenessProbe:
+            {{- toYaml .Values.engine.livenessProbe | nindent 12 }}
+          {{- end }}
+          {{- if .Values.engine.readinessProbe }}
+          readinessProbe:
+            {{- toYaml .Values.engine.readinessProbe | nindent 12 }}
+          {{- end }}
+          resources:
+            {{- toYaml .Values.engine.resources | nindent 12 }}
+          {{- with .Values.engine.volumeMounts }}
+          volumeMounts:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+      {{- with .Values.engine.volumes }}
+      volumes:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}

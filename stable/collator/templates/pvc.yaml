@@ -1,0 +1,14 @@
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ include "collator.fullname" . }}
+  labels:
+    {{- include "collator.labels" . | nindent 4 }}
+spec:
+  accessModes: {{ .Values.storage.accessModes }}
+  {{- if .Values.storage.className }}
+  storageClassName: {{ .Values.storage.className }}
+  {{- end }}
+  resources:
+    requests:
+      storage: {{ .Values.storage.size }}

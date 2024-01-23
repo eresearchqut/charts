@@ -1,0 +1,157 @@
+---
+api:
+  image:
+    repository: localhost:5001/collator-api
+    pullPolicy: IfNotPresent
+    tag: latest
+  replicaCount: 1
+  podAnnotations: {}
+  podLabels: {}
+  podSecurityContext: {}
+  securityContext: {}
+  service:
+    type: ClusterIP
+    port: 3000
+  resources: {}
+  livenessProbe: {}
+    # httpGet:
+    #   path: /
+    #   port: http
+  readinessProbe: {}
+    # httpGet:
+    #   path: /
+    #   port: http
+  volumes:
+    - name: collator-data
+      persistentVolumeClaim:
+        claimName: collator
+  volumeMounts:
+    - mountPath: /app/data
+      name: collator-data
+
+engine:
+  image:
+    repository: localhost:5001/collator-engine
+    pullPolicy: IfNotPresent
+    tag: latest
+  replicaCount: 1
+  podAnnotations: {}
+  podLabels: {}
+  podSecurityContext: {}
+  securityContext: {}
+  resources: {}
+  livenessProbe: {}
+    # httpGet:
+    #   path: /
+    #   port: http
+  readinessProbe: {}
+    # httpGet:
+    #   path: /
+    #   port: http
+  volumes:
+    - name: collator-data
+      persistentVolumeClaim:
+        claimName: collator
+  volumeMounts:
+    - mountPath: /consumer/data
+      name: collator-data
+
+rabbitmq:
+  image:
+    repository: rabbitmq
+    pullPolicy: IfNotPresent
+    tag: management
+  replicaCount: 1
+  podAnnotations: {}
+  podLabels: {}
+  podSecurityContext: {}
+  securityContext: {}
+  service:
+    type: ClusterIP
+    port: 5672
+  resources: {}
+  livenessProbe: {}
+    # httpGet:
+    #   path: /
+    #   port: http
+  readinessProbe: {}
+    # httpGet:
+    #   path: /
+    #   port: http
+  volumes: []
+  volumeMounts: []
+
+web:
+  image:
+    repository: localhost:5001/collator-web
+    pullPolicy: IfNotPresent
+    tag: latest
+  replicaCount: 1
+  podAnnotations: {}
+  podLabels: {}
+  podSecurityContext: {}
+  securityContext: {}
+  service:
+    type: ClusterIP
+    port: 80
+  livenessProbe: {}
+    # httpGet:
+    #   path: /
+    #   port: http
+  readinessProbe: {}
+    # httpGet:
+    #   path: /
+    #   port: http
+  volumes:
+    - name: collator-data
+      persistentVolumeClaim:
+        claimName: collator
+  volumeMounts:
+    - mountPath: /app/data
+      name: collator-data
+
+imagePullSecrets: []
+nameOverride: ""
+fullnameOverride: ""
+
+serviceAccount:
+  create: true
+  automount: true
+  annotations: {}
+  name: ""
+
+commonPodAnnotations: {}
+commonPodLabels: {}
+
+podSecurityContext: {}
+
+securityContext:
+  {}
+  # capabilities:
+  #   drop:
+  #   - ALL
+  # readOnlyRootFilesystem: true
+  # runAsNonRoot: true
+  # runAsUser: 1000
+
+ingress:
+  enabled: true
+  className: ""
+  annotations: {}
+  hosts:
+    - host: collator.k8s.local
+      paths:
+        - path: /
+          pathType: ImplementationSpecific
+  tls: []
+
+nodeSelector: {}
+
+tolerations: []
+
+affinity: {}
+
+storage:
+  accessModes: [ReadWriteOnce]
+  size: 10Gi
+  storageClass: ""
