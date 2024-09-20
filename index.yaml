@@ -1,0 +1,14 @@
+apiVersion: v1
+entries:
+  static-website:
+  - apiVersion: v2
+    appVersion: 0.1.0
+    created: "2024-09-20T03:49:29.125518226Z"
+    description: A Helm chart for Kubernetes
+    digest: eebfb1a9bbdc77e91fe81373727cb11ccbdad0bb830814fe74da31b8d302f5f2
+    name: static-website
+    type: application
+    urls:
+    - https://github.com/eresearchqut/charts/releases/download/static-website-0.1.0/static-website-0.1.0.tgz
+    version: 0.1.0
+generated: "2024-09-20T03:49:29.125527724Z"
