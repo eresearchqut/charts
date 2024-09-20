@@ -1,0 +1,11 @@
+._*
+.DS_Store
+.idea/
+.project
+.vscode/
+*.bak
+*.orig
+*.swp
+*.tmp
+*.tmproj
+*~
