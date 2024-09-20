@@ -17,7 +17,7 @@ jobs:
       - name: install Helm
         uses: azure/setup-helm@v3
         with:
-          version: v3.12.2
+          version: v3.16.1
       - name: configure Git
         run: |
           git config user.name "$GITHUB_ACTOR"
