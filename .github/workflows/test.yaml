@@ -9,7 +9,7 @@ jobs:
         with:
           fetch-depth: 0
       - name: set up Helm
-        uses: azure/setup-helm@v3
+        uses: azure/setup-helm@v4
         with:
           version: v3.16.1
       - uses: actions/setup-python@v5
