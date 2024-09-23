@@ -1,61 +1,98 @@
+# -- Number of replicas to run
 replicaCount: 1
 
 image:
+  # -- image override name:tag
   imageOverride: ""
+  # -- image pull policy
   pullPolicy: IfNotPresent
+  # -- image repository
   repository: nginx
+  # -- image tag
   tag: latest
 
+# -- Image pull secrets
 imagePullSecrets: []
+
+# -- Helm release name override
 nameOverride: ""
+# -- Helm release full name override
 fullnameOverride: ""
 
+# -- List of additional environment variables
 env: []
+# -- List of additional environment variables from a ConfigMap
 envFrom: []
 
 serviceAccount:
+  # -- Create and mount default service account
   create: true
+  # -- Service account annotations
   annotations: {}
+  # -- Service account name
   name: ""
 
+# -- Pod annotations
 podAnnotations: {}
 
+# -- Pod security context
 podSecurityContext: {}
 
+# -- Container security context
 containerSecurityContext: {}
 
 networkPolicy:
+  # -- Create NetworkPolicy resources
   enabled: true
+  # -- Create default deny all network policy
   defaultDeny: true
+  # -- List of extra egress rules
   extraEgress: []
+  # -- List of extra ingress rules
   extraIngress: []
 
 service:
+  # -- Service type
   type: ClusterIP
+  # -- Service port
   port: 80
 
 ingress:
+  # -- Create ingress resources
   enabled: false
+  # -- Ingress class name
   className: ""
+  # -- Annotations to be added to the ingress
   annotations: {}
+  # -- Hosts and path for the ingress
   hosts:
     - host: chart-example.local
       paths:
         - path: /
           pathType: ImplementationSpecific
+  # -- TLS configuration for the ingress
   tls: []
 
+# -- Resources requests and limits
 resources: {}
 
 autoscaling:
+  # -- Enable autoscaling
   enabled: false
+  # -- Min number of replicas
   minReplicas: 1
+  # -- Max number of replicas
   maxReplicas: 10
+  # -- Target CPU utilization
   targetCPUUtilizationPercentage: 80
+  # -- Target memory utilization
   targetMemoryUtilizationPercentage: 80
 
+# -- Node selector
 nodeSelector: {}
 
+# -- Tolerations
 tolerations: []
 
+# -- Affinity
 affinity: {}

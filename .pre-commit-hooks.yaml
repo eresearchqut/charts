@@ -1,0 +1,9 @@
+---
+- id: helm-docs-built
+  args: []
+  description: Uses auto built 'helm-docs' to create documentation from the Helm chart's 'values.yaml' file.
+  entry: helm-docs
+  files: ((README|readme)\.md\.gotmpl|(Chart|requirements|values)\.yaml)$
+  language: golang
+  name: Helm Docs Built
+  require_serial: true
