@@ -2,6 +2,16 @@ apiVersion: v1
 entries:
   static-website:
   - apiVersion: v2
+    appVersion: 0.1.1
+    created: "2024-09-23T00:11:38.362122652Z"
+    description: A Helm chart for deploying simple static websites.
+    digest: 269ffb407120e15733dc594b689dd8b88a755bde573beb6073d2ccf23ea8b1a4
+    name: static-website
+    type: application
+    urls:
+    - https://github.com/eresearchqut/charts/releases/download/static-website-0.1.1/static-website-0.1.1.tgz
+    version: 0.1.1
+  - apiVersion: v2
     appVersion: 0.1.0
     created: "2024-09-20T03:49:29.125518226Z"
     description: A Helm chart for Kubernetes
@@ -11,4 +21,4 @@ entries:
     urls:
     - https://github.com/eresearchqut/charts/releases/download/static-website-0.1.0/static-website-0.1.0.tgz
     version: 0.1.0
-generated: "2024-09-20T03:49:29.125527724Z"
+generated: "2024-09-23T00:11:38.362135095Z"
