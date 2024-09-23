@@ -1,0 +1,10 @@
+{{ define "extra.usage" -}}
+## Installing the Chart
+
+To install this chart with the release name `{{ template "chart.name" . }}`:
+
+```console
+$ helm repo add eresearchqut https://eresearchqut.github.io/charts/
+$ helm install {{ template "chart.name" . }} eresearchqut/{{ template "chart.name" . }}
+```
+{{- end }}
