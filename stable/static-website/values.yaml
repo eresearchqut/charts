@@ -73,6 +73,20 @@ ingress:
   # -- TLS configuration for the ingress
   tls: []
 
+avi:
+  # -- Enable Avi ingress controller
+  enabled: false
+  hostRule:
+    # -- Avi Virtual Host certificate name. If not provided, it will use the ingress host name.
+    sslKeyCertificate: ""
+  httpRule:
+    # -- List of health monitors
+    healthMonitors:
+      - System-Ping
+    loadBalancerPolicy:
+      # -- Load balancer policy algorithm
+      algorithm: LB_ALGORITHM_LEAST_CONNECTIONS
+
 # -- Resources requests and limits
 resources: {}
 

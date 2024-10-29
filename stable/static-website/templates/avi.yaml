@@ -1,0 +1,28 @@
+{{- if and (.Values.ingress.enabled) (.Values.avi.enabled) }}
+apiVersion: ako.vmware.com/v1beta1
+kind: HostRule
+metadata:
+  name: {{ include "app.fullname" . }}
+spec:
+  virtualhost:
+    fqdn: {{ (first .Values.ingress.hosts).host }}
+    tls:
+      sslKeyCertificate:
+        name: {{ .Values.avi.hostRule.sslKeyCertificate | default (first .Values.ingress.hosts).host }}
+        type: ref
+---
+apiVersion: ako.vmware.com/v1beta1
+kind: HTTPRule
+metadata:
+  name: {{ include "app.fullname" . }}
+spec:
+  fqdn: {{ (first .Values.ingress.hosts).host }}
+  paths:
+    - target: /
+      healthMonitors:
+        {{- range .Values.avi.httpRule.healthMonitors }}
+        - name: {{ . }}
+        {{- end }}
+      loadBalancerPolicy:
+        algorithm: {{ .Values.avi.httpRule.loadBalancerPolicy.algorithm }}
+{{- end }}

@@ -1,6 +1,6 @@
 # static-website
 
-![Version: 0.1.1](https://img.shields.io/badge/Version-0.1.1-informational?style=flat-square) ![Type: application](https://img.shields.io/badge/Type-application-informational?style=flat-square) ![AppVersion: 0.1.1](https://img.shields.io/badge/AppVersion-0.1.1-informational?style=flat-square)
+![Version: 0.2.0](https://img.shields.io/badge/Version-0.2.0-informational?style=flat-square) ![Type: application](https://img.shields.io/badge/Type-application-informational?style=flat-square) ![AppVersion: 0.2.0](https://img.shields.io/badge/AppVersion-0.2.0-informational?style=flat-square)
 
 A Helm chart for deploying simple static websites.
 
@@ -23,6 +23,10 @@ $ helm install static-website eresearchqut/static-website
 | autoscaling.minReplicas | int | `1` | Min number of replicas |
 | autoscaling.targetCPUUtilizationPercentage | int | `80` | Target CPU utilization |
 | autoscaling.targetMemoryUtilizationPercentage | int | `80` | Target memory utilization |
+| avi.enabled | bool | `false` | Enable Avi ingress controller |
+| avi.hostRule.sslKeyCertificate | string | `""` | Avi Virtual Host certificate name. If not provided, it will use the ingress host name. |
+| avi.httpRule.healthMonitors | list | `["System-Ping"]` | List of health monitors |
+| avi.httpRule.loadBalancerPolicy.algorithm | string | `"LB_ALGORITHM_LEAST_CONNECTIONS"` | Load balancer policy algorithm |
 | containerSecurityContext | object | `{}` | Container security context |
 | env | list | `[]` | List of additional environment variables |
 | envFrom | list | `[]` | List of additional environment variables from a ConfigMap |
