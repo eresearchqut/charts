@@ -21,7 +21,7 @@ spec:
     - target: /
       healthMonitors:
         {{- range .Values.avi.httpRule.healthMonitors }}
-        - name: {{ . }}
+        - {{ . }}
         {{- end }}
       loadBalancerPolicy:
         algorithm: {{ .Values.avi.httpRule.loadBalancerPolicy.algorithm }}
