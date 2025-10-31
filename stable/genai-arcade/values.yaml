@@ -1,0 +1,129 @@
+---
+# -- Annotations to be added to all resources
+commonAnnotations: {}
+
+# -- Image pull secrets
+imagePullSecrets: []
+
+# -- Helm release name override
+nameOverride: ""
+
+# -- Helm release full name override
+fullnameOverride: ""
+
+# -- Enable network policy
+enableNetworkPolicy: true
+
+ingress:
+  # -- Create ingress resources
+  enabled: false
+  # -- Ingress class name
+  className: ""
+  # -- Annotations to be added to the ingress
+  annotations: {}
+  # -- Hosts and path for the ingress
+  hosts:
+    - host: chart-example.local
+      paths:
+        - path: /
+          pathType: ImplementationSpecific
+  # -- TLS configuration for the ingress
+  tls: []
+
+api:
+  # -- Affinity
+  affinity: {}
+  # -- Container security context
+  containerSecurityContext:
+    runAsUser: 1000
+    capabilities:
+      drop:
+        - all
+  image:
+    # -- Image pull policy
+    pullPolicy: IfNotPresent
+    # -- Image repository
+    repository: registry.eres.qut.edu.au/ghcr-eresearch/qut-genai-lab/app
+    # -- Image tag
+    tag: latest
+  # -- Node selector
+  nodeSelector: {}
+  # -- Pod security context
+  podSecurityContext:
+    runAsNonRoot: true
+  # -- Number of replicas to run
+  replicas: 1
+  # -- Resources requests and limits
+  resources: {}
+  service:
+    # -- Service port
+    port: 8000
+    # -- Service type
+    type: ClusterIP
+  # -- Tolerations
+  tolerations: []
+
+redis:
+  # -- Affinity
+  affinity: {}
+  # -- Container security context
+  containerSecurityContext:
+    runAsUser: 999
+    capabilities:
+      drop:
+        - all
+  image:
+    # -- Image pull policy
+    pullPolicy: IfNotPresent
+    # -- Image repository
+    repository: redis
+    # -- Image tag
+    tag: 8.2.2
+  # -- Node selector
+  nodeSelector: {}
+  # -- Pod security context
+  podSecurityContext:
+    runAsNonRoot: true
+  # -- Number of replicas to run
+  replicas: 1
+  # -- Resources requests and limits
+  resources: {}
+  service:
+    # -- Service port
+    port: 6379
+    # -- Service type
+    type: ClusterIP
+  # -- Tolerations
+  tolerations: []
+
+# -- Worker configurations
+workers: {}
+  # worker:
+  #   # -- Affinity
+  #   affinity: {}
+  #   # -- Container security context
+  #   containerSecurityContext:
+  #     runAsUser: 1000
+  #     capabilities:
+  #       drop:
+  #         - all
+  #   image:
+  #     # -- Image pull policy
+  #     pullPolicy: IfNotPresent
+  #     # -- Image repository
+  #     repository: registry.eres.qut.edu.au/ghcr-eresearch/qut-genai-lab/worker
+  #     # -- Image tag
+  #     tag: latest
+  #   # -- Node selector
+  #   nodeSelector: {}
+  #   # -- Pod security context
+  #   podSecurityContext:
+  #     runAsNonRoot: true
+  #   # -- Number of replicas to run
+  #   replicas: 1
+  #   # -- Resources requests and limits
+  #   resources: {}
+  #   # -- Tolerations
+  #   tolerations: []
+  #   # -- Volume claim templates
+  #   volumeClaimTemplates: []

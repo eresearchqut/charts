@@ -1,0 +1,73 @@
+{{- $outer := . }}
+{{- range $workerName, $worker := .Values.workers }}
+{{- $workersData := deepCopy $outer | merge (dict "workerName" $workerName "workerValues" $worker) }}
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: {{ include "genai-arcade.fullname" $workersData }}-{{ $workerName }}
+  labels:
+    {{- include "genai-arcade.labels" $workersData | nindent 4 }}
+  {{- with $.Values.commonAnnotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+spec:
+  selector:
+    matchLabels:
+      {{- include "genai-arcade.selectorLabelsWorker" $workersData | nindent 6 }}
+  serviceName: {{ $workerName }}
+  replicas: {{ $worker.replicas }}
+  minReadySeconds: 30
+  persistentVolumeClaimRetentionPolicy:
+    whenDeleted: Retain
+    whenScaled: Delete
+  updateStrategy:
+    type: RollingUpdate
+  template:
+    metadata:
+      labels:
+        {{- include "genai-arcade.selectorLabelsWorker" $workersData | nindent 8 }}
+    spec:
+      affinity:
+        {{- toYaml $worker.affinity | nindent 8 }}
+      imagePullSecrets:
+        {{- toYaml $.Values.imagePullSecrets | nindent 8 }}
+      terminationGracePeriodSeconds: 10
+      initContainers:
+        - name: init-download
+          image: python:3.11
+          env:
+            - name: HF_HOME
+              value: /hf_cache
+          command:
+            - bash
+            - -c
+            - /scripts/init.sh
+          volumeMounts:
+            - name: models
+              mountPath: /hf_cache
+            - name: init-script
+              mountPath: /scripts/init.sh
+              subPath: init.sh
+      containers:
+        - name: {{ $workerName }}
+          image: {{ $worker.image.repository }}:{{ $worker.image.tag | default $.Chart.AppVersion }}
+          env:
+            - name: REDIS_CONNECTION_STRING
+              value: "redis://{{ include "genai-arcade.fullname" $ }}-redis:{{ $.Values.redis.service.port }}"
+          volumeMounts:
+            - name: models
+              mountPath: /hf_cache
+          resources:
+            {{- toYaml $worker.resources | nindent 12 }}
+      tolerations:
+        {{- toYaml $worker.tolerations | nindent 8 }}
+      volumes:
+        - name: init-script
+          configMap:
+            defaultMode: 0770
+            name: {{ include "genai-arcade.fullname" $workersData }}-init-script
+  volumeClaimTemplates:
+    {{- toYaml $worker.volumeClaimTemplates | nindent 4 }}
+{{- end }}

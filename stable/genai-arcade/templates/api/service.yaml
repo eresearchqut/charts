@@ -1,0 +1,20 @@
+---
+kind: Service
+apiVersion: v1
+metadata:
+  name: {{ include "genai-arcade.fullname" . }}-api
+  labels:
+    {{- include "genai-arcade.labels" . | nindent 4 }}
+  {{- with .Values.commonAnnotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+spec:
+  selector:
+    {{- include "genai-arcade.selectorLabelsApi" . | nindent 4 }}
+  type: {{ .Values.api.service.type }}
+  ports:
+    - name: api
+      port: {{ .Values.api.service.port }}
+      protocol: TCP
+      targetPort: api

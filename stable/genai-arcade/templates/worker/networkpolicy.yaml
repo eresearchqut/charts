@@ -1,0 +1,42 @@
+{{- if .Values.enableNetworkPolicy }}
+{{- $outer := . }}
+{{- range $workerName, $worker := .Values.workers }}
+{{- $workersData := deepCopy $outer | merge (dict "workerName" $workerName "workerValues" $worker) }}
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: {{ include "genai-arcade.fullname" $workersData }}-{{ $workerName }}
+  labels:
+    {{- include "genai-arcade.labels" $workersData | nindent 4 }}
+  {{- with $.Values.commonAnnotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+spec:
+  podSelector:
+    matchLabels:
+      {{- include "genai-arcade.selectorLabelsWorker" $workersData | nindent 6 }}
+  policyTypes:
+    - Egress
+  egress:
+    - ports:
+        - port: redis
+          protocol: TCP
+      to:
+        - podSelector:
+            matchLabels:
+              {{ include "genai-arcade.selectorLabelsRedis" $workersData | nindent 14 }}
+    - ports:
+        - port: 443
+          protocol: TCP
+      to:
+        - ipBlock:
+            cidr: 0.0.0.0/0
+            except:
+              - 10.0.0.0/8
+              - 172.16.0.0/12
+              - 192.168.0.0/16
+              - 169.254.169.254/32
+{{- end }}
+{{- end }}
