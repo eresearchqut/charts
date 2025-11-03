@@ -33,7 +33,11 @@ spec:
         - name: api
           securityContext:
             {{- toYaml .Values.api.containerSecurityContext | nindent 12 }}
+          {{- if .Values.api.image.imageOverride }}
+          image: "{{ .Values.api.image.imageOverride }}"
+          {{- else }}
           image: "{{ .Values.api.image.repository }}:{{ .Values.api.image.tag | default .Chart.AppVersion }}"
+          {{- end }}
           imagePullPolicy: {{ .Values.api.image.pullPolicy }}
           env:
             - name: REDIS_CONNECTION_STRING

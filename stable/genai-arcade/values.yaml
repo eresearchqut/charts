@@ -45,6 +45,8 @@ api:
   image:
     # -- Image pull policy
     pullPolicy: IfNotPresent
+    # -- Image repository override
+    imageOverride: ""
     # -- Image repository
     repository: registry.eres.qut.edu.au/ghcr-eresearch/qut-genai-lab/app
     # -- Image tag
@@ -78,6 +80,8 @@ redis:
   image:
     # -- Image pull policy
     pullPolicy: IfNotPresent
+    # -- Image repository override
+    imageOverride: ""
     # -- Image repository
     repository: redis
     # -- Image tag
@@ -113,6 +117,8 @@ workers: {}
   #   image:
   #     # -- Image pull policy
   #     pullPolicy: IfNotPresent
+  #     # -- Image repository override
+  #     imageOverride: ""
   #     # -- Image repository
   #     repository: registry.eres.qut.edu.au/ghcr-eresearch/qut-genai-lab/worker
   #     # -- Image tag

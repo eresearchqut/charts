@@ -52,7 +52,11 @@ spec:
               subPath: init.sh
       containers:
         - name: {{ $workerName }}
+          {{- if $worker.image.imageOverride }}
+          image: "{{ $worker.image.imageOverride }}"
+          {{- else }}
           image: {{ $worker.image.repository }}:{{ $worker.image.tag | default $.Chart.AppVersion }}
+          {{- end }}
           env:
             - name: REDIS_CONNECTION_STRING
               value: "redis://{{ include "genai-arcade.fullname" $ }}-redis:{{ $.Values.redis.service.port }}"

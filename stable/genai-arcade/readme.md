@@ -19,6 +19,7 @@ $ helm install genai-arcade eresearchqut/genai-arcade
 |-----|------|---------|-------------|
 | api.affinity | object | `{}` | Affinity |
 | api.containerSecurityContext | object | `{"capabilities":{"drop":["all"]},"runAsUser":1000}` | Container security context |
+| api.image.imageOverride | string | `""` | Image repository override |
 | api.image.pullPolicy | string | `"IfNotPresent"` | Image pull policy |
 | api.image.repository | string | `"registry.eres.qut.edu.au/ghcr-eresearch/qut-genai-lab/app"` | Image repository |
 | api.image.tag | string | `"latest"` | Image tag |
@@ -42,6 +43,7 @@ $ helm install genai-arcade eresearchqut/genai-arcade
 | nameOverride | string | `""` | Helm release name override |
 | redis.affinity | object | `{}` | Affinity |
 | redis.containerSecurityContext | object | `{"capabilities":{"drop":["all"]},"runAsUser":999}` | Container security context |
+| redis.image.imageOverride | string | `""` | Image repository override |
 | redis.image.pullPolicy | string | `"IfNotPresent"` | Image pull policy |
 | redis.image.repository | string | `"redis"` | Image repository |
 | redis.image.tag | string | `"8.2.2"` | Image tag |
