@@ -11,7 +11,4 @@ metadata:
   {{- end }}
 data:
   init.sh: |
-    #!/bin/bash
-    pip install -U huggingface_hub[cli] &&
-    hf download shuyuej/Llama-3.2-3B-Instruct-GPTQ &&
-    hf download stable-diffusion-v1-5/stable-diffusion-v1-5
+    {{- .Values.initScript | nindent 4 }}

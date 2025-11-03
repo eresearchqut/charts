@@ -14,6 +14,9 @@ fullnameOverride: ""
 # -- Enable network policy
 enableNetworkPolicy: true
 
+initScript: |
+  #!/bin/bash
+
 ingress:
   # -- Create ingress resources
   enabled: false

@@ -38,6 +38,7 @@ $ helm install genai-arcade eresearchqut/genai-arcade
 | ingress.enabled | bool | `false` | Create ingress resources |
 | ingress.hosts | list | `[{"host":"chart-example.local","paths":[{"path":"/","pathType":"ImplementationSpecific"}]}]` | Hosts and path for the ingress |
 | ingress.tls | list | `[]` | TLS configuration for the ingress |
+| initScript | string | `"#!/bin/bash\n"` |  |
 | nameOverride | string | `""` | Helm release name override |
 | redis.affinity | object | `{}` | Affinity |
 | redis.containerSecurityContext | object | `{"capabilities":{"drop":["all"]},"runAsUser":999}` | Container security context |
