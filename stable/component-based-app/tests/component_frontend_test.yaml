@@ -1,0 +1,61 @@
+# USECASE: Component exposed via Ingress
+#
+# A component with secrets injected and traffic routed through an Ingress.
+# Tests that Ingress → Service wiring works and secrets flow to the pod.
+
+suite: Component Exposed via Ingress
+templates:
+  - deployment.yaml
+  - service.yaml
+  - ingress.yaml
+
+release:
+  name: myapp
+  namespace: default
+
+set:
+  components:
+    frontend:
+      image:
+        repository: "example.com/app"
+        tag: "latest"
+      port: 3000
+      command: ["node", "server.js"]
+      livenessProbe:
+        path: /health
+      appSecretKeys:
+        - envName: API_KEY
+          secretKey: api-key
+  ingress:
+    host: app.example.com
+    targetComponent: frontend
+
+tests:
+  - it: ingress points to the component's service
+    template: ingress.yaml
+    documentIndex: 0
+    asserts:
+      - equal:
+          path: spec.rules[0].http.paths[0].backend.service.name
+          value: myapp-component-based-app-frontend
+
+  - it: service selector points to the component's pods
+    template: service.yaml
+    documentIndex: 0
+    asserts:
+      - equal:
+          path: spec.selector["app.kubernetes.io/component"]
+          value: frontend
+
+  - it: secret keys are mapped into the container
+    template: deployment.yaml
+    documentIndex: 0
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: API_KEY
+            valueFrom:
+              secretKeyRef:
+                name: myapp-component-based-app-secrets
+                key: api-key

@@ -1,0 +1,22 @@
+{{- range $name, $spec := .Values.components }}
+{{- if $spec.monitoring }}
+---
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: {{ include "component-based-app.fullname" $ }}-{{ $name }}
+  labels:
+    app.kubernetes.io/component: {{ $name }}
+    {{- include "component-based-app.labels" $ | nindent 4 }}
+spec:
+  endpoints:
+    - port: {{ $spec.monitoring.port | default "http" }}
+      path: {{ $spec.monitoring.path | default "/metrics" }}
+      interval: {{ $spec.monitoring.interval | default "30s" }}
+      scrapeTimeout: {{ $spec.monitoring.scrapeTimeout | default "10s" }}
+  selector:
+    matchLabels:
+      {{- include "component-based-app.selectorLabels" $ | nindent 6 }}
+      app.kubernetes.io/component: {{ $name }}
+{{- end }}
+{{- end }}

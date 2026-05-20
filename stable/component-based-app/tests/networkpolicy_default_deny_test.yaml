@@ -1,0 +1,73 @@
+suite: NetworkPolicy — Default Deny
+templates:
+  - networkpolicy-default.yaml
+
+release:
+  name: myapp
+  namespace: prod
+
+tests:
+  - it: creates exactly one default-deny policy when networkPolicy is enabled
+    set:
+      networkPolicy: {}
+    asserts:
+      - hasDocuments:
+          count: 1
+
+  - it: selects ALL pods in the release by instance label
+    set:
+      networkPolicy: {}
+    documentIndex: 0
+    asserts:
+      - equal:
+          path: spec.podSelector.matchLabels["app.kubernetes.io/instance"]
+          value: myapp
+
+  - it: enforces both Ingress and Egress policy types
+    set:
+      networkPolicy: {}
+    documentIndex: 0
+    asserts:
+      - contains:
+          path: spec.policyTypes
+          content: Ingress
+      - contains:
+          path: spec.policyTypes
+          content: Egress
+
+  - it: denies ALL ingress by having no ingress rules
+    set:
+      networkPolicy: {}
+    documentIndex: 0
+    asserts:
+      - notExists:
+          path: spec.ingress
+
+  - it: egress contains ONLY DNS and nothing else
+    set:
+      networkPolicy: {}
+    documentIndex: 0
+    asserts:
+      - lengthEqual:
+          path: spec.egress
+          count: 1
+      - contains:
+          path: spec.egress[0].ports
+          content:
+            port: 53
+            protocol: UDP
+      - contains:
+          path: spec.egress[0].ports
+          content:
+            port: 53
+            protocol: TCP
+      - lengthEqual:
+          path: spec.egress[0].ports
+          count: 2
+
+  - it: does NOT create any NetworkPolicy when networkPolicy is disabled
+    set:
+      networkPolicy:
+    asserts:
+      - hasDocuments:
+          count: 0

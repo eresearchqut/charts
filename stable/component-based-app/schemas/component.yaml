@@ -1,0 +1,281 @@
+$schema: "https://json-schema.org/draft/2020-12/schema"
+type: object
+description: >
+  A single application component. Each key in `components` maps to
+  a Deployment and ClusterIP Service named `<fullname>-<key>`.
+required: [image, command, port]
+properties:
+  image:
+    type: object
+    required: [repository, tag]
+    description: Container image reference.
+    properties:
+      repository:
+        type: string
+        description: Container image repository (e.g., registry.example.com/myapp).
+      tag:
+        type: string
+        description: Container image tag. Required — no default is applied.
+  replicas:
+    type: integer
+    minimum: 1
+    default: 1
+    description: Number of replicas for this component.
+  command:
+    type: array
+    description: Command and arguments passed to the container (overrides image ENTRYPOINT).
+    items:
+      type: string
+  port:
+    type: integer
+    minimum: 1
+    maximum: 65535
+    description: >
+      Port the container listens on. Exposed as the Service port and
+      injected as the PORT environment variable.
+  resources:
+    description: >
+      Per-component resource requests and limits. Falls back to top-level
+      resources when not set.
+    $ref: "https://raw.githubusercontent.com/yannh/kubernetes-json-schema/master/v1.34.3/_definitions.json#/definitions/io.k8s.api.core.v1.ResourceRequirements"
+  livenessProbe:
+    type: object
+    required: [path]
+    description: Container liveness probe configuration. Omit to disable.
+    properties:
+      path:
+        type: string
+        description: HTTP path for the liveness probe (e.g., /healthz).
+      initialDelaySeconds:
+        type: integer
+        default: 0
+      periodSeconds:
+        type: integer
+        default: 10
+      timeoutSeconds:
+        type: integer
+        default: 1
+      failureThreshold:
+        type: integer
+        default: 3
+      successThreshold:
+        type: integer
+        default: 1
+  readinessProbe:
+    type: object
+    required: [path]
+    description: Container readiness probe configuration. Omit to disable.
+    properties:
+      path:
+        type: string
+        description: HTTP path for the readiness probe.
+      initialDelaySeconds:
+        type: integer
+        default: 0
+      periodSeconds:
+        type: integer
+        default: 10
+      timeoutSeconds:
+        type: integer
+        default: 1
+      failureThreshold:
+        type: integer
+        default: 3
+      successThreshold:
+        type: integer
+        default: 1
+  startupProbe:
+    type: object
+    required: [path]
+    description: >
+      Startup probe for applications with long initialization.
+      Set `path` to enable; omit to disable.
+    properties:
+      path:
+        type: string
+        default: ""
+        description: HTTP path for the startup probe. Empty string disables it.
+      initialDelaySeconds:
+        type: integer
+        default: 0
+      periodSeconds:
+        type: integer
+        default: 10
+      timeoutSeconds:
+        type: integer
+        default: 1
+      failureThreshold:
+        type: integer
+        default: 30
+        description: Consecutive failures before the container is killed. Defaults higher (30) to accommodate slow starts.
+  injectDatabase:
+    type: boolean
+    default: false
+    description: >
+      When true, injects DB_USERNAME and DB_PASSWORD environment variables
+      from the database secret.
+  secretName:
+    type: string
+    default: ""
+    description: >
+      Name of the Kubernetes Secret that backs appSecretKeys entries.
+      Defaults to `<fullname>-secrets` when empty.
+  appSecretKeys:
+    type: array
+    description: List of environment variables sourced from the Kubernetes Secret named by secretName.
+    items:
+      $ref: "app-secret-item.yaml"
+  podIPEnvName:
+    type: string
+    default: POD_IP
+    description: >
+      Name of the environment variable that receives the pod's IP address
+      via the Downward API.
+  allowedHostsEnvName:
+    type: string
+    default: ALLOWED_HOSTS
+    description: >
+      Name of the environment variable set to `<service-name>,$(podIPEnvName)`.
+      Requires podIPEnvName.
+  serviceLinks:
+    type: array
+    description: Injects environment variables with HTTP URLs pointing to sibling component Services.
+    items:
+      $ref: "service-link-item.yaml"
+  env:
+    type: array
+    description: Additional environment variables in standard Kubernetes EnvVar format.
+    items:
+      $ref: "https://raw.githubusercontent.com/yannh/kubernetes-json-schema/master/v1.34.3/_definitions.json#/definitions/io.k8s.api.core.v1.EnvVar"
+  initContainer:
+    type: object
+    required: [command]
+    description: >
+      Init container that runs before the main application container.
+      Uses the same image as the component.
+    properties:
+      command:
+        type: array
+        description: Init container command and arguments.
+        items:
+          type: string
+  extraEgress:
+    type: array
+    description: >
+      Additional NetworkPolicy egress rules. Only meaningful when
+      networkPolicy is configured.
+    items:
+      $ref: "https://raw.githubusercontent.com/yannh/kubernetes-json-schema/master/v1.34.3/_definitions.json#/definitions/io.k8s.api.networking.v1.NetworkPolicyEgressRule"
+  extraIngress:
+    type: array
+    description: >
+      Additional NetworkPolicy ingress rules. Only meaningful when
+      networkPolicy is configured.
+    items:
+      $ref: "https://raw.githubusercontent.com/yannh/kubernetes-json-schema/master/v1.34.3/_definitions.json#/definitions/io.k8s.api.networking.v1.NetworkPolicyIngressRule"
+  podAnnotations:
+    type: object
+    description: Annotations added to the component's Pod.
+    additionalProperties:
+      type: string
+  podLabels:
+    type: object
+    description: Labels added to the component's Pod.
+    additionalProperties:
+      type: string
+  volumes:
+    type: array
+    description: Additional volumes attached to the component's Pod.
+    items:
+      $ref: "https://raw.githubusercontent.com/yannh/kubernetes-json-schema/master/v1.34.3/_definitions.json#/definitions/io.k8s.api.core.v1.Volume"
+  volumeMounts:
+    type: array
+    description: Additional volume mounts into the component's main container.
+    items:
+      $ref: "https://raw.githubusercontent.com/yannh/kubernetes-json-schema/master/v1.34.3/_definitions.json#/definitions/io.k8s.api.core.v1.VolumeMount"
+  nodeSelector:
+    type: object
+    description: Node labels for pod assignment.
+    additionalProperties:
+      type: string
+  affinity:
+    description: Affinity and anti-affinity rules for pod scheduling.
+    $ref: "https://raw.githubusercontent.com/yannh/kubernetes-json-schema/master/v1.34.3/_definitions.json#/definitions/io.k8s.api.core.v1.Affinity"
+  tolerations:
+    type: array
+    description: Tolerations for pod scheduling onto tainted nodes.
+    items:
+      $ref: "https://raw.githubusercontent.com/yannh/kubernetes-json-schema/master/v1.34.3/_definitions.json#/definitions/io.k8s.api.core.v1.Toleration"
+  autoscaling:
+    type: object
+    required: [minReplicas, maxReplicas]
+    description: HorizontalPodAutoscaler configuration. Omit the block to disable HPA.
+    properties:
+      minReplicas:
+        type: integer
+        minimum: 1
+        default: 1
+        description: Minimum number of replicas.
+      maxReplicas:
+        type: integer
+        minimum: 1
+        default: 100
+        description: Maximum number of replicas.
+      targetCPUUtilizationPercentage:
+        type: integer
+        default: 80
+        description: Target average CPU utilization percentage across all pods.
+      targetMemoryUtilizationPercentage:
+        type: integer
+        description: Target average memory utilization percentage across all pods.
+      behavior:
+        type: object
+        description: HPA scaling behavior configuration. Omit for sensible Kubernetes defaults.
+  podDisruptionBudget:
+    type: object
+    description: >
+      PodDisruptionBudget configuration. Auto-created for components with
+      replicas > 1 or autoscaling. Set explicitly to override.
+    properties:
+      minAvailable:
+        description: Minimum number of available pods during voluntary disruptions.
+        anyOf:
+          - type: integer
+          - type: string
+      maxUnavailable:
+        description: Maximum number of unavailable pods during voluntary disruptions.
+        anyOf:
+          - type: integer
+          - type: string
+  monitoring:
+    type: object
+    description: >
+      Prometheus ServiceMonitor configuration. Requires prometheus-operator.
+      Omit to disable monitoring.
+    properties:
+      port:
+        type: string
+        default: http
+        description: Name of the port exposing metrics on the Service.
+      path:
+        type: string
+        default: /metrics
+        description: HTTP path for the metrics endpoint.
+      interval:
+        type: string
+        default: 30s
+        description: Prometheus scrape interval.
+      scrapeTimeout:
+        type: string
+        default: 10s
+        description: Prometheus scrape timeout.
+  podSecurityContext:
+    description: >
+      Per-component pod security context. Overrides the global podSecurityContext.
+      Set to {} to opt out of pod-level security settings for this component.
+    $ref: "https://raw.githubusercontent.com/yannh/kubernetes-json-schema/master/v1.34.3/_definitions.json#/definitions/io.k8s.api.core.v1.PodSecurityContext"
+  containerSecurityContext:
+    description: >
+      Per-component container security context. Overrides the global containerSecurityContext.
+      Set to {} to opt out of container-level security settings for this component.
+    $ref: "https://raw.githubusercontent.com/yannh/kubernetes-json-schema/master/v1.34.3/_definitions.json#/definitions/io.k8s.api.core.v1.SecurityContext"

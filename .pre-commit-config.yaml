@@ -1,5 +1,14 @@
 ---
 repos:
+  - repo: local
+    hooks:
+      - id: helm-schema
+        name: Helm values schema json
+        entry: bash -c 'cd stable/component-based-app && helm schema'
+        language: system
+        pass_filenames: false
+        files: ^stable/component-based-app/
+        require_serial: true
   - repo: https://github.com/norwoodj/helm-docs
     rev: "v1.14.2"
     hooks:
@@ -7,4 +16,14 @@ repos:
         args:
           - --template-files=readme.md.gotmpl
           - --template-files=stable/_templates.gotmpl
+          - --output-file=readme.md
+      - id: helm-docs-built
+        description: Uses auto built 'helm-docs' to create documentation from the Helm chart's 'values.yaml' file.
+        entry: helm-docs
+        files: ((README|readme)\.md\.gotmpl|(Chart|requirements|values)\.yaml)$
+        language: golang
+        name: Helm Docs Built
+        require_serial: true
+        args:
+          - --chart-search-root=stable
           - --output-file=readme.md
