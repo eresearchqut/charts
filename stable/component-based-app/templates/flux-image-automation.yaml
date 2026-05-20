@@ -1,0 +1,70 @@
+{{- if .Values.imageUpdate }}
+{{- /*
+  Collect unique image repositories across all components.
+  Each repository gets an ImageRepository + ImagePolicy pair.
+  The resource is named "<fullname>-<component>" for the first component
+  that declares that repository.
+*/}}
+{{- $repos := dict }}
+{{- range $name, $spec := .Values.components }}
+  {{- $repo := dig "image" "repository" "" $spec }}
+  {{- if and $repo (not (hasKey $repos $repo)) }}
+    {{- $_ := set $repos $repo $name }}
+  {{- end }}
+{{- end }}
+{{- range $repo, $component := $repos }}
+{{- $resourceName := printf "%s-%s" (include "component-based-app.fullname" $) $component }}
+---
+apiVersion: image.toolkit.fluxcd.io/v1
+kind: ImageRepository
+metadata:
+  name: {{ $resourceName }}
+  labels:
+    {{- include "component-based-app.labels" $ | nindent 4 }}
+spec:
+  image: {{ $repo }}
+  interval: 5m
+---
+apiVersion: image.toolkit.fluxcd.io/v1
+kind: ImagePolicy
+metadata:
+  name: {{ $resourceName }}
+  labels:
+    {{- include "component-based-app.labels" $ | nindent 4 }}
+spec:
+  imageRepositoryRef:
+    name: {{ $resourceName }}
+  filterTags:
+    pattern: {{ $.Values.imageUpdate.imageTagPattern | quote }}
+    extract: "$ts"
+  policy:
+    numerical:
+      order: asc
+{{- end }}
+---
+apiVersion: image.toolkit.fluxcd.io/v1
+kind: ImageUpdateAutomation
+metadata:
+  name: {{ include "component-based-app.fullname" . }}
+  labels:
+    {{- include "component-based-app.labels" . | nindent 4 }}
+spec:
+  git:
+    checkout:
+      ref:
+        branch: {{ .Values.imageUpdate.imageUpdateBranch }}
+    commit:
+      author:
+        email: fluxcdbot@users.noreply.github.com
+        name: fluxcdbot
+      messageTemplate: |
+{{ .Values.imageUpdate.messageTemplate | nindent 8 }}
+  interval: 5m0s
+  sourceRef:
+    kind: GitRepository
+    name: {{ include "component-based-app.fullname" . }}
+    namespace: {{ .Release.Namespace }}
+  update:
+    path: {{ .Values.imageUpdate.updatePath }}
+    strategy: Setters
+{{- end }}

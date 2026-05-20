@@ -1,0 +1,182 @@
+{{- range $name, $spec := .Values.components }}
+{{- $tag := dig "image" "tag" "" $spec }}
+{{- if empty $tag }}
+  {{- fail (printf "component '%s': image.tag must be set explicitly. Set components.%s.image.tag" $name $name) }}
+{{- end }}
+{{- $image := printf "%s:%s" (dig "image" "repository" "" $spec) $tag }}
+{{- $autoscaling := include "component-based-app.autoscaling" (dict "spec" $spec) | fromYaml }}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "component-based-app.fullname" $ }}-{{ $name }}
+  labels:
+    app.kubernetes.io/component: {{ $name }}
+    {{- include "component-based-app.labels" $ | nindent 4 }}
+spec:
+  {{- if not $spec.autoscaling }}
+  replicas: {{ $spec.replicas | default 1 }}
+  {{- end }}
+  selector:
+    matchLabels:
+      {{- include "component-based-app.selectorLabels" $ | nindent 6 }}
+      app.kubernetes.io/component: {{ $name }}
+  template:
+    metadata:
+      {{- with $spec.podAnnotations }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      labels:
+        app.kubernetes.io/component: {{ $name }}
+        {{- include "component-based-app.labels" $ | nindent 8 }}
+        {{- with $spec.podLabels }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+    spec:
+      serviceAccountName: {{ include "component-based-app.serviceAccountName" $ }}
+
+      {{- with $.Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- $podSecurityContext := or $spec.podSecurityContext $.Values.podSecurityContext }}
+      {{- with $podSecurityContext }}
+      securityContext:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with $spec.volumes }}
+      volumes:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with $spec.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with $spec.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with $spec.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- if $spec.initContainer }}
+      initContainers:
+        - name: init
+          image: {{ $image }}
+          command:
+            {{- toYaml $spec.initContainer.command | nindent 12 }}
+          {{- if $spec.injectDatabase }}
+          env:
+            - name: DB_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: {{ $.Values.database.secretName | default (printf "%s-database" (include "component-based-app.fullname" $)) }}
+                  key: username
+            - name: DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ $.Values.database.secretName | default (printf "%s-database" (include "component-based-app.fullname" $)) }}
+                  key: password
+          {{- end }}
+      {{- end }}
+      containers:
+        - name: {{ $name }}
+          image: {{ $image }}
+          command:
+            {{- toYaml $spec.command | nindent 12 }}
+          ports:
+            - containerPort: {{ $spec.port }}
+              name: http
+          {{- $resources := or $spec.resources $.Values.resources }}
+          {{- with $resources }}
+          resources:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          livenessProbe:
+            httpGet:
+              path: {{ $spec.livenessProbe.path }}
+              port: http
+            initialDelaySeconds: {{ $spec.livenessProbe.initialDelaySeconds | default 0 }}
+            periodSeconds: {{ $spec.livenessProbe.periodSeconds | default 10 }}
+            timeoutSeconds: {{ $spec.livenessProbe.timeoutSeconds | default 1 }}
+            failureThreshold: {{ $spec.livenessProbe.failureThreshold | default 3 }}
+            successThreshold: {{ $spec.livenessProbe.successThreshold | default 1 }}
+          {{- if $spec.readinessProbe }}
+          readinessProbe:
+            httpGet:
+              path: {{ $spec.readinessProbe.path }}
+              port: http
+            initialDelaySeconds: {{ $spec.readinessProbe.initialDelaySeconds | default 0 }}
+            periodSeconds: {{ $spec.readinessProbe.periodSeconds | default 10 }}
+            timeoutSeconds: {{ $spec.readinessProbe.timeoutSeconds | default 1 }}
+            failureThreshold: {{ $spec.readinessProbe.failureThreshold | default 3 }}
+            successThreshold: {{ $spec.readinessProbe.successThreshold | default 1 }}
+          {{- end }}
+          {{- if and $spec.startupProbe $spec.startupProbe.path }}
+          startupProbe:
+            httpGet:
+              path: {{ $spec.startupProbe.path }}
+              port: http
+            initialDelaySeconds: {{ $spec.startupProbe.initialDelaySeconds | default 0 }}
+            periodSeconds: {{ $spec.startupProbe.periodSeconds | default 10 }}
+            timeoutSeconds: {{ $spec.startupProbe.timeoutSeconds | default 1 }}
+            failureThreshold: {{ $spec.startupProbe.failureThreshold | default 30 }}
+          {{- end }}
+          {{- $containerSecurityContext := or $spec.containerSecurityContext $.Values.containerSecurityContext }}
+          {{- with $containerSecurityContext }}
+          securityContext:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          {{- with $spec.volumeMounts }}
+          volumeMounts:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          env:
+            {{- if $spec.injectDatabase }}
+            - name: DB_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: {{ $.Values.database.secretName | default (printf "%s-database" (include "component-based-app.fullname" $)) }}
+                  key: username
+            - name: DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ $.Values.database.secretName | default (printf "%s-database" (include "component-based-app.fullname" $)) }}
+                  key: password
+            {{- end }}
+            {{- range $spec.appSecretKeys }}
+            - name: {{ .envName }}
+              valueFrom:
+                secretKeyRef:
+                  name: {{ $spec.secretName | default (printf "%s-secrets" (include "component-based-app.fullname" $)) }}
+                  key: {{ .secretKey }}
+            {{- end }}
+            - name: PORT
+              value: {{ $spec.port | quote }}
+            {{- if $spec.podIPEnvName }}
+            - name: {{ $spec.podIPEnvName }}
+              valueFrom:
+                fieldRef:
+                  fieldPath: status.podIP
+            {{- end }}
+            {{- if and $spec.podIPEnvName $spec.allowedHostsEnvName }}
+            - name: {{ $spec.allowedHostsEnvName }}
+              value: {{ printf "%s-%s,$(%s)" (include "component-based-app.fullname" $) $name $spec.podIPEnvName | quote }}
+            {{- end }}
+            {{- range $spec.serviceLinks }}
+            {{- $targetSpec := index $.Values.components .targetName }}
+            {{- if empty $targetSpec }}
+              {{- fail (printf "serviceLinks: component '%s' not found" .targetName) }}
+            {{- end }}
+            {{- if not $targetSpec }}
+              {{- fail (printf "serviceLinks: component '%s' is disabled" .targetName) }}
+            {{- end }}
+            - name: {{ .envName }}
+              value: {{ printf "http://%s-%s:%s%s" (include "component-based-app.fullname" $) .targetName (toString $targetSpec.port) .path | quote }}
+            {{- end }}
+            {{- with $spec.env }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+{{- end }}

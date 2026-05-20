@@ -1,0 +1,81 @@
+# USECASE: Component with a Database
+#
+# A component that connects to a database, runs an init container
+# for migrations, and exposes its pod IP via the Downward API.
+# Tests that DB credentials flow to both containers and the pod IP is accessible.
+
+suite: Component with a Database
+templates:
+  - deployment.yaml
+  - service.yaml
+
+release:
+  name: myapp
+  namespace: default
+
+set:
+  components:
+    api:
+      image:
+        repository: "example.com/app"
+        tag: "latest"
+      port: 8000
+      command: ["python", "run.py"]
+      livenessProbe:
+        path: /health
+      injectDatabase: true
+      podIPEnvName: POD_IP
+      allowedHostsEnvName: ALLOWED_HOSTS
+      initContainer:
+        command: ["python", "manage.py", "migrate"]
+  database:
+    image:
+      repository: "example.com/app"
+      tag: "latest"
+
+tests:
+  - it: main container gets database credentials
+    template: deployment.yaml
+    documentIndex: 0
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: DB_USERNAME
+            valueFrom:
+              secretKeyRef:
+                name: myapp-component-based-app-database
+                key: username
+
+  - it: init container also gets database credentials
+    template: deployment.yaml
+    documentIndex: 0
+    asserts:
+      - contains:
+          path: spec.template.spec.initContainers[0].env
+          content:
+            name: DB_USERNAME
+            valueFrom:
+              secretKeyRef:
+                name: myapp-component-based-app-database
+                key: username
+
+  - it: pod IP is exposed via the Downward API
+    template: deployment.yaml
+    documentIndex: 0
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: POD_IP
+            valueFrom:
+              fieldRef:
+                fieldPath: status.podIP
+
+  - it: ALLOWED_HOSTS references the service name
+    template: deployment.yaml
+    documentIndex: 0
+    asserts:
+      - matchRegex:
+          path: spec.template.spec.containers[0].env[?(@.name == 'ALLOWED_HOSTS')].value
+          pattern: "^myapp-component-based-app-api,\\$"

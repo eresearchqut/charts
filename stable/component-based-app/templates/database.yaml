@@ -1,0 +1,54 @@
+{{- if .Values.database }}
+---
+apiVersion: postgresql.cnpg.io/v1
+kind: Cluster
+metadata:
+  name: {{ include "component-based-app.fullname" . }}-db
+  labels:
+    {{- include "component-based-app.labels" . | nindent 4 }}
+    app.kubernetes.io/component: database
+spec:
+  imageName: {{ printf "%s:%s" .Values.database.image.repository .Values.database.image.tag }}
+  instances: {{ .Values.database.instances | default 1 }}
+  affinity:
+    enablePodAntiAffinity: true
+  storage:
+    storageClass: {{ .Values.database.storageClass | default "vsan-file" }}
+    size: {{ .Values.database.storageSize }}
+  walStorage:
+    storageClass: {{ .Values.database.walStorageClass | default "vsan-file" }}
+    size: {{ .Values.database.walStorageSize }}
+  resources:
+    requests:
+      memory: {{ .Values.database.resources.requests.memory }}
+      cpu: {{ .Values.database.resources.requests.cpu | quote }}
+    limits:
+      memory: {{ .Values.database.resources.limits.memory }}
+      cpu: {{ .Values.database.resources.limits.cpu | quote }}
+  monitoring:
+    enablePodMonitor: false
+  bootstrap:
+    initdb:
+      dataChecksums: true
+      walSegmentSize: 32
+      database: {{ include "component-based-app.name" . }}
+      owner: {{ include "component-based-app.name" . }}
+      secret:
+        name: {{ .Values.database.secretName | default (printf "%s-database" (include "component-based-app.fullname" .)) }}
+---
+apiVersion: monitoring.coreos.com/v1
+kind: PodMonitor
+metadata:
+  name: {{ include "component-based-app.fullname" . }}-db
+  labels:
+    {{- include "component-based-app.labels" . | nindent 4 }}
+    app.kubernetes.io/component: database
+    cnpg.io/cluster: {{ include "component-based-app.fullname" . }}-db
+spec:
+  podMetricsEndpoints:
+    - port: metrics
+  selector:
+    matchLabels:
+      cnpg.io/cluster: {{ include "component-based-app.fullname" . }}-db
+      cnpg.io/podRole: instance
+{{- end }}

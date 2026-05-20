@@ -4,15 +4,6 @@
 
 A Helm chart for deploying simple static websites.
 
-## Installing the Chart
-
-To install this chart with the release name `static-website`:
-
-```console
-$ helm repo add eresearchqut https://eresearchqut.github.io/charts/
-$ helm install static-website eresearchqut/static-website
-```
-
 ## Values
 
 | Key | Type | Default | Description |

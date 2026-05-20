@@ -1,0 +1,142 @@
+suite: NetworkPolicy — Service Links & Ingress
+templates:
+  - networkpolicy-components.yaml
+
+release:
+  name: myapp
+  namespace: prod
+
+set:
+  components:
+    api:
+      image:
+        repository: "example.com/app"
+        tag: "latest"
+      port: 8000
+      command: ["python", "app.py"]
+      livenessProbe:
+        path: /healthz
+      injectDatabase: true
+      serviceLinks:
+        - envName: WORKER_URL
+          targetName: worker
+          path: /
+    worker:
+      image:
+        repository: "example.com/app"
+        tag: "latest"
+      port: 8080
+      command: ["node", "worker.js"]
+      livenessProbe:
+        path: /health
+      serviceLinks:
+        - envName: API_URL
+          targetName: api
+          path: /
+  database: {}
+  ingress:
+    host: api.example.com
+    targetComponent: api
+  networkPolicy:
+    allowPublicIngress: true
+
+tests:
+  # --- Count: one policy per component ---
+  - it: creates one NetworkPolicy per component
+    asserts:
+      - hasDocuments:
+          count: 2
+
+  # --- DB egress on component with injectDatabase ---
+  - it: component with injectDatabase gets egress to database on port 5432
+    documentIndex: 0
+    asserts:
+      - equal:
+          path: metadata.labels["app.kubernetes.io/component"]
+          value: api
+      - contains:
+          path: spec.egress
+          content:
+            to:
+              - podSelector:
+                  matchLabels:
+                    cnpg.io/cluster: myapp-component-based-app-db
+            ports:
+              - port: 5432
+                protocol: TCP
+
+  # --- Component without injectDatabase has NO DB egress ---
+  - it: component without injectDatabase has no database egress rule
+    documentIndex: 1
+    asserts:
+      - notContains:
+          path: spec.egress
+          content:
+            to:
+              - podSelector:
+                  matchLabels:
+                    cnpg.io/cluster: myapp-component-based-app-db
+
+  # --- serviceLinks: egress from source to target ---
+  - it: serviceLink creates egress rule from source to target component's port
+    documentIndex: 0
+    asserts:
+      - contains:
+          path: spec.egress
+          content:
+            to:
+              - podSelector:
+                  matchLabels:
+                    app.kubernetes.io/component: worker
+                    app.kubernetes.io/instance: myapp
+            ports:
+              - port: 8080
+                protocol: TCP
+
+  # --- serviceLinks: ingress on target from source ---
+  - it: serviceLink creates ingress rule on target from source component
+    documentIndex: 1
+    asserts:
+      - contains:
+          path: spec.ingress
+          content:
+            from:
+              - podSelector:
+                  matchLabels:
+                    app.kubernetes.io/component: api
+                    app.kubernetes.io/instance: myapp
+            ports:
+              - port: 8080
+                protocol: TCP
+
+  # --- Ingress controller access: only on targetComponent ---
+  - it: ingress controller can reach the component named by ingress.targetComponent
+    documentIndex: 0
+    asserts:
+      - contains:
+          path: spec.ingress
+          content:
+            from:
+              - ipBlock:
+                  cidr: 0.0.0.0/0
+            ports:
+              - port: 8000
+                protocol: TCP
+
+  - it: non-target component does NOT get ingress controller access
+    documentIndex: 1
+    asserts:
+      - notContains:
+          path: spec.ingress
+          content:
+            from:
+              - ipBlock:
+                  cidr: 0.0.0.0/0
+
+  # --- Disabled: no policies ---
+  - it: no component NetworkPolicies when networkPolicy is disabled
+    set:
+      networkPolicy:
+    asserts:
+      - hasDocuments:
+          count: 0

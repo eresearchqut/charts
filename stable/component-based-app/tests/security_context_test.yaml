@@ -1,0 +1,230 @@
+suite: Security Contexts & Hardening
+templates:
+  - deployment.yaml
+  - serviceaccount.yaml
+
+release:
+  name: secured
+  namespace: prod
+
+capabilities:
+  apiVersions:
+    - v1
+    - apps/v1
+
+set:
+  components:
+    api:
+      image:
+        repository: "example.com/app"
+        tag: "latest"
+      port: 8000
+      command: ["python", "run.py"]
+      livenessProbe:
+        path: /health
+      initContainer:
+        command: ["python", "manage.py", "migrate"]
+      volumes:
+        - name: tls
+          secret:
+            secretName: api-tls
+      volumeMounts:
+        - name: tls
+          mountPath: /etc/tls
+          readOnly: true
+
+tests:
+  # --- podSecurityContext goes to Pod spec, NOT container ---
+  - it: podSecurityContext propagates to pod spec level
+    set:
+      podSecurityContext:
+        seccompProfile:
+          type: RuntimeDefault
+      containerSecurityContext: {}
+    template: deployment.yaml
+    documentIndex: 0
+    asserts:
+      - equal:
+          path: spec.template.spec.securityContext.seccompProfile.type
+          value: RuntimeDefault
+
+  # --- container containerSecurityContext ---
+  - it: containerSecurityContext propagates to main container
+    set:
+      containerSecurityContext:
+        allowPrivilegeEscalation: false
+        readOnlyRootFilesystem: true
+    template: deployment.yaml
+    documentIndex: 0
+    asserts:
+      - equal:
+          path: spec.template.spec.containers[0].securityContext.allowPrivilegeEscalation
+          value: false
+      - equal:
+          path: spec.template.spec.containers[0].securityContext.readOnlyRootFilesystem
+          value: true
+
+  # --- per-component podSecurityContext override ---
+  - it: per-component podSecurityContext overrides global
+    set:
+      podSecurityContext:
+        runAsUser: 1000
+      components:
+        api:
+          image:
+            repository: "example.com/app"
+            tag: "latest"
+          port: 8000
+          command: ["python", "run.py"]
+          livenessProbe:
+            path: /health
+          podSecurityContext:
+            runAsUser: 2000
+            runAsGroup: 3000
+    template: deployment.yaml
+    documentIndex: 0
+    asserts:
+      - equal:
+          path: spec.template.spec.securityContext.runAsUser
+          value: 2000
+      - equal:
+          path: spec.template.spec.securityContext.runAsGroup
+          value: 3000
+
+  # --- per-component containerSecurityContext override ---
+  - it: per-component containerSecurityContext overrides global
+    set:
+      containerSecurityContext:
+        readOnlyRootFilesystem: true
+      components:
+        api:
+          image:
+            repository: "example.com/app"
+            tag: "latest"
+          port: 8000
+          command: ["python", "run.py"]
+          livenessProbe:
+            path: /health
+          containerSecurityContext:
+            readOnlyRootFilesystem: false
+            runAsUser: 2000
+    template: deployment.yaml
+    documentIndex: 0
+    asserts:
+      - equal:
+          path: spec.template.spec.containers[0].securityContext.readOnlyRootFilesystem
+          value: false
+      - equal:
+          path: spec.template.spec.containers[0].securityContext.runAsUser
+          value: 2000
+
+  # --- global runAsUser/runAsGroup on pod ---
+  - it: global runAsUser and runAsGroup propagate to pod spec
+    set:
+      podSecurityContext:
+        runAsUser: 1000
+        runAsGroup: 3000
+    template: deployment.yaml
+    documentIndex: 0
+    asserts:
+      - equal:
+          path: spec.template.spec.securityContext.runAsUser
+          value: 1000
+      - equal:
+          path: spec.template.spec.securityContext.runAsGroup
+          value: 3000
+  # --- Volumes ---
+  - it: volumes specified on component appear in pod spec
+    template: deployment.yaml
+    documentIndex: 0
+    asserts:
+      - contains:
+          path: spec.template.spec.volumes
+          content:
+            name: tls
+            secret:
+              secretName: api-tls
+
+  - it: volumeMounts specified on component appear in main container
+    template: deployment.yaml
+    documentIndex: 0
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].volumeMounts
+          content:
+            name: tls
+            mountPath: /etc/tls
+            readOnly: true
+
+  # --- imagePullSecrets ---
+  - it: imagePullSecrets appear in Deployment pod spec
+    set:
+      imagePullSecrets:
+        - name: regcred
+    template: deployment.yaml
+    documentIndex: 0
+    asserts:
+      - contains:
+          path: spec.template.spec.imagePullSecrets
+          content:
+            name: regcred
+
+  - it: imagePullSecrets also appear in ServiceAccount
+    set:
+      imagePullSecrets:
+        - name: regcred
+    template: serviceaccount.yaml
+    documentIndex: 0
+    asserts:
+      - contains:
+          path: imagePullSecrets
+          content:
+            name: regcred
+
+  # --- nodeSelector, affinity, tolerations ---
+  - it: nodeSelector propagates to pod spec
+    set:
+      components:
+        api:
+          image:
+            repository: "example.com/app"
+            tag: "latest"
+          port: 8000
+          command: ["python", "run.py"]
+          livenessProbe:
+            path: /health
+          nodeSelector:
+            disktype: ssd
+    template: deployment.yaml
+    documentIndex: 0
+    asserts:
+      - equal:
+          path: spec.template.spec.nodeSelector.disktype
+          value: ssd
+
+  - it: tolerations propagate to pod spec
+    set:
+      components:
+        api:
+          image:
+            repository: "example.com/app"
+            tag: "latest"
+          port: 8000
+          command: ["python", "run.py"]
+          livenessProbe:
+            path: /health
+          tolerations:
+            - key: "dedicated"
+              operator: "Equal"
+              value: "compute"
+              effect: "NoSchedule"
+    template: deployment.yaml
+    documentIndex: 0
+    asserts:
+      - contains:
+          path: spec.template.spec.tolerations
+          content:
+            key: dedicated
+            operator: Equal
+            value: compute
+            effect: NoSchedule

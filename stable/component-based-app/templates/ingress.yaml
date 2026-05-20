@@ -1,0 +1,54 @@
+{{- if .Values.ingress.host }}
+{{- if not .Values.ingress.paths }}
+{{- $target := index .Values.components .Values.ingress.targetComponent }}
+{{- if empty $target }}
+  {{- fail (printf "ingress.targetComponent '%s' not found in .Values.components" .Values.ingress.targetComponent) }}
+{{- end }}
+{{- if not $target }}
+  {{- fail (printf "ingress.targetComponent '%s' is disabled" .Values.ingress.targetComponent) }}
+{{- end }}
+{{- end }}
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: {{ include "component-based-app.fullname" . }}
+  labels:
+    {{- include "component-based-app.labels" . | nindent 4 }}
+  {{- with .Values.ingress.annotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+spec:
+  ingressClassName: {{ .Values.ingress.className }}
+  rules:
+    - host: {{ .Values.ingress.host }}
+      http:
+        paths:
+          {{- if .Values.ingress.paths }}
+          {{- range .Values.ingress.paths }}
+          {{- $pathTarget := index $.Values.components .targetComponent }}
+          {{- if empty $pathTarget }}
+            {{- fail (printf "ingress.paths: component '%s' not found" .targetComponent) }}
+          {{- end }}
+{{- if not $pathTarget }}
+  {{- fail (printf "ingress.paths: component '%s' is disabled" .targetComponent) }}
+{{- end }}
+          - path: {{ .path }}
+            pathType: {{ .pathType | default "Prefix" }}
+            backend:
+              service:
+                name: {{ include "component-based-app.fullname" $ }}-{{ .targetComponent }}
+                port:
+                  name: {{ .portName | default "http" }}
+          {{- end }}
+          {{- else }}
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: {{ include "component-based-app.fullname" . }}-{{ .Values.ingress.targetComponent }}
+                port:
+                  name: http
+          {{- end }}
+{{- end }}

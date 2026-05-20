@@ -1,0 +1,41 @@
+{{- if .Values.ingress.host }}
+---
+apiVersion: ako.vmware.com/v1alpha1
+kind: HostRule
+metadata:
+  name: {{ include "component-based-app.fullname" . }}
+  labels:
+    {{- include "component-based-app.labels" . | nindent 4 }}
+spec:
+  virtualhost:
+    fqdn: {{ .Values.ingress.host }}
+    analyticsProfile: System-Analytics-Profile
+    enableVirtualHost: true
+    errorPageProfile: qut-error-pages
+    fqdnType: Exact
+    httpPolicy:
+      policySets:
+        - geo-blocking-default
+        - ip-reputation-block-all
+        - robots-disallow-all
+    tls:
+      sslKeyCertificate:
+        name: {{ .Values.ingress.tlsHost | quote }}
+        type: ref
+      termination: edge
+---
+apiVersion: ako.vmware.com/v1alpha1
+kind: HTTPRule
+metadata:
+  name: {{ include "component-based-app.fullname" . }}
+  labels:
+    {{- include "component-based-app.labels" . | nindent 4 }}
+spec:
+  fqdn: {{ .Values.ingress.host }}
+  paths:
+    - target: /
+      healthMonitors:
+        - System-HTTP
+      loadBalancerPolicy:
+        algorithm: LB_ALGORITHM_LEAST_CONNECTIONS
+{{- end }}
