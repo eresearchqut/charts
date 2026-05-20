@@ -1,0 +1,15 @@
+$schema: "https://json-schema.org/draft/2020-12/schema"
+type: object
+required: [envName, targetName]
+description: Injects a URL pointing to a sibling component Service as an environment variable.
+properties:
+  envName:
+    type: string
+    description: Name of the environment variable that receives the URL.
+  targetName:
+    type: string
+    description: Component key to link to. The URL is built as http://<service>:<port>.
+  path:
+    type: string
+    default: /
+    description: URL path appended to the service URL (e.g., /api).

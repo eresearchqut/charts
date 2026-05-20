@@ -1,0 +1,128 @@
+suite: Environment Variable Wiring
+templates:
+  - deployment.yaml
+
+release:
+  name: envtest
+  namespace: test
+
+set:
+tests:
+  # --- appSecretKeys ---
+  - it: appSecretKeys use custom secretName when specified
+    set:
+      components:
+        app:
+          image:
+            repository: "example.com/app"
+            tag: "latest"
+          port: 3000
+          command: ["node", "server.js"]
+          livenessProbe:
+            path: /health
+          secretName: my-custom-secrets
+          appSecretKeys:
+            - envName: API_KEY
+              secretKey: api-key
+    template: deployment.yaml
+    documentIndex: 0
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: API_KEY
+            valueFrom:
+              secretKeyRef:
+                name: my-custom-secrets
+                key: api-key
+
+  - it: appSecretKeys fall back to <fullname>-secrets when secretName is omitted
+    set:
+      components:
+        app:
+          image:
+            repository: "example.com/app"
+            tag: "latest"
+          port: 3000
+          command: ["node", "server.js"]
+          livenessProbe:
+            path: /health
+          appSecretKeys:
+            - envName: KEY1
+              secretKey: key1
+    template: deployment.yaml
+    documentIndex: 0
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: KEY1
+            valueFrom:
+              secretKeyRef:
+                name: envtest-component-based-app-secrets
+                key: key1
+
+  # --- podIPEnvName ---
+  - it: podIPEnvName creates a Downward API env var for the pod IP
+    set:
+      components:
+        app:
+          image:
+            repository: "example.com/app"
+            tag: "latest"
+          port: 3000
+          command: ["node", "server.js"]
+          livenessProbe:
+            path: /health
+          podIPEnvName: POD_IP
+    template: deployment.yaml
+    documentIndex: 0
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: POD_IP
+            valueFrom:
+              fieldRef:
+                fieldPath: status.podIP
+
+  # --- allowedHostsEnvName gated on podIPEnvName ---
+  - it: allowedHostsEnvName is NOT rendered when podIPEnvName is missing
+    set:
+      components:
+        app:
+          image:
+            repository: "example.com/app"
+            tag: "latest"
+          port: 3000
+          command: ["node", "server.js"]
+          livenessProbe:
+            path: /health
+          allowedHostsEnvName: ALLOWED_HOSTS
+    template: deployment.yaml
+    documentIndex: 0
+    asserts:
+      - notContains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: ALLOWED_HOSTS
+
+  - it: podIPEnvName without allowedHostsEnvName does not leak ALLOWED_HOSTS
+    set:
+      components:
+        app:
+          image:
+            repository: "example.com/app"
+            tag: "latest"
+          port: 3000
+          command: ["node", "server.js"]
+          livenessProbe:
+            path: /health
+          podIPEnvName: POD_IP
+    template: deployment.yaml
+    documentIndex: 0
+    asserts:
+      - notContains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: ALLOWED_HOSTS

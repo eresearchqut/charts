@@ -1,0 +1,65 @@
+{{- if and .Values.networkPolicy .Values.database }}
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: {{ include "component-based-app.fullname" . }}-database
+  labels:
+    app.kubernetes.io/component: database
+    {{- include "component-based-app.labels" . | nindent 4 }}
+spec:
+  podSelector:
+    matchLabels:
+      cnpg.io/cluster: {{ include "component-based-app.fullname" . }}-db
+  policyTypes:
+    - Ingress
+    - Egress
+  ingress:
+    {{- range $name, $spec := .Values.components }}
+    {{- if $spec.injectDatabase }}
+    - from:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/component: {{ $name }}
+              app.kubernetes.io/instance: {{ $.Release.Name }}
+      ports:
+        - port: 5432
+          protocol: TCP
+    {{- end }}
+    {{- end }}
+    {{- if .Values.networkPolicy.monitoringSelector }}
+    - from:
+{{- toYaml (list .Values.networkPolicy.monitoringSelector) | nindent 8 }}
+      ports:
+        - port: 9187
+          protocol: TCP
+    {{- end }}
+    {{- if .Values.networkPolicy.cnpgOperatorSelector }}
+    - from:
+{{- toYaml (list .Values.networkPolicy.cnpgOperatorSelector) | nindent 8 }}
+    {{- end }}
+    - from:
+        - podSelector:
+            matchLabels:
+              cnpg.io/cluster: {{ include "component-based-app.fullname" . }}-db
+  egress:
+    - ports:
+        - port: 53
+          protocol: UDP
+        - port: 53
+          protocol: TCP
+    - to:
+        - podSelector:
+            matchLabels:
+              cnpg.io/cluster: {{ include "component-based-app.fullname" . }}-db
+    {{- /* Kubernetes API server: required by CNPG for leader election and cluster management.
+         Restrict further via database.extraEgress if the API server CIDR is known. */}}
+    - ports:
+        - port: 443
+          protocol: TCP
+        - port: 6443
+          protocol: TCP
+    {{- with .Values.database.extraEgress }}
+    {{- toYaml . | nindent 4 }}
+    {{- end }}
+{{- end }}

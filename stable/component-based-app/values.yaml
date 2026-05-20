@@ -1,0 +1,179 @@
+# -- Helm release name override.
+nameOverride: ""
+
+# -- Helm release full name override.
+fullnameOverride: ""
+
+# -- Application version. Defaults to empty (no version label emitted).
+# Set this to tag Deployments with a meaningful version string.
+appVersion: ""
+
+# @schema additionalProperties: true
+# -- Global values for subchart inheritance.
+# Reserved for values shared across subcharts via Helm's global convention.
+global: {}
+
+# @schema itemRef: $k8s/_definitions.json#/definitions/io.k8s.api.core.v1.LocalObjectReference
+# -- List of image pull secret names for the container registry.
+# Each entry must be `name: <secret-name>`, matching Kubernetes imagePullSecrets format.
+imagePullSecrets: []
+
+# @schema $ref: $k8s/_definitions.json#/definitions/io.k8s.api.core.v1.ResourceRequirements
+# -- Default resource requests and limits applied to all components.
+# Individual components can override with their own resources block.
+# Set to {} to opt out of defaults entirely.
+resources: {}
+#  requests:
+#    cpu: 100m
+#    memory: 128Mi
+#  limits:
+#    cpu: 500m
+#    memory: 512Mi
+
+# @schema patternProperties: {"^[a-z][a-z0-9-]*$": {"$ref": "schemas/component.yaml"}}
+# -- Map of named components; each key becomes a Deployment + Service pair.
+# Each entry generates one Deployment and one ClusterIP Service named `<fullname>-<key>`.
+# Component keys must be valid Kubernetes DNS label names (lowercase alphanumeric + hyphens).
+# Omit a component from this map to disable it.
+components: {}
+
+ingress:
+  # -- Ingress class name (e.g., nginx, avi).
+  className: ""
+  # -- Ingress hostname (e.g., app.example.com).
+  host: ""
+  # -- AVI HostRule TLS host for certificate selection.
+  tlsHost: ""
+  # -- Component key whose Service receives all inbound traffic.
+  # Used when a single path `/` routes to one component.
+  targetComponent: ""
+  # -- Annotations to add to the Ingress resource (e.g., cert-manager.io/cluster-issuer).
+  annotations: {}
+  # @schema itemRef: schemas/paths-item.yaml
+  # -- Multiple path rules. When set, overrides the single targetComponent path.
+  # Each entry specifies path, pathType (default: Prefix), and targetComponent.
+  # Example:
+  #   paths:
+  #     - path: /api
+  #       targetComponent: api
+  #     - path: /
+  #       targetComponent: frontend
+  paths: []
+
+# @schema required: false
+# -- CloudNativePG database configuration. Omit entirely to skip database provisioning.
+database:
+  # -- Name of the secret containing database credentials.
+  secretName: ""
+  image:
+    # -- CloudNativePG PostgreSQL image repository.
+    repository: registry.eres.qut.edu.au/ghcr/cloudnative-pg/postgresql
+    # -- CloudNativePG PostgreSQL image tag (version).
+    tag: "17.5"
+  # -- PVC storage size for the database (Kubernetes quantity).
+  storageSize: 8Gi
+  # -- PVC storage size for WAL (Kubernetes quantity).
+  walStorageSize: 2Gi
+  # -- PVC storage class for the database. Defaults to cluster default when empty.
+  storageClass: ""
+  # -- PVC storage class for WAL. Defaults to cluster default when empty.
+  walStorageClass: ""
+  # @schema minimum: 1
+  # -- Number of CNPG cluster instances. Set > 1 for high availability.
+  instances: 1
+  resources:
+    requests:
+      # -- CPU request for the database instance.
+      cpu: "0.5"
+      # -- Memory request for the database instance.
+      memory: 256Mi
+    limits:
+      # -- CPU limit for the database instance.
+      cpu: "1"
+      # -- Memory limit for the database instance.
+      memory: 1Gi
+  # @schema itemRef: $k8s/_definitions.json#/definitions/io.k8s.api.networking.v1.NetworkPolicyEgressRule
+  # -- Additional NetworkPolicy egress rules appended to the database NetworkPolicy.
+  # Only meaningful when networkPolicy is set.
+  # Standard Kubernetes NetworkPolicyEgressRule format (e.g., S3 for WAL archiving).
+  extraEgress: []
+
+# @schema required: false
+# -- NetworkPolicy configuration. Omit entirely to skip network policy creation.
+networkPolicy:
+  # -- When true, allows ingress from any source (0.0.0.0/0) to the ingress.targetComponent.
+  # Only meaningful when ingress.targetComponent is also set.
+  allowPublicIngress: false
+  # -- NetworkPolicyPeer selecting the Prometheus monitoring namespace.
+  # Traffic from this peer is allowed to reach the database metrics port (9187).
+  monitoringSelector:
+    namespaceSelector:
+      matchLabels:
+        kubernetes.io/metadata.name: monitoring
+  # -- NetworkPolicyPeer selecting the CloudNativePG operator namespace.
+  # Required for CNPG health checks, switchover, and cluster management.
+  cnpgOperatorSelector:
+    namespaceSelector:
+      matchLabels:
+        kubernetes.io/metadata.name: cnpg-system
+
+serviceAccount:
+  # -- Create a service account for the deployment.
+  create: true
+  # -- Annotations to add to the service account.
+  annotations: {}
+  # -- Name of the service account to use. Defaults to `<fullname>` when empty.
+  name: ""
+  # -- Automatically mount API credentials for the service account.
+  # Most application pods do not need Kubernetes API access. Defaulting to false
+  # reduces the blast radius of a container compromise. Enable when the pod
+  # genuinely needs to call the Kubernetes API.
+  automount: false
+
+# @schema $ref: $k8s/_definitions.json#/definitions/io.k8s.api.core.v1.PodSecurityContext; additionalProperties: true
+# -- Pod security context. Provides pod-level security settings.
+# Individual components can override with their own podSecurityContext block.
+podSecurityContext:
+  seccompProfile:
+    type: RuntimeDefault
+
+# @schema $ref: $k8s/_definitions.json#/definitions/io.k8s.api.core.v1.SecurityContext; additionalProperties: true
+# -- Container security context. Provides container-level security settings.
+# Individual components can override with their own containerSecurityContext block.
+# Override with {} to remove all defaults.
+containerSecurityContext:
+  capabilities:
+    drop:
+      - ALL
+  readOnlyRootFilesystem: true
+  runAsNonRoot: true
+  allowPrivilegeEscalation: false
+
+# @schema required: false
+# -- Flux ImageUpdateAutomation configuration. Omit entirely to skip image automation.
+imageUpdate:
+  # -- Regex with named capture group "ts" for chronological tag ordering.
+  imageTagPattern: "^(?P<ts>[0-9]+)$"
+  # -- Git branch for ImageUpdateAutomation commits.
+  imageUpdateBranch: main
+  # -- Repo-relative path scanned for `$imagepolicy` annotations.
+  updatePath: "."
+  # -- Commit message template for image update automation.
+  messageTemplate: |
+    Automated image update
+
+    Automation name: {{ .AutomationObject }}
+
+    Files:
+    {{ range $filename, $_ := .Changed.FileChanges -}}
+    - {{ $filename }}
+    {{ end -}}
+
+    Objects:
+    {{ range $resource, $changes := .Changed.Objects -}}
+    - {{ $resource.Kind }} {{ $resource.Name }}
+      Changes:
+    {{- range $_, $change := $changes }}
+        - {{ $change.OldValue }} -> {{ $change.NewValue }}
+    {{ end -}}
+    {{ end -}}

@@ -1,0 +1,87 @@
+# SUITE: Component Rendering
+#
+# Components render a Deployment and Service when present in the
+# `components` map. Removing a component from the map suppresses all
+# its resources (Deployment, Service, HPA, NetworkPolicy, etc.).
+
+suite: Component Rendering
+templates:
+  - deployment.yaml
+  - service.yaml
+
+release:
+  name: myapp
+  namespace: default
+
+set:
+
+tests:
+  # --- Default values must not create resources ---
+  - it: default values produce zero Deployments (components is empty)
+    asserts:
+      - hasDocuments:
+          count: 0
+        template: deployment.yaml
+
+  - it: default values produce zero Services (components is empty)
+    asserts:
+      - hasDocuments:
+          count: 0
+        template: service.yaml
+
+  # --- Component NOT in map produces no resources ---
+  - it: "component not in the map produces no resources"
+    set:
+      components: {}
+    asserts:
+      - hasDocuments:
+          count: 0
+        template: deployment.yaml
+
+  # --- Component in map produces a Deployment and Service ---
+  - it: component in map produces a Deployment
+    set:
+      components:
+        web:
+          image:
+            repository: "example.com/app"
+            tag: "latest"
+          port: 80
+          command: ["nginx"]
+          livenessProbe:
+            path: /
+    asserts:
+      - hasDocuments:
+          count: 1
+        template: deployment.yaml
+      - hasDocuments:
+          count: 1
+        template: service.yaml
+
+  # --- Multiple components each get their own resources ---
+  - it: each component in map produces its own Deployment
+    set:
+      components:
+        web:
+          image:
+            repository: "example.com/app"
+            tag: "latest"
+          port: 80
+          command: ["nginx"]
+          livenessProbe:
+            path: /
+        worker:
+          image:
+            repository: "example.com/app"
+            tag: "latest"
+          port: 8080
+          command: ["node", "worker.js"]
+          livenessProbe:
+            path: /health
+    asserts:
+      - hasDocuments:
+          count: 2
+        template: deployment.yaml
+      - hasDocuments:
+          count: 2
+        template: service.yaml

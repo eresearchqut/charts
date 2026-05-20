@@ -1,0 +1,37 @@
+{{- range $name, $spec := .Values.components }}
+{{- $svcName := printf "%s-%s" (include "component-based-app.fullname" $) $name }}
+1. Get the application URL for component {{ $name }} by running these commands:
+  export POD_NAME=$(kubectl get pods --namespace {{ $.Release.Namespace }} -l "app.kubernetes.io/component={{ $name }},app.kubernetes.io/instance={{ $.Release.Name }}" -o jsonpath="{.items[0].metadata.name}")
+  export CONTAINER_PORT=$(kubectl get pod --namespace {{ $.Release.Namespace }} $POD_NAME -o jsonpath="{.spec.containers[0].ports[0].containerPort}")
+  echo "Visit http://127.0.0.1:8080 to use your application"
+  kubectl --namespace {{ $.Release.Namespace }} port-forward $POD_NAME 8080:$CONTAINER_PORT
+
+{{- end }}
+{{- if .Values.database }}
+2. Ensure the namespace is labelled for CNPG operator:
+   kubectl label namespace {{ .Release.Namespace }} app/managed-by=cnpg-operator
+
+3. Database cluster {{ include "component-based-app.fullname" . }}-db has been deployed.
+   Check status: kubectl --namespace {{ .Release.Namespace }} get cluster {{ include "component-based-app.fullname" . }}-db
+{{- end }}
+
+
+{{- $hasSecrets := false }}
+{{- range $name, $spec := .Values.components }}
+{{- if $spec.appSecretKeys }}
+{{- $hasSecrets = true }}
+{{- end }}
+{{- end }}
+{{- if or .Values.database $hasSecrets }}
+Ensure the following Kubernetes Secrets exist before pods can start:
+{{- if .Values.database }}
+  Database secret: '{{ .Values.database.secretName | default (printf "%s-database" (include "component-based-app.fullname" .)) }}'
+    Required keys: username, password
+{{- end }}
+{{- range $name, $spec := .Values.components }}
+{{- if $spec.appSecretKeys }}
+  App secret: '{{ $spec.secretName | default (printf "%s-secrets" (include "component-based-app.fullname" $)) }}'
+    Required keys: {{- range $i, $k := $spec.appSecretKeys }}{{ if $i }}, {{ end }}{{ $k.secretKey }}{{- end }}
+{{- end }}
+{{- end }}
+{{- end }}

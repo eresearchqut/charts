@@ -1,0 +1,206 @@
+suite: NetworkPolicy — Database Isolation
+templates:
+  - networkpolicy-database.yaml
+
+release:
+  name: myapp
+  namespace: prod
+
+tests:
+  # --- Conditional creation ---
+  - it: creates database policy when database and networkPolicy are both enabled
+    set:
+      networkPolicy: {}
+      database: {}
+    asserts:
+      - hasDocuments:
+          count: 1
+
+  - it: no database policy when database is disabled
+    set:
+      networkPolicy: {}
+      database:
+    asserts:
+      - hasDocuments:
+          count: 0
+
+  - it: no database policy when networkPolicy is disabled
+    set:
+      networkPolicy:
+      database: {}
+    asserts:
+      - hasDocuments:
+          count: 0
+
+  # --- podSelector targets the CNPG cluster ---
+  - it: podSelector targets the CNPG cluster pods
+    set:
+      networkPolicy: {}
+      database: {}
+    documentIndex: 0
+    asserts:
+      - equal:
+          path: spec.podSelector.matchLabels["cnpg.io/cluster"]
+          value: myapp-component-based-app-db
+
+  # --- Ingress: components with injectDatabase ---
+  - it: ingress allows PostgreSQL from components that inject the database
+    set:
+      networkPolicy: {}
+      database: {}
+      components:
+        api:
+          image:
+            repository: "example.com/app"
+            tag: "latest"
+          port: 8000
+          command: ["python", "app.py"]
+          livenessProbe:
+            path: /healthz
+          injectDatabase: true
+        worker:
+          image:
+            repository: "example.com/app"
+            tag: "latest"
+          port: 8080
+          command: ["node", "worker.js"]
+          livenessProbe:
+            path: /health
+          injectDatabase: false
+    documentIndex: 0
+    asserts:
+      - contains:
+          path: spec.ingress
+          content:
+            from:
+              - podSelector:
+                  matchLabels:
+                    app.kubernetes.io/component: api
+                    app.kubernetes.io/instance: myapp
+            ports:
+              - port: 5432
+                protocol: TCP
+      - notContains:
+          path: spec.ingress
+          content:
+            from:
+              - podSelector:
+                  matchLabels:
+                    app.kubernetes.io/component: worker
+
+  # --- Ingress: monitoring ---
+  - it: ingress allows metrics scraping from monitoring namespace
+    set:
+      networkPolicy: {}
+      database: {}
+    documentIndex: 0
+    asserts:
+      - contains:
+          path: spec.ingress
+          content:
+            from:
+              - namespaceSelector:
+                  matchLabels:
+                    kubernetes.io/metadata.name: monitoring
+            ports:
+              - port: 9187
+                protocol: TCP
+
+  # --- Ingress: CNPG operator ---
+  - it: ingress allows the CNPG operator to manage the cluster
+    set:
+      networkPolicy: {}
+      database: {}
+    documentIndex: 0
+    asserts:
+      - contains:
+          path: spec.ingress
+          content:
+            from:
+              - namespaceSelector:
+                  matchLabels:
+                    kubernetes.io/metadata.name: cnpg-system
+
+  # --- Ingress: intra-cluster replication ---
+  - it: ingress allows intra-cluster pod-to-pod traffic for replication
+    set:
+      networkPolicy: {}
+      database: {}
+    documentIndex: 0
+    asserts:
+      - contains:
+          path: spec.ingress
+          content:
+            from:
+              - podSelector:
+                  matchLabels:
+                    cnpg.io/cluster: myapp-component-based-app-db
+
+  # --- Egress: ONLY DNS, intra-cluster, and API server ---
+  - it: egress contains DNS and nothing unrestricted beyond cluster and API server
+    set:
+      networkPolicy: {}
+      database: {}
+    documentIndex: 0
+    asserts:
+      # DNS
+      - contains:
+          path: spec.egress
+          content:
+            ports:
+              - port: 53
+                protocol: UDP
+              - port: 53
+                protocol: TCP
+      # Intra-cluster replication
+      - contains:
+          path: spec.egress
+          content:
+            to:
+              - podSelector:
+                  matchLabels:
+                    cnpg.io/cluster: myapp-component-based-app-db
+      # Kubernetes API server
+      - contains:
+          path: spec.egress
+          content:
+            ports:
+              - port: 443
+                protocol: TCP
+              - port: 6443
+                protocol: TCP
+      # No unrestricted egress (no to: {} with empty podSelector/namespaceSelector)
+      - notContains:
+          path: spec.egress
+          content:
+            to:
+              - {}
+      # Exactly 3 egress rules: DNS, intra-cluster, API server
+      - lengthEqual:
+          path: spec.egress
+          count: 3
+
+  # --- No ingress rules for components without injectDatabase ---
+  - it: no database ingress rules exist for components without injectDatabase
+    set:
+      networkPolicy: {}
+      database: {}
+      components:
+        web:
+          image:
+            repository: "example.com/app"
+            tag: "latest"
+          port: 80
+          command: ["nginx"]
+          livenessProbe:
+            path: /
+          injectDatabase: false
+    documentIndex: 0
+    asserts:
+      - notContains:
+          path: spec.ingress
+          content:
+            from:
+              - podSelector:
+                  matchLabels:
+                    app.kubernetes.io/component: web

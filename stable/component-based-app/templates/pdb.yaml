@@ -1,0 +1,27 @@
+{{- range $name, $spec := .Values.components }}
+{{- $pdb := $spec.podDisruptionBudget }}
+{{- $hasReplicas := gt (int ($spec.replicas | default 1)) 1 }}
+{{- $hasAutoscaling := $spec.autoscaling }}
+{{- if or $pdb $hasReplicas $hasAutoscaling }}
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: {{ include "component-based-app.fullname" $ }}-{{ $name }}
+  labels:
+    app.kubernetes.io/component: {{ $name }}
+    {{- include "component-based-app.labels" $ | nindent 4 }}
+spec:
+  {{- if $pdb.minAvailable }}
+  minAvailable: {{ $pdb.minAvailable }}
+  {{- else if $pdb.maxUnavailable }}
+  maxUnavailable: {{ $pdb.maxUnavailable }}
+  {{- else }}
+  maxUnavailable: 1
+  {{- end }}
+  selector:
+    matchLabels:
+      {{- include "component-based-app.selectorLabels" $ | nindent 6 }}
+      app.kubernetes.io/component: {{ $name }}
+{{- end }}
+{{- end }}

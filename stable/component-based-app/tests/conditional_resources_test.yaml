@@ -1,0 +1,163 @@
+suite: Conditional Resource Rendering
+templates:
+  - deployment.yaml
+  - ingress.yaml
+  - avi-rules.yaml
+  - flux-image-automation.yaml
+
+release:
+  name: cond
+  namespace: test
+
+set:
+
+tests:
+  # --- Empty components: no resources ---
+  - it: creates zero Deployments when components is empty
+    set:
+      components: {}
+    asserts:
+      - hasDocuments:
+          count: 0
+        template: deployment.yaml
+
+  # --- Ingress conditional on host ---
+  - it: no Ingress or AVI rules when ingress.host is empty
+    set:
+      ingress:
+        host: ""
+    asserts:
+      - hasDocuments:
+          count: 0
+        template: ingress.yaml
+      - hasDocuments:
+          count: 0
+        template: avi-rules.yaml
+  - it: creates Ingress when ingress.host is set
+    set:
+      ingress:
+        host: app.example.com
+        targetComponent: web
+      components:
+        web:
+          image:
+            repository: "example.com/app"
+            tag: "latest"
+          port: 80
+          command: ["nginx"]
+          livenessProbe:
+            path: /
+    asserts:
+      - hasDocuments:
+          count: 1
+        template: ingress.yaml
+  - it: Ingress class name propagates to spec
+    set:
+      ingress:
+        host: app.example.com
+        className: nginx
+        targetComponent: web
+      components:
+        web:
+          image:
+            repository: "example.com/app"
+            tag: "latest"
+          port: 80
+          command: ["nginx"]
+          livenessProbe:
+            path: /
+    template: ingress.yaml
+    documentIndex: 0
+    asserts:
+      - equal:
+          path: spec.ingressClassName
+          value: nginx
+  - it: creates AVI HostRule and HTTPRule when ingress.host is set
+    set:
+      ingress:
+        host: app.example.com
+        tlsHost: "*.example.com"
+        targetComponent: web
+      components:
+        web:
+          image:
+            repository: "example.com/app"
+            tag: "latest"
+          port: 80
+          command: ["nginx"]
+          livenessProbe:
+            path: /
+    asserts:
+      - hasDocuments:
+          count: 2
+        template: avi-rules.yaml
+
+  # --- Readiness probe conditional ---
+  - it: readinessProbe is absent when not configured
+    set:
+      components:
+        app:
+          image:
+            repository: "example.com/app"
+            tag: "latest"
+          port: 3000
+          command: ["node", "server.js"]
+          livenessProbe:
+            path: /health
+    template: deployment.yaml
+    documentIndex: 0
+    asserts:
+      - notExists:
+          path: spec.template.spec.containers[0].readinessProbe
+  - it: readinessProbe is present when configured
+    set:
+      components:
+        app:
+          image:
+            repository: "example.com/app"
+            tag: "latest"
+          port: 3000
+          command: ["node", "server.js"]
+          livenessProbe:
+            path: /health
+          readinessProbe:
+            path: /ready
+    template: deployment.yaml
+    documentIndex: 0
+    asserts:
+      - equal:
+          path: spec.template.spec.containers[0].readinessProbe.httpGet.path
+          value: /ready
+
+  # --- Flux image automation conditional ---
+  - it: Flux resources not created when imageUpdate is disabled
+    set:
+      imageUpdate:
+    asserts:
+      - hasDocuments:
+          count: 0
+        template: flux-image-automation.yaml
+  - it: Flux image automation creates one ImageRepository per unique repo
+    set:
+      imageUpdate: {}
+      components:
+        api:
+          image:
+            repository: "example.com/app"
+            tag: "latest"
+          port: 8000
+          command: ["python", "run.py"]
+          livenessProbe:
+            path: /health
+        worker:
+          image:
+            repository: "example.com/app"
+            tag: "latest"
+          port: 8080
+          command: ["node", "worker.js"]
+          livenessProbe:
+            path: /health
+    asserts:
+      - hasDocuments:
+          count: 3
+        template: flux-image-automation.yaml

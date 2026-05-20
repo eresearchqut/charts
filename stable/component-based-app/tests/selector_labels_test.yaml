@@ -1,0 +1,158 @@
+suite: Selector-Label Consistency
+templates:
+  - deployment.yaml
+  - service.yaml
+
+release:
+  name: myapp
+  namespace: default
+
+set:
+  components:
+    web:
+      image:
+        repository: "example.com/app"
+        tag: "latest"
+      port: 80
+      command: ["nginx"]
+      livenessProbe:
+        path: /
+
+tests:
+  # --- Basic selector-label matching ---
+  - it: deployment selector matches pod template labels exactly
+    template: deployment.yaml
+    documentIndex: 0
+    asserts:
+      - equal:
+          path: spec.selector.matchLabels["app.kubernetes.io/name"]
+          value: component-based-app
+      - equal:
+          path: spec.template.metadata.labels["app.kubernetes.io/name"]
+          value: component-based-app
+      - equal:
+          path: spec.selector.matchLabels["app.kubernetes.io/instance"]
+          value: myapp
+      - equal:
+          path: spec.template.metadata.labels["app.kubernetes.io/instance"]
+          value: myapp
+      - equal:
+          path: spec.selector.matchLabels["app.kubernetes.io/component"]
+          value: web
+      - equal:
+          path: spec.template.metadata.labels["app.kubernetes.io/component"]
+          value: web
+
+  - it: service selector matches the same pod labels deployment selects
+    template: service.yaml
+    documentIndex: 0
+    asserts:
+      - equal:
+          path: spec.selector["app.kubernetes.io/name"]
+          value: component-based-app
+      - equal:
+          path: spec.selector["app.kubernetes.io/instance"]
+          value: myapp
+      - equal:
+          path: spec.selector["app.kubernetes.io/component"]
+          value: web
+
+  # --- Custom podLabels are additive, don't replace ---
+  - it: custom podLabels appear alongside standard labels (not instead of)
+    set:
+      components:
+        web:
+          image:
+            repository: "example.com/app"
+            tag: "latest"
+          port: 80
+          command: ["nginx"]
+          livenessProbe:
+            path: /
+          podLabels:
+            custom: value
+    template: deployment.yaml
+    documentIndex: 0
+    asserts:
+      - equal:
+          path: spec.template.metadata.labels["custom"]
+          value: value
+      - equal:
+          path: spec.template.metadata.labels["app.kubernetes.io/component"]
+          value: web
+      - equal:
+          path: spec.selector.matchLabels["app.kubernetes.io/component"]
+          value: web
+
+  # --- nameOverride changes the name label everywhere consistently ---
+  - it: nameOverride changes deployment selector and pod template name label
+    set:
+      nameOverride: custom-name
+      components:
+        web:
+          image:
+            repository: "example.com/app"
+            tag: "latest"
+          port: 80
+          command: ["nginx"]
+          livenessProbe:
+            path: /
+    template: deployment.yaml
+    documentIndex: 0
+    asserts:
+      - equal:
+          path: spec.selector.matchLabels["app.kubernetes.io/name"]
+          value: custom-name
+      - equal:
+          path: spec.template.metadata.labels["app.kubernetes.io/name"]
+          value: custom-name
+
+  - it: nameOverride changes service selector name label to match
+    set:
+      nameOverride: custom-name
+      components:
+        web:
+          image:
+            repository: "example.com/app"
+            tag: "latest"
+          port: 80
+          command: ["nginx"]
+          livenessProbe:
+            path: /
+    template: service.yaml
+    documentIndex: 0
+    asserts:
+      - equal:
+          path: spec.selector["app.kubernetes.io/name"]
+          value: custom-name
+
+  # --- Service points to correct component when multiple exist ---
+  - it: each service's selector points to its own component
+    set:
+      components:
+        web:
+          image:
+            repository: "example.com/app"
+            tag: "latest"
+          port: 80
+          command: ["nginx"]
+          livenessProbe:
+            path: /
+        worker:
+          image:
+            repository: "example.com/app"
+            tag: "latest"
+          port: 8080
+          command: ["node", "worker.js"]
+          livenessProbe:
+            path: /health
+    template: service.yaml
+    asserts:
+      - equal:
+          path: spec.selector["app.kubernetes.io/component"]
+          value: web
+        documentIndex: 0
+      - equal:
+          path: spec.selector["app.kubernetes.io/component"]
+          value: worker
+        documentIndex: 1

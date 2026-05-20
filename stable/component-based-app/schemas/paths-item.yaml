@@ -1,0 +1,22 @@
+$schema: "https://json-schema.org/draft/2020-12/schema"
+type: object
+required: [path, targetComponent]
+description: An ingress path rule mapping a URL path to a component Service.
+properties:
+  path:
+    type: string
+    title: Path
+    description: URL path to match (e.g., /api or /).
+  pathType:
+    type: string
+    enum: [Prefix, Exact, ImplementationSpecific]
+    default: Prefix
+    description: Kubernetes path matching type.
+  targetComponent:
+    type: string
+    title: Target component
+    description: Component key whose Service receives traffic for this path.
+  portName:
+    type: string
+    default: http
+    description: Name of the Service port to route to.

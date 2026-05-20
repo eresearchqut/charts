@@ -1,0 +1,242 @@
+suite: Database Integration & Secrets
+templates:
+  - database.yaml
+  - deployment.yaml
+  - tests/database-ready-test.yaml
+
+release:
+  name: dataapp
+  namespace: prod
+
+set:
+  components:
+    api:
+      image:
+        repository: "example.com/app"
+        tag: "latest"
+      port: 8000
+      command: ["python", "run.py"]
+      livenessProbe:
+        path: /health
+      injectDatabase: true
+      initContainer:
+        command: ["python", "manage.py", "migrate"]
+    web:
+      image:
+        repository: "example.com/app"
+        tag: "latest"
+      port: 80
+      command: ["nginx"]
+      livenessProbe:
+        path: /
+      injectDatabase: false
+  database: {}
+
+tests:
+  # --- CNPG Cluster exists ---
+  - it: creates a CNPG Cluster when database is enabled
+    template: database.yaml
+    documentIndex: 0
+    asserts:
+      - isKind:
+          of: Cluster
+      - equal:
+          path: apiVersion
+          value: postgresql.cnpg.io/v1
+
+  - it: cluster uses the specified database image
+    template: database.yaml
+    documentIndex: 0
+    asserts:
+      - matchRegex:
+          path: spec.imageName
+          pattern: "^registry.eres.qut.edu.au/ghcr/cloudnative-pg/postgresql:17\\.5$"
+
+  - it: cluster secret name matches component reference (default pattern)
+    template: database.yaml
+    documentIndex: 0
+    asserts:
+      - equal:
+          path: spec.bootstrap.initdb.secret.name
+          value: dataapp-component-based-app-database
+
+  # --- PodMonitor ---
+  - it: creates a PodMonitor for Prometheus
+    template: database.yaml
+    documentIndex: 1
+    asserts:
+      - isKind:
+          of: PodMonitor
+      - equal:
+          path: spec.selector.matchLabels["cnpg.io/cluster"]
+          value: dataapp-component-based-app-db
+      - equal:
+          path: spec.selector.matchLabels["cnpg.io/podRole"]
+          value: instance
+
+  # --- Database disabled: no resources ---
+  - it: creates no database resources when database is disabled
+    set:
+      database:
+      components:
+        api:
+          injectDatabase: false
+    asserts:
+      - hasDocuments:
+          count: 0
+        template: database.yaml
+
+  # --- Custom database secret name ---
+  - it: uses custom secret name when database.secretName is set
+    set:
+      database:
+        secretName: my-custom-db-secret
+    template: database.yaml
+    documentIndex: 0
+    asserts:
+      - equal:
+          path: spec.bootstrap.initdb.secret.name
+          value: my-custom-db-secret
+
+  # --- DB env vars in main container (injectDatabase: true) ---
+  - it: api container has DB_USERNAME from default secret name
+    template: deployment.yaml
+    documentIndex: 0
+    set:
+      database: {}
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: DB_USERNAME
+            valueFrom:
+              secretKeyRef:
+                name: dataapp-component-based-app-database
+                key: username
+
+  # --- DB env vars in main container with custom secretName ---
+  - it: api container uses custom secret name from database.secretName
+    template: deployment.yaml
+    documentIndex: 0
+    set:
+      database:
+        secretName: my-custom-db-secret
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: DB_USERNAME
+            valueFrom:
+              secretKeyRef:
+                name: my-custom-db-secret
+                key: username
+
+  # --- DB env vars in init container ---
+  - it: api init container gets DB_USERNAME from same secret
+    template: deployment.yaml
+    documentIndex: 0
+    set:
+      database:
+        secretName: my-custom-db-secret
+    asserts:
+      - contains:
+          path: spec.template.spec.initContainers[0].env
+          content:
+            name: DB_USERNAME
+            valueFrom:
+              secretKeyRef:
+                name: my-custom-db-secret
+                key: username
+      - contains:
+          path: spec.template.spec.initContainers[0].env
+          content:
+            name: DB_PASSWORD
+            valueFrom:
+              secretKeyRef:
+                name: my-custom-db-secret
+                key: password
+
+  # --- Component without injectDatabase has NO DB vars ---
+  - it: web container does NOT have DB env vars when injectDatabase is false
+    template: deployment.yaml
+    documentIndex: 1
+    set:
+      database: {}
+    asserts:
+      - notContains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: DB_USERNAME
+      - notContains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: DB_PASSWORD
+
+  # --- Database enabled but no component has injectDatabase: DB vars absent ---
+  - it: no DB env vars injected when no component has injectDatabase
+    set:
+      components:
+        api:
+          image:
+            repository: "example.com/app"
+            tag: "latest"
+          port: 8000
+          command: ["python", "run.py"]
+          livenessProbe:
+            path: /health
+          injectDatabase: false
+      database: {}
+    template: deployment.yaml
+    documentIndex: 0
+    asserts:
+      - notContains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: DB_USERNAME
+
+  # --- Database readiness test hook ---
+  - it: creates a readiness test Pod when database is enabled
+    set:
+      database: {}
+    template: tests/database-ready-test.yaml
+    documentIndex: 0
+    asserts:
+      - isKind:
+          of: Pod
+      - equal:
+          path: metadata.annotations["helm.sh/hook"]
+          value: test
+      - equal:
+          path: metadata.annotations["helm.sh/hook-delete-policy"]
+          value: before-hook-creation,hook-succeeded
+      - contains:
+          path: spec.containers[0].args
+          content: dataapp-component-based-app-db-rw
+      - contains:
+          path: spec.containers[0].command
+          content: pg_isready
+      - equal:
+          path: spec.restartPolicy
+          value: Never
+
+  - it: uses custom secret name for test Pod password
+    set:
+      database:
+        secretName: my-custom-db-secret
+    template: tests/database-ready-test.yaml
+    documentIndex: 0
+    asserts:
+      - equal:
+          path: spec.containers[0].env[0].valueFrom.secretKeyRef.name
+          value: my-custom-db-secret
+
+  - it: no readiness test Pod when database is disabled
+    set:
+      database:
+      components:
+        api:
+          injectDatabase: false
+    template: tests/database-ready-test.yaml
+    asserts:
+      - hasDocuments:
+          count: 0

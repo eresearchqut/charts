@@ -1,0 +1,19 @@
+{{- range $name, $spec := .Values.components }}
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: "{{ include "component-based-app.fullname" $ }}-{{ $name }}-test-connection"
+  labels:
+    app.kubernetes.io/component: {{ $name }}
+    {{- include "component-based-app.labels" $ | nindent 4 }}
+  annotations:
+    "helm.sh/hook": test
+spec:
+  containers:
+    - name: wget
+      image: busybox
+      command: ['wget']
+      args: ['{{ include "component-based-app.fullname" $ }}-{{ $name }}:{{ $spec.port }}']
+  restartPolicy: Never
+{{- end }}
