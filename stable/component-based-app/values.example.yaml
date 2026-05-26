@@ -1,0 +1,539 @@
+# -- Helm release name override.
+# @section -- Helm Metadata
+nameOverride: "" # @schema required:false
+
+# -- Helm release full name override.
+# @section -- Helm Metadata
+fullnameOverride: "" # @schema required:false
+
+# @schema required: false
+# -- Application version.
+# @section -- Helm Metadata
+# Set this to tag Deployments with a meaningful version string.
+appVersion: "" # @schema required:false
+
+# @schema additionalProperties: true
+# -- Global values for subchart inheritance.
+# @section -- Helm Metadata
+# Reserved for values shared across subcharts via Helm's global convention.
+global: {}
+
+# @schema itemRef: $k8s/_definitions.json#/definitions/io.k8s.api.core.v1.LocalObjectReference
+# @notationType -- list
+# -- (k8s/core/v1.LocalObjectReference) List of image pull secret names for the container registry.
+# @section -- Image Registry
+# @default -- `[]`
+imagePullSecrets:
+  - # -- Name of the Kubernetes Secret in the same namespace.
+    # @default -- `nil`
+    # @section -- Image Registry
+    name: "my-registry-secret"
+
+# @schema $ref: $k8s/_definitions.json#/definitions/io.k8s.api.core.v1.ResourceRequirements
+# -- (k8s/core/v1.ResourceRequirements) Default resource requests and limits. Individual components can override this.
+# @default -- `{}`
+resources:
+  # @ignore -- example
+  requests:
+    cpu: "100m"
+    memory: "128Mi"
+  # @ignore
+  limits:
+    cpu: "500m"
+    memory: "512Mi"
+
+# @schema patternProperties: {"^[a-z][a-z0-9-]*$": {"$ref": "schemas/component.yaml"}}
+components:
+  # -- Application component, key must be a valid kubernetes dns label
+  # @section -- Components
+  # @default -- `{}`
+  "*":
+    # -- Number of replicas.
+    # @section -- Components
+    # @default -- `nil`
+    replicas: 1
+    # -- Container image reference.
+    # @section -- Components
+    # @default -- `nil`
+    image:
+      # -- Container image repository (e.g., registry.example.com/myapp).
+      # @section -- Components
+      # @default -- `nil`
+      repository: "registry.example.com/myapp"
+      # -- Container image tag. Required — no default is applied.
+      # @section -- Components
+      # @default -- `nil`
+      tag: "latest"
+    # -- Command and arguments passed to the container (overrides image ENTRYPOINT).
+    # @section -- Components
+    # @default -- `[]`
+    command:
+      - "gunicorn"
+      - "-w"
+      - "4"
+      - "myapp.wsgi:application"
+    # -- Port the container listens on. Exposed as the Service port and injected as `PORT`.
+    # @section -- Components
+    # @default -- `nil`
+    port: 8000
+    # -- (k8s/core/v1.ResourceRequirements) Per-component resource requests and limits. Falls back to top-level `resources` when not set.
+    # @section -- Components
+    # @default -- `nil`
+    resources:
+      requests:
+        cpu: "100m"
+        memory: "128Mi"
+      limits:
+        cpu: "500m"
+        memory: "512Mi"
+    # -- Container liveness probe. Omit the block to disable.
+    # @section -- Components
+    # @default -- `nil`
+    livenessProbe:
+      # -- HTTP path for the liveness probe (e.g., /healthz).
+      # @section -- Components
+      # @default -- `nil`
+      path: /healthz
+      # -- (int) Delay before first probe.
+      # @section -- Components
+      # @default -- `nil`
+      initialDelaySeconds: 0
+      # -- (int) Interval between probes.
+      # @section -- Components
+      # @default -- `nil`
+      periodSeconds: 10
+      # -- (int) Probe timeout.
+      # @section -- Components
+      # @default -- `nil`
+      timeoutSeconds: 1
+      # -- (int) Consecutive failures before restart.
+      # @section -- Components
+      # @default -- `nil`
+      failureThreshold: 3
+      # -- (int) Consecutive successes to mark ready.
+      # @section -- Components
+      # @default -- `nil`
+      successThreshold: 1
+    # -- Container readiness probe. Omit the block to disable.
+    # @section -- Components
+    # @default -- `nil`
+    readinessProbe:
+      # -- HTTP path for the readiness probe.
+      # @section -- Components
+      # @default -- `nil`
+      path: /ready
+      # -- (int) Delay before first probe.
+      # @section -- Components
+      # @default -- `nil`
+      initialDelaySeconds: 0
+      # -- (int) Interval between probes.
+      # @section -- Components
+      # @default -- `nil`
+      periodSeconds: 10
+      # -- (int) Probe timeout.
+      # @section -- Components
+      # @default -- `nil`
+      timeoutSeconds: 1
+      # -- (int) Consecutive failures before marking unready.
+      # @section -- Components
+      # @default -- `nil`
+      failureThreshold: 3
+      # -- (int) Consecutive successes to mark ready.
+      # @section -- Components
+      # @default -- `nil`
+      successThreshold: 1
+    # -- Startup probe for slow-starting applications. Set `path` to enable; omit to disable.
+    # @section -- Components
+    # @default -- `nil`
+    startupProbe:
+      # -- HTTP path for the startup probe. Empty string disables it.
+      # @section -- Components
+      # @default -- `nil`
+      path: ""
+      # -- (int) Delay before first probe.
+      # @section -- Components
+      # @default -- `nil`
+      initialDelaySeconds: 0
+      # -- (int) Interval between probes.
+      # @section -- Components
+      # @default -- `nil`
+      periodSeconds: 10
+      # -- (int) Probe timeout.
+      # @section -- Components
+      # @default -- `nil`
+      timeoutSeconds: 1
+      # -- (int) Consecutive failures before the container is killed. Defaults higher (30) for slow starts.
+      # @section -- Components
+      # @default -- `nil`
+      failureThreshold: 30
+    # -- When true, injects `DB_USERNAME`, `DB_PASSWORD`, `DB_HOST`, and `DB_PORT` from the database secret.
+    # @section -- Components
+    # @default -- `nil`
+    injectDatabase: false
+    # -- Name of the Kubernetes Secret that backs `appSecretKeys` entries. Defaults to `<fullname>-secrets` when empty.
+    # @section -- Components
+    # @default -- `nil`
+    secretName: ""
+    # -- Environment variables sourced from a Kubernetes Secret.
+    # @section -- Components
+    # @default -- `nil`
+    appSecretKeys:
+      - # -- Name of the environment variable exposed to the container.
+        # @default -- `nil`
+        # @section -- Components
+        envName: "DJANGO_SECRET_KEY"
+        # -- Key within the referenced Kubernetes Secret.
+        # @section -- Components
+        # @default -- `nil`
+        secretKey: "django-secret-key"
+    # -- Name of the environment variable that receives the pod's IP via the Downward API.
+    # @section -- Components
+    # @default -- `nil`
+    podIPEnvName: "POD_IP"
+    # -- Environment variable set to `<service-name>,$(POD_IP)`. Requires `podIPEnvName`.
+    # @section -- Components
+    # @default -- `nil`
+    allowedHostsEnvName: "ALLOWED_HOSTS"
+    # -- Injects HTTP URLs pointing to sibling component Services as environment variables.
+    # @section -- Components
+    # @default -- `nil`
+    serviceLinks:
+      - # -- Name of the environment variable that receives the URL.
+        # @section -- Components
+        # @default -- `nil`
+        envName: "API_URL"
+        # -- Key of the target component in this chart.
+        # @section -- Components
+        # @default -- `nil`
+        targetName: "api"
+        # -- URL path appended to the service URL.
+        # @section -- Components
+        # @default -- `nil`
+        path: "/"
+    # @notationType -- list
+    # -- (k8s/core/v1.EnvVar) Additional environment variables in Kubernetes EnvVar format.
+    # @section -- Components
+    # @default -- `[]`
+    env:
+      - name: "LOG_LEVEL"
+        value: "info"
+    # -- Init container that runs before the main container. Uses the same image as the component.
+    # @section -- Components
+    # @default -- `nil`
+    initContainer:
+      # -- Init container command and arguments.
+      # @section -- Components
+      # @default -- `nil`
+      command:
+        - "python"
+        - "manage.py"
+        - "migrate"
+    # @notationType -- list
+    # -- (k8s/networking/v1.NetworkPolicyEgressRule) Additional NetworkPolicy egress rules. Only meaningful when `networkPolicy` is configured.
+    # @section -- Components
+    # @default -- `[]`
+    extraEgress:
+      - to:
+          - ipBlock:
+              cidr: "10.0.0.0/8"
+        ports:
+          - port: 443
+            protocol: "TCP"
+    # @notationType -- list
+    # -- (k8s/networking/v1.NetworkPolicyIngressRule) Additional NetworkPolicy ingress rules. Only meaningful when `networkPolicy` is configured.
+    # @section -- Components
+    # @default -- `[]`
+    extraIngress: []
+    # -- Annotations added to the component's Pod.
+    # @section -- Components
+    # @default -- `nil`
+    podAnnotations:
+      "prometheus.io/scrape": "true"
+    # -- Labels added to the component's Pod.
+    # @section -- Components
+    # @default -- `nil`
+    podLabels:
+      "app.kubernetes.io/tier": "backend"
+    # @notationType -- list
+    # -- (k8s/core/v1.Volume) Additional volumes attached to the component's Pod.
+    # @section -- Components
+    # @default -- `[]`
+    volumes: []
+    # @notationType -- list
+    # -- (k8s/core/v1.VolumeMount) Additional volume mounts into the component's main container.
+    # @section -- Components
+    # @default -- `[]`
+    volumeMounts: []
+    # -- Node labels for pod assignment.
+    # @section -- Components
+    # @default -- `nil`
+    nodeSelector:
+      "node-role.kubernetes.io/worker": ""
+    # -- (k8s/core/v1.Affinity) Affinity and anti-affinity rules for pod scheduling.
+    # @section -- Components
+    # @default -- `nil`
+    affinity: {}
+    # @notationType -- list
+    # -- (k8s/core/v1.Toleration) Tolerations for pod scheduling onto tainted nodes.
+    # @section -- Components
+    # @default -- `[]`
+    tolerations: []
+    # -- HorizontalPodAutoscaler configuration. Omit the block to disable HPA.
+    # @ignore
+    # @section -- Components
+    # @default -- `nil`
+    autoscaling:
+      # -- Minimum number of replicas.
+      # @section -- Components
+      # @default -- `nil`
+      minReplicas: 1
+      # -- Maximum number of replicas.
+      # @section -- Components
+      # @default -- `nil`
+      maxReplicas: 100
+      # -- Target average CPU utilization percentage.
+      # @section -- Components
+      # @default -- `nil`
+      targetCPUUtilizationPercentage: 80
+      # -- Target average memory utilization percentage.
+      # @section -- Components
+      # @default -- `nil`
+      targetMemoryUtilizationPercentage: 80
+      # -- HPA scaling behavior configuration. Omit for sensible Kubernetes defaults.
+      # @section -- Components
+      # @default -- `nil`
+      behavior:
+        scaleDown:
+          stabilizationWindowSeconds: 300
+    # -- PodDisruptionBudget configuration. Auto-created for components with replicas > 1 or autoscaling. Set explicitly to override.
+    # @section -- Components
+    # @default -- `nil`
+    podDisruptionBudget:
+      # -- Minimum number of available pods during voluntary disruptions. Can be int or percentage string (e.g., "50%").
+      # @section -- Components
+      # @default -- `nil`
+      minAvailable: 1
+      # -- Maximum number of unavailable pods during voluntary disruptions. Can be int or percentage string.
+      # @section -- Components
+      # @default -- `nil`
+      maxUnavailable: 1
+    # -- Prometheus ServiceMonitor configuration. Requires prometheus-operator. Omit to disable.
+    # @section -- Components
+    # @default -- `nil`
+    monitoring:
+      # -- Name of the port exposing metrics on the Service.
+      # @section -- Components
+      # @default -- `nil`
+      port: "http"
+      # -- HTTP path for the metrics endpoint.
+      # @section -- Components
+      # @default -- `nil`
+      path: "/metrics"
+      # -- Prometheus scrape interval.
+      # @section -- Components
+      # @default -- `nil`
+      interval: "30s"
+      # -- Prometheus scrape timeout.
+      # @section -- Components
+      # @default -- `nil`
+      scrapeTimeout: "10s"
+    # -- (k8s/core/v1.PodSecurityContext) Per-component pod security context. Overrides the global `podSecurityContext`. Set to `{}` to opt out.
+    # @section -- Components
+    # @default -- `nil`
+    podSecurityContext:
+      seccompProfile:
+        type: "RuntimeDefault"
+    # -- (k8s/core/v1.SecurityContext) Per-component container security context. Overrides the global `containerSecurityContext`. Set to `{}` to opt out.
+    # @section -- Components
+    # @default -- `nil`
+    containerSecurityContext:
+      capabilities:
+        drop:
+          - "ALL"
+      readOnlyRootFilesystem: true
+      runAsNonRoot: true
+      allowPrivilegeEscalation: false
+
+ingress:
+  # -- Ingress class name (e.g., nginx, avi).
+  # @section -- Ingress
+  # @default -- `""`
+  className: ""
+  # -- Ingress hostname (e.g., app.example.com).
+  # @section -- Ingress
+  # @default -- `""`
+  host: ""
+  # -- AVI HostRule TLS host for certificate selection.
+  # @section -- Ingress
+  # @default -- `""`
+  tlsHost: ""
+  # -- Component key whose Service receives all inbound traffic when a single path `/` routes to one component.
+  # @section -- Ingress
+  # @default -- `""`
+  targetComponent: ""
+  # -- Annotations to add to the Ingress resource (e.g., cert-manager.io/cluster-issuer).
+  # @section -- Ingress
+  # @default -- `{}`
+  annotations: {}
+  # @schema itemRef: schemas/paths-item.yaml
+  # -- Multiple path rules. When set, overrides the single targetComponent path.
+  # @section -- Ingress
+  # Each entry specifies path, pathType (default: Prefix), and targetComponent.
+  # @default -- `[]`
+  paths:
+    - # -- URL path to match (e.g., /api or /).
+      # @default -- `nil`
+      # @section -- Ingress
+      path: "/api"
+      # -- Kubernetes path matching type (Prefix, Exact, or ImplementationSpecific).
+      # @section -- Ingress
+      # @default -- `nil`
+      pathType: "Prefix"
+      # -- Component key whose Service receives traffic for this path.
+      # @section -- Ingress
+      # @default -- `nil`
+      targetComponent: "api"
+      # -- Name of the Service port to route to.
+      # @section -- Ingress
+      # @default -- `nil`
+      portName: "http"
+
+# @schema required: false
+
+database:
+  # -- Name of the secret containing database credentials.
+  # @section -- Database
+  secretName: ""
+  image:
+    # -- CloudNativePG PostgreSQL image repository.
+    # @section -- Database
+    repository: registry.eres.qut.edu.au/ghcr/cloudnative-pg/postgresql
+    # -- (Required) CloudNativePG PostgreSQL image tag (version). Must be set explicitly.
+    # @section -- Database
+    tag: "17"
+  # -- PVC storage size for the database (Kubernetes quantity).
+  # @section -- Database
+  storageSize: 8Gi
+  # -- PVC storage size for WAL (Kubernetes quantity).
+  # @section -- Database
+  walStorageSize: 2Gi
+  # -- PVC storage class for the database. Defaults to cluster default when empty.
+  # @section -- Database
+  storageClass: ""
+  # -- PVC storage class for WAL. Defaults to cluster default when empty.
+  # @section -- Database
+  walStorageClass: ""
+  # @schema minimum: 1
+  # -- Number of CNPG cluster instances. Set > 1 for high availability.
+  # @section -- Database
+  instances: 1
+  resources:
+    requests:
+      # -- CPU request for the database instance.
+      # @section -- Database
+      cpu: "0.5"
+      # -- Memory request for the database instance.
+      # @section -- Database
+      memory: 256Mi
+    limits:
+      # -- CPU limit for the database instance.
+      # @section -- Database
+      cpu: "1"
+      # -- Memory limit for the database instance.
+      # @section -- Database
+      memory: 1Gi
+  # @schema itemRef: $k8s/_definitions.json#/definitions/io.k8s.api.networking.v1.NetworkPolicyEgressRule
+  # @notationType -- list
+  # -- (k8s/networking/v1.NetworkPolicyEgressRule) Additional NetworkPolicy egress rules appended to the database NetworkPolicy.
+  # @section -- Database
+  # Only meaningful when networkPolicy is set.
+  # Standard Kubernetes NetworkPolicyEgressRule format (e.g., S3 for WAL archiving).
+  extraEgress: []
+
+# @schema required: false
+# -- NetworkPolicy configuration. Omit entirely to skip network policy creation.
+# @section -- Network Policy
+networkPolicy:
+  # -- When true, allows ingress from any source (0.0.0.0/0) to the ingress.targetComponent.
+  # @section -- Network Policy
+  # Only meaningful when ingress.targetComponent is also set.
+  allowPublicIngress: false
+  # -- NetworkPolicyPeer selecting the Prometheus monitoring namespace.
+  # @section -- Network Policy
+  # Traffic from this peer is allowed to reach the database metrics port (9187).
+  monitoringSelector:
+    namespaceSelector:
+      matchLabels:
+        kubernetes.io/metadata.name: monitoring
+  # -- NetworkPolicyPeer selecting the CloudNativePG operator namespace.
+  # @section -- Network Policy
+  # Required for CNPG health checks, switchover, and cluster management.
+  cnpgOperatorSelector:
+    namespaceSelector:
+      matchLabels:
+        kubernetes.io/metadata.name: cnpg-system
+
+serviceAccount:
+  # -- Create a service account for the deployment.
+  enabled: false
+  # -- Annotations to add to the service account.
+  annotations: {}
+  # -- Name of the service account to use. Defaults to `<fullname>` when empty.
+  name: ""
+  # -- Automatically mount API credentials for the service account.
+  automount: false
+
+# @schema $ref: $k8s/_definitions.json#/definitions/io.k8s.api.core.v1.PodSecurityContext; additionalProperties: true
+# -- (k8s/core/v1.PodSecurityContext) Default pod security context, individual components can override with their own podSecurityContext block.
+podSecurityContext:
+  seccompProfile:
+    type: RuntimeDefault
+
+# @schema $ref: $k8s/_definitions.json#/definitions/io.k8s.api.core.v1.SecurityContext; additionalProperties: true
+# -- (k8s/core/v1.SecurityContext) Container security context. Provides container-level security settings.
+# Individual components can override. Override with {} to remove all defaults.
+# @default -- drop all capabilities, readonly, nonRoot, no escalation
+containerSecurityContext:
+  capabilities:
+    drop:
+      - ALL
+  readOnlyRootFilesystem: true
+  runAsNonRoot: true
+  allowPrivilegeEscalation: false
+
+# @schema required: false
+imageUpdate:
+  # -- Enable Flux image automation (ImageRepository, ImagePolicy, ImageUpdateAutomation).
+  # @section -- Image Automation
+  # When false, no Flux image resources are created.
+  # Set to true to allow Flux to track images and automatically commit updates to git.
+  enabled: false
+  # -- Regex with named capture group "ts" for chronological tag ordering.
+  # @section -- Image Automation
+  imageTagPattern: "^(?P<ts>[0-9]+)$"
+  # -- Git branch for ImageUpdateAutomation commits.
+  # @section -- Image Automation
+  imageUpdateBranch: main
+  # -- Repo-relative path scanned for `$imagepolicy` annotations.
+  # @section -- Image Automation
+  updatePath: "."
+  # -- Commit message template for image update automation.
+  # @section -- Image Automation
+  messageTemplate: |
+    Automated image update
+
+    Automation name: {{ .AutomationObject }}
+
+    Files:
+    {{ range $filename, $_ := .Changed.FileChanges -}}
+    - {{ $filename }}
+    {{ end -}}
+
+    Objects:
+    {{ range $resource, $changes := .Changed.Objects -}}
+    - {{ $resource.Kind }} {{ $resource.Name }}
+      Changes:
+    {{- range $_, $change := $changes }}
+        - {{ $change.OldValue }} -> {{ $change.NewValue }}
+    {{ end -}}
+    {{ end -}}

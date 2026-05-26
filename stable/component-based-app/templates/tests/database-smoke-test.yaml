@@ -1,4 +1,5 @@
 {{- if .Values.database }}
+{{- $_ := required "database.image.tag is required" .Values.database.image.tag }}
 ---
 apiVersion: v1
 kind: Pod

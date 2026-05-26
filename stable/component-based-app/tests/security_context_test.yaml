@@ -171,6 +171,8 @@ tests:
 
   - it: imagePullSecrets also appear in ServiceAccount
     set:
+      serviceAccount:
+        enabled: true
       imagePullSecrets:
         - name: regcred
     template: serviceaccount.yaml
