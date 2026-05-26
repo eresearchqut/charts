@@ -23,7 +23,7 @@ set:
       command: ["python", "run.py"]
       livenessProbe:
         path: /health
-      injectDatabase: true
+      allowDatabaseAccess: true
       podIPEnvName: POD_IP
       allowedHostsEnvName: ALLOWED_HOSTS
       initContainer:

@@ -18,6 +18,10 @@
                             "type": "object",
                             "additionalProperties": false
                         },
+                        "allowDatabaseAccess": {
+                            "description": "When true, injects `DB_USERNAME`, `DB_PASSWORD`, `DB_HOST`, and `DB_PORT` from the database secret.",
+                            "type": "boolean"
+                        },
                         "allowedHostsEnvName": {
                             "description": "Environment variable set to `\u003cservice-name\u003e,$(POD_IP)`. Requires `podIPEnvName`.",
                             "type": "string"
@@ -205,10 +209,6 @@
                                 }
                             },
                             "additionalProperties": false
-                        },
-                        "injectDatabase": {
-                            "description": "When true, injects `DB_USERNAME`, `DB_PASSWORD`, `DB_HOST`, and `DB_PORT` from the database secret.",
-                            "type": "boolean"
                         },
                         "livenessProbe": {
                             "description": "Container liveness probe. Omit the block to disable.",
@@ -699,7 +699,7 @@
             "type": "string"
         },
         "networkPolicy": {
-            "description": "NetworkPolicy configuration. Omit entirely to skip network policy creation.",
+            "description": "NetworkPolicy configuration",
             "type": "object",
             "properties": {
                 "allowPublicIngress": {
@@ -3271,6 +3271,11 @@
                     "description": "Affinity and anti-affinity rules for pod scheduling.",
                     "$ref": "#/$defs/_definitions.json/definitions/io.k8s.api.core.v1.Affinity"
                 },
+                "allowDatabaseAccess": {
+                    "description": "When true, injects DB_USERNAME, DB_PASSWORD, DB_HOST, and DB_PORT environment variables from the database secret.\n",
+                    "default": false,
+                    "type": "boolean"
+                },
                 "allowedHostsEnvName": {
                     "description": "Name of the environment variable set to `\u003cservice-name\u003e,$(podIPEnvName)`. Requires podIPEnvName.\n",
                     "default": "ALLOWED_HOSTS",
@@ -3387,11 +3392,6 @@
                         }
                     },
                     "additionalProperties": false
-                },
-                "injectDatabase": {
-                    "description": "When true, injects DB_USERNAME, DB_PASSWORD, DB_HOST, and DB_PORT environment variables from the database secret.\n",
-                    "default": false,
-                    "type": "boolean"
                 },
                 "livenessProbe": {
                     "description": "Container liveness probe configuration. Omit to disable.",

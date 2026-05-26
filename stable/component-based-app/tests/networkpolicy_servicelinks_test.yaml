@@ -16,7 +16,7 @@ set:
       command: ["python", "app.py"]
       livenessProbe:
         path: /healthz
-      injectDatabase: true
+      allowDatabaseAccess: true
       serviceLinks:
         - envName: WORKER_URL
           targetName: worker
@@ -47,8 +47,8 @@ tests:
       - hasDocuments:
           count: 2
 
-  # --- DB egress on component with injectDatabase ---
-  - it: component with injectDatabase gets egress to database on port 5432
+  # --- DB egress on component with allowDatabaseAccess ---
+  - it: component with allowDatabaseAccess gets egress to database on port 5432
     documentIndex: 0
     asserts:
       - equal:
@@ -65,8 +65,8 @@ tests:
               - port: 5432
                 protocol: TCP
 
-  # --- Component without injectDatabase has NO DB egress ---
-  - it: component without injectDatabase has no database egress rule
+  # --- Component without allowDatabaseAccess has NO DB egress ---
+  - it: component without allowDatabaseAccess has no database egress rule
     documentIndex: 1
     asserts:
       - notContains:

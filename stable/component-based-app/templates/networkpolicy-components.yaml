@@ -17,7 +17,7 @@ spec:
     - Ingress
     - Egress
   egress:
-    {{- if $spec.injectDatabase }}
+    {{- if $spec.allowDatabaseAccess }}
     - to:
         - podSelector:
             matchLabels:
