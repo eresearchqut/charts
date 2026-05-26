@@ -2874,7 +2874,7 @@
                     "additionalProperties": false
                 },
                 "injectDatabase": {
-                    "description": "When true, injects DB_USERNAME and DB_PASSWORD environment variables from the database secret.\n",
+                    "description": "When true, injects DB_USERNAME, DB_PASSWORD, DB_HOST, and DB_PORT environment variables from the database secret.\n",
                     "default": false,
                     "type": "boolean"
                 },

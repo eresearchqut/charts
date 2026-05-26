@@ -113,6 +113,16 @@ tests:
               secretKeyRef:
                 name: dataapp-component-based-app-database
                 key: username
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: DB_HOST
+            value: dataapp-component-based-app-db-rw
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: DB_PORT
+            value: "5432"
 
   # --- DB env vars in main container with custom secretName ---
   - it: api container uses custom secret name from database.secretName
@@ -130,6 +140,16 @@ tests:
               secretKeyRef:
                 name: my-custom-db-secret
                 key: username
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: DB_HOST
+            value: dataapp-component-based-app-db-rw
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: DB_PORT
+            value: "5432"
 
   # --- DB env vars in init container ---
   - it: api init container gets DB_USERNAME from same secret
@@ -155,6 +175,16 @@ tests:
               secretKeyRef:
                 name: my-custom-db-secret
                 key: password
+      - contains:
+          path: spec.template.spec.initContainers[0].env
+          content:
+            name: DB_HOST
+            value: dataapp-component-based-app-db-rw
+      - contains:
+          path: spec.template.spec.initContainers[0].env
+          content:
+            name: DB_PORT
+            value: "5432"
 
   # --- Component without injectDatabase has NO DB vars ---
   - it: web container does NOT have DB env vars when injectDatabase is false
@@ -171,6 +201,14 @@ tests:
           path: spec.template.spec.containers[0].env
           content:
             name: DB_PASSWORD
+      - notContains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: DB_HOST
+      - notContains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: DB_PORT
 
   # --- Database enabled but no component has injectDatabase: DB vars absent ---
   - it: no DB env vars injected when no component has injectDatabase
@@ -193,6 +231,14 @@ tests:
           path: spec.template.spec.containers[0].env
           content:
             name: DB_USERNAME
+      - notContains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: DB_HOST
+      - notContains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: DB_PORT
 
   # --- Database readiness test hook ---
   - it: creates a readiness test Pod when database is enabled
