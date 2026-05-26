@@ -31,6 +31,7 @@ set:
         path: /
       allowDatabaseAccess: false
   database:
+    enabled: true
     image:
       tag: "17.5"
 
@@ -80,6 +81,7 @@ tests:
   - it: creates no database resources when database is disabled
     set:
       database:
+        enabled: false
       components:
         api:
           allowDatabaseAccess: false
@@ -92,6 +94,7 @@ tests:
   - it: uses custom secret name when database.secretName is set
     set:
       database:
+        enabled: true
         image:
           tag: "17.5"
         secretName: my-custom-db-secret
@@ -108,6 +111,7 @@ tests:
     documentIndex: 0
     set:
       database:
+        enabled: true
         image:
           tag: "17.5"
     asserts:
@@ -136,6 +140,7 @@ tests:
     documentIndex: 0
     set:
       database:
+        enabled: true
         image:
           tag: "17.5"
         secretName: my-custom-db-secret
@@ -165,6 +170,7 @@ tests:
     documentIndex: 0
     set:
       database:
+        enabled: true
         image:
           tag: "17.5"
         secretName: my-custom-db-secret
@@ -202,6 +208,7 @@ tests:
     documentIndex: 1
     set:
       database:
+        enabled: true
         image:
           tag: "17.5"
     asserts:
@@ -236,6 +243,7 @@ tests:
             path: /health
           allowDatabaseAccess: false
       database:
+        enabled: true
         image:
           tag: "17.5"
     template: deployment.yaml
@@ -258,6 +266,7 @@ tests:
   - it: creates a readiness test Pod when database is enabled
     set:
       database:
+        enabled: true
         image:
           tag: "17.5"
     template: tests/database-smoke-test.yaml
@@ -284,6 +293,7 @@ tests:
   - it: uses custom secret name for test Pod password
     set:
       database:
+        enabled: true
         image:
           tag: "17.5"
         secretName: my-custom-db-secret
@@ -297,6 +307,7 @@ tests:
   - it: no readiness test Pod when database is disabled
     set:
       database:
+        enabled: false
       components:
         api:
           allowDatabaseAccess: false

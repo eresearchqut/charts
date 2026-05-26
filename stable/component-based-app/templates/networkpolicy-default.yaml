@@ -1,4 +1,4 @@
-{{- if .Values.networkPolicy }}
+{{- if .Values.networkPolicy.enabled }}
 ---
 # Baseline: deny all ingress and egress for every pod belonging to this release,
 # then restore DNS so pods can resolve cluster-internal names.

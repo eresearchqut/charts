@@ -1,4 +1,4 @@
-{{- if .Values.database }}
+{{- if .Values.database.enabled }}
 {{- $_ := required "database.image.tag is required" .Values.database.image.tag }}
 ---
 apiVersion: postgresql.cnpg.io/v1

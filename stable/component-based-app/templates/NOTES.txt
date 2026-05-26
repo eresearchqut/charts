@@ -7,7 +7,7 @@
   kubectl --namespace {{ $.Release.Namespace }} port-forward $POD_NAME 8080:$CONTAINER_PORT
 
 {{- end }}
-{{- if .Values.database }}
+{{- if .Values.database.enabled }}
 2. Ensure the namespace is labelled for CNPG operator:
    kubectl label namespace {{ .Release.Namespace }} app/managed-by=cnpg-operator
 
@@ -22,9 +22,9 @@
 {{- $hasSecrets = true }}
 {{- end }}
 {{- end }}
-{{- if or .Values.database $hasSecrets }}
+{{- if or .Values.database.enabled $hasSecrets }}
 Ensure the following Kubernetes Secrets exist before pods can start:
-{{- if .Values.database }}
+{{- if .Values.database.enabled }}
   Database secret: '{{ .Values.database.secretName | default (printf "%s-database" (include "component-based-app.fullname" .)) }}'
     Required keys: username, password
 {{- end }}

@@ -71,3 +71,16 @@ Usage: {{ include "component-based-app.autoscaling" (dict "spec" $spec) }}
 {{- define "component-based-app.autoscaling" -}}
 {{- .spec.autoscaling | toYaml -}}
 {{- end -}}
+
+{{/*
+Public ingress rule snippet for the ingress controller (0.0.0.0/0) on the given port.
+Usage: {{ include "component-based-app.ingressPublicRule" <port> | nindent 4 }}
+*/}}
+{{- define "component-based-app.ingressPublicRule" -}}
+- from:
+    - ipBlock:
+        cidr: 0.0.0.0/0
+  ports:
+    - port: {{ . }}
+      protocol: TCP
+{{- end -}}

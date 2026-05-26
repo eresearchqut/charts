@@ -1,4 +1,4 @@
-{{- if and .Values.networkPolicy .Values.database }}
+{{- if and .Values.networkPolicy.enabled .Values.database.enabled }}
 ---
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
@@ -75,7 +75,6 @@ spec:
     {{- with .Values.database.extraEgress }}
     {{- toYaml . | nindent 4 }}
     {{- end }}
-{{- end }}
 
 ---
 # Allow database-component pods (e.g. Helm test hooks) to connect to the database cluster.
@@ -103,3 +102,4 @@ spec:
       ports:
         - port: 5432
           protocol: TCP
+{{- end }}
