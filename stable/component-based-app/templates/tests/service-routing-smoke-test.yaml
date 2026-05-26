@@ -13,7 +13,7 @@ spec:
   containers:
     - name: wget
       image: busybox
-      command: ['wget']
-      args: ['{{ include "component-based-app.fullname" $ }}-{{ $name }}:{{ $spec.port }}']
+      command: ['wget', '-q', '-O', '/dev/null']
+      args: ['http://{{ include "component-based-app.fullname" $ }}-{{ $name }}:{{ $spec.port }}{{ $spec.readinessProbe.path | default "/" }}']
   restartPolicy: Never
 {{- end }}

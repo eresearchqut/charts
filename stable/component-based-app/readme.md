@@ -120,6 +120,7 @@ configurable instances, storage, and resource limits.
 
 | Key | Type | Default | Description |
 |-----|------|---------|-------------|
+| database.enabled | bool | `false` | Enable or disable the CloudNativePG PostgreSQL database cluster. |
 | database.extraEgress | list of [networking/v1.NetworkPolicyEgressRule](https://raw.githubusercontent.com/yannh/kubernetes-json-schema/master/v1.34.3/_definitions.json#/definitions/io.k8s.api.networking/v1.NetworkPolicyEgressRule) | `[]` | Additional NetworkPolicy egress rules appended to the database NetworkPolicy. Only meaningful when networkPolicy is set. Standard Kubernetes NetworkPolicyEgressRule format (e.g., S3 for WAL archiving). |
 | database.image.repository | string | `"registry.eres.qut.edu.au/ghcr/cloudnative-pg/postgresql"` | CloudNativePG PostgreSQL image repository. |
 | database.image.tag | Required | `"17"` | CloudNativePG PostgreSQL image tag (version). Must be set explicitly. |
@@ -206,9 +207,9 @@ components:
 
 | Key | Type | Default | Description |
 |-----|------|---------|-------------|
-| networkPolicy | object | `{"allowPublicIngress":false,"cnpgOperatorSelector":{"namespaceSelector":{"matchLabels":{"kubernetes.io/metadata.name":"cnpg-system"}}},"monitoringSelector":{"namespaceSelector":{"matchLabels":{"kubernetes.io/metadata.name":"monitoring"}}}}` | NetworkPolicy configuration |
-| networkPolicy.allowPublicIngress | bool | `false` | When true, allows ingress from any source (0.0.0.0/0) to the ingress.targetComponent. Only meaningful when ingress.targetComponent is also set. |
+| networkPolicy | object | `{"cnpgOperatorSelector":{"namespaceSelector":{"matchLabels":{"kubernetes.io/metadata.name":"cnpg-system"}}},"enabled":true,"monitoringSelector":{"namespaceSelector":{"matchLabels":{"kubernetes.io/metadata.name":"monitoring"}}}}` | NetworkPolicy configuration |
 | networkPolicy.cnpgOperatorSelector | object | `{"namespaceSelector":{"matchLabels":{"kubernetes.io/metadata.name":"cnpg-system"}}}` | NetworkPolicyPeer selecting the CloudNativePG operator namespace. Required for CNPG health checks, switchover, and cluster management. |
+| networkPolicy.enabled | bool | `true` | Enable or disable all NetworkPolicy resources for this release. |
 | networkPolicy.monitoringSelector | object | `{"namespaceSelector":{"matchLabels":{"kubernetes.io/metadata.name":"monitoring"}}}` | NetworkPolicyPeer selecting the Prometheus monitoring namespace. Traffic from this peer is allowed to reach the database metrics port (9187). |
 ### Other Values
 

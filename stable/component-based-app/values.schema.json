@@ -507,6 +507,10 @@
         "database": {
             "type": "object",
             "properties": {
+                "enabled": {
+                    "description": "Enable or disable the CloudNativePG PostgreSQL database cluster.",
+                    "type": "boolean"
+                },
                 "extraEgress": {
                     "description": "Additional NetworkPolicy egress rules appended to the database NetworkPolicy. Only meaningful when networkPolicy is set. Standard Kubernetes NetworkPolicyEgressRule format (e.g., S3 for WAL archiving).",
                     "type": "array",
@@ -702,10 +706,6 @@
             "description": "NetworkPolicy configuration",
             "type": "object",
             "properties": {
-                "allowPublicIngress": {
-                    "description": "When true, allows ingress from any source (0.0.0.0/0) to the ingress.targetComponent. Only meaningful when ingress.targetComponent is also set.",
-                    "type": "boolean"
-                },
                 "cnpgOperatorSelector": {
                     "description": "NetworkPolicyPeer selecting the CloudNativePG operator namespace. Required for CNPG health checks, switchover, and cluster management.",
                     "type": "object",
@@ -727,6 +727,10 @@
                         }
                     },
                     "additionalProperties": false
+                },
+                "enabled": {
+                    "description": "Enable or disable all NetworkPolicy resources for this release.",
+                    "type": "boolean"
                 },
                 "monitoringSelector": {
                     "description": "NetworkPolicyPeer selecting the Prometheus monitoring namespace. Traffic from this peer is allowed to reach the database metrics port (9187).",
