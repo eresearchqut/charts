@@ -80,6 +80,8 @@ tests:
             ports:
               - port: 5432
                 protocol: TCP
+              - port: 8000
+                protocol: TCP
       - notContains:
           path: spec.ingress
           content:

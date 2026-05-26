@@ -46,6 +46,16 @@ tests:
               secretKeyRef:
                 name: myapp-component-based-app-database
                 key: username
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: DB_HOST
+            value: myapp-component-based-app-db-rw
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: DB_PORT
+            value: "5432"
 
   - it: init container also gets database credentials
     template: deployment.yaml
@@ -59,6 +69,16 @@ tests:
               secretKeyRef:
                 name: myapp-component-based-app-database
                 key: username
+      - contains:
+          path: spec.template.spec.initContainers[0].env
+          content:
+            name: DB_HOST
+            value: myapp-component-based-app-db-rw
+      - contains:
+          path: spec.template.spec.initContainers[0].env
+          content:
+            name: DB_PORT
+            value: "5432"
 
   - it: pod IP is exposed via the Downward API
     template: deployment.yaml

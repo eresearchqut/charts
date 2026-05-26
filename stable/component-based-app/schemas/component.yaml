@@ -112,8 +112,8 @@ properties:
     type: boolean
     default: false
     description: >
-      When true, injects DB_USERNAME and DB_PASSWORD environment variables
-      from the database secret.
+      When true, injects DB_USERNAME, DB_PASSWORD, DB_HOST, and DB_PORT
+      environment variables from the database secret.
   secretName:
     type: string
     default: ""
