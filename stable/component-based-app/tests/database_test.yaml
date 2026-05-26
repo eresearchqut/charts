@@ -18,7 +18,7 @@ set:
       command: ["python", "run.py"]
       livenessProbe:
         path: /health
-      injectDatabase: true
+      allowDatabaseAccess: true
       initContainer:
         command: ["python", "manage.py", "migrate"]
     web:
@@ -29,7 +29,7 @@ set:
       command: ["nginx"]
       livenessProbe:
         path: /
-      injectDatabase: false
+      allowDatabaseAccess: false
   database:
     image:
       tag: "17.5"
@@ -82,7 +82,7 @@ tests:
       database:
       components:
         api:
-          injectDatabase: false
+          allowDatabaseAccess: false
     asserts:
       - hasDocuments:
           count: 0
@@ -102,7 +102,7 @@ tests:
           path: spec.bootstrap.initdb.secret.name
           value: my-custom-db-secret
 
-  # --- DB env vars in main container (injectDatabase: true) ---
+  # --- DB env vars in main container (allowDatabaseAccess: true) ---
   - it: api container has DB_USERNAME from default secret name
     template: deployment.yaml
     documentIndex: 0
@@ -196,8 +196,8 @@ tests:
             name: DB_PORT
             value: "5432"
 
-  # --- Component without injectDatabase has NO DB vars ---
-  - it: web container does NOT have DB env vars when injectDatabase is false
+  # --- Component without allowDatabaseAccess has NO DB vars ---
+  - it: web container does NOT have DB env vars when allowDatabaseAccess is false
     template: deployment.yaml
     documentIndex: 1
     set:
@@ -222,8 +222,8 @@ tests:
           content:
             name: DB_PORT
 
-  # --- Database enabled but no component has injectDatabase: DB vars absent ---
-  - it: no DB env vars injected when no component has injectDatabase
+  # --- Database enabled but no component has allowDatabaseAccess: DB vars absent ---
+  - it: no DB env vars injected when no component has allowDatabaseAccess
     set:
       components:
         api:
@@ -234,7 +234,7 @@ tests:
           command: ["python", "run.py"]
           livenessProbe:
             path: /health
-          injectDatabase: false
+          allowDatabaseAccess: false
       database:
         image:
           tag: "17.5"
@@ -299,7 +299,7 @@ tests:
       database:
       components:
         api:
-          injectDatabase: false
+          allowDatabaseAccess: false
     template: tests/database-smoke-test.yaml
     asserts:
       - hasDocuments:

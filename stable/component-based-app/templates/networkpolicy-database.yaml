@@ -16,7 +16,7 @@ spec:
     - Egress
   ingress:
     {{- range $name, $spec := .Values.components }}
-    {{- if $spec.injectDatabase }}
+    {{- if $spec.allowDatabaseAccess }}
     - from:
         - podSelector:
             matchLabels:
@@ -29,6 +29,17 @@ spec:
           protocol: TCP
     {{- end }}
     {{- end }}
+    # Allow the database component's own pods (e.g. Helm test hooks) to connect.
+    - from:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/component: database
+              app.kubernetes.io/instance: {{ $.Release.Name }}
+      ports:
+        - port: 5432
+          protocol: TCP
+        - port: 8000
+          protocol: TCP
     {{- if .Values.networkPolicy.monitoringSelector }}
     - from:
 {{- toYaml (list .Values.networkPolicy.monitoringSelector) | nindent 8 }}

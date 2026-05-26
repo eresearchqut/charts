@@ -43,8 +43,8 @@ tests:
           path: spec.podSelector.matchLabels["cnpg.io/cluster"]
           value: myapp-component-based-app-db
 
-  # --- Ingress: components with injectDatabase ---
-  - it: ingress allows PostgreSQL from components that inject the database
+  # --- Ingress: components with allowDatabaseAccess ---
+  - it: ingress allows PostgreSQL from components that allow database access
     set:
       networkPolicy: {}
       database: {}
@@ -57,7 +57,7 @@ tests:
           command: ["python", "app.py"]
           livenessProbe:
             path: /healthz
-          injectDatabase: true
+          allowDatabaseAccess: true
         worker:
           image:
             repository: "example.com/app"
@@ -66,7 +66,7 @@ tests:
           command: ["node", "worker.js"]
           livenessProbe:
             path: /health
-          injectDatabase: false
+          allowDatabaseAccess: false
     documentIndex: 0
     asserts:
       - contains:
@@ -182,8 +182,8 @@ tests:
           path: spec.egress
           count: 3
 
-  # --- No ingress rules for components without injectDatabase ---
-  - it: no database ingress rules exist for components without injectDatabase
+  # --- No ingress rules for components without allowDatabaseAccess ---
+  - it: no database ingress rules exist for components without allowDatabaseAccess
     set:
       networkPolicy: {}
       database: {}
@@ -196,7 +196,7 @@ tests:
           command: ["nginx"]
           livenessProbe:
             path: /
-          injectDatabase: false
+          allowDatabaseAccess: false
     documentIndex: 0
     asserts:
       - notContains:

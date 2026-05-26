@@ -67,7 +67,7 @@ spec:
           image: {{ $image }}
           command:
             {{- toYaml $spec.initContainer.command | nindent 12 }}
-          {{- if $spec.injectDatabase }}
+          {{- if $spec.allowDatabaseAccess }}
           env:
             - name: DB_USERNAME
               valueFrom:
@@ -138,7 +138,7 @@ spec:
             {{- toYaml . | nindent 12 }}
           {{- end }}
           env:
-            {{- if $spec.injectDatabase }}
+            {{- if $spec.allowDatabaseAccess }}
             - name: DB_USERNAME
               valueFrom:
                 secretKeyRef:

@@ -130,12 +130,12 @@ Each component gets a `<fullname>-<name>` NetworkPolicy with `policyTypes:
 
 | Condition                           | Egress Rules                                       |
 |-------------------------------------|----------------------------------------------------|
-| `injectDatabase: true`              | Database access                                    |
+| `allowDatabaseAccess: true`              | Database access                                    |
 | `serviceLinks` entries              | TCP to each linked sibling component's port        |
 | Neither of the above                | **No egress rules beyond DNS** (from default-deny) |
 | `extraEgress` entries (always)      | Appended as-is to the egress list                  |
 
-**Components without `injectDatabase` or `serviceLinks` have no egress rules
+**Components without `allowDatabaseAccess` or `serviceLinks` have no egress rules
 beyond DNS.** If your component needs to reach external APIs or any other
 outbound destination, use `extraEgress`:
 

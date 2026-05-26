@@ -108,7 +108,7 @@ properties:
         type: integer
         default: 30
         description: Consecutive failures before the container is killed. Defaults higher (30) to accommodate slow starts.
-  injectDatabase:
+  allowDatabaseAccess:
     type: boolean
     default: false
     description: >
