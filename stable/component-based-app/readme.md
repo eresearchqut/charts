@@ -42,7 +42,7 @@ Kubernetes: `>=1.25-0`
 | fullnameOverride | string | `""` | Helm release full name override. |
 | global | object | `{}` | Global values for subchart inheritance. Reserved for values shared across subcharts via Helm's global convention. |
 | imagePullSecrets | list | `[]` | List of image pull secret names for the container registry. Each entry must be `name: <secret-name>`, matching Kubernetes imagePullSecrets format. |
-| imageUpdate | object | `{"imageTagPattern":"^(?P<ts>[0-9]+)$","imageUpdateBranch":"main","messageTemplate":"Automated image update\n\nAutomation name: {{ .AutomationObject }}\n\nFiles:\n{{ range $filename, $_ := .Changed.FileChanges -}}\n- {{ $filename }}\n{{ end -}}\n\nObjects:\n{{ range $resource, $changes := .Changed.Objects -}}\n- {{ $resource.Kind }} {{ $resource.Name }}\n  Changes:\n{{- range $_, $change := $changes }}\n    - {{ $change.OldValue }} -> {{ $change.NewValue }}\n{{ end -}}\n{{ end -}}\n","updatePath":"."}` | Flux ImageUpdateAutomation configuration. Omit entirely to skip image automation. |
+| imageUpdate.enabled | bool | `false` | Enable Flux image automation (ImageRepository, ImagePolicy, ImageUpdateAutomation). When false, no Flux image resources are created. Set to true to allow Flux to track images and automatically commit updates to git. |
 | imageUpdate.imageTagPattern | string | `"^(?P<ts>[0-9]+)$"` | Regex with named capture group "ts" for chronological tag ordering. |
 | imageUpdate.imageUpdateBranch | string | `"main"` | Git branch for ImageUpdateAutomation commits. |
 | imageUpdate.messageTemplate | string | `"Automated image update\n\nAutomation name: {{ .AutomationObject }}\n\nFiles:\n{{ range $filename, $_ := .Changed.FileChanges -}}\n- {{ $filename }}\n{{ end -}}\n\nObjects:\n{{ range $resource, $changes := .Changed.Objects -}}\n- {{ $resource.Kind }} {{ $resource.Name }}\n  Changes:\n{{- range $_, $change := $changes }}\n    - {{ $change.OldValue }} -> {{ $change.NewValue }}\n{{ end -}}\n{{ end -}}\n"` | Commit message template for image update automation. |
@@ -58,10 +58,10 @@ Kubernetes: `>=1.25-0`
 | networkPolicy.allowPublicIngress | bool | `false` | When true, allows ingress from any source (0.0.0.0/0) to the ingress.targetComponent. Only meaningful when ingress.targetComponent is also set. |
 | networkPolicy.cnpgOperatorSelector | object | `{"namespaceSelector":{"matchLabels":{"kubernetes.io/metadata.name":"cnpg-system"}}}` | NetworkPolicyPeer selecting the CloudNativePG operator namespace. Required for CNPG health checks, switchover, and cluster management. |
 | networkPolicy.monitoringSelector | object | `{"namespaceSelector":{"matchLabels":{"kubernetes.io/metadata.name":"monitoring"}}}` | NetworkPolicyPeer selecting the Prometheus monitoring namespace. Traffic from this peer is allowed to reach the database metrics port (9187). |
-| podSecurityContext | object | `{"seccompProfile":{"type":"RuntimeDefault"}}` | Pod security context. Provides pod-level security settings. Individual components can override with their own podSecurityContext block. |
+| podSecurityContext | object | `{"seccompProfile":{"type":"RuntimeDefault"}}` | Default pod security context, individual components can override with their own podSecurityContext block. |
 | resources | object | `{}` | Default resource requests and limits applied to all components. Individual components can override with their own resources block. Set to {} to opt out of defaults entirely. |
 | serviceAccount.annotations | object | `{}` | Annotations to add to the service account. |
-| serviceAccount.automount | bool | `false` | Automatically mount API credentials for the service account. Most application pods do not need Kubernetes API access. Defaulting to false reduces the blast radius of a container compromise. Enable when the pod genuinely needs to call the Kubernetes API. |
+| serviceAccount.automount | bool | `false` | Automatically mount API credentials for the service account. |
 | serviceAccount.create | bool | `true` | Create a service account for the deployment. |
 | serviceAccount.name | string | `""` | Name of the service account to use. Defaults to `<fullname>` when empty. |
 

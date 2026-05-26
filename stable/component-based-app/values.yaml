@@ -125,14 +125,10 @@ serviceAccount:
   # -- Name of the service account to use. Defaults to `<fullname>` when empty.
   name: ""
   # -- Automatically mount API credentials for the service account.
-  # Most application pods do not need Kubernetes API access. Defaulting to false
-  # reduces the blast radius of a container compromise. Enable when the pod
-  # genuinely needs to call the Kubernetes API.
   automount: false
 
 # @schema $ref: $k8s/_definitions.json#/definitions/io.k8s.api.core.v1.PodSecurityContext; additionalProperties: true
-# -- Pod security context. Provides pod-level security settings.
-# Individual components can override with their own podSecurityContext block.
+# -- Default pod security context, individual components can override with their own podSecurityContext block.
 podSecurityContext:
   seccompProfile:
     type: RuntimeDefault
@@ -150,8 +146,11 @@ containerSecurityContext:
   allowPrivilegeEscalation: false
 
 # @schema required: false
-# -- Flux ImageUpdateAutomation configuration. Omit entirely to skip image automation.
 imageUpdate:
+  # -- Enable Flux image automation (ImageRepository, ImagePolicy, ImageUpdateAutomation).
+  # When false, no Flux image resources are created.
+  # Set to true to allow Flux to track images and automatically commit updates to git.
+  enabled: false
   # -- Regex with named capture group "ts" for chronological tag ordering.
   imageTagPattern: "^(?P<ts>[0-9]+)$"
   # -- Git branch for ImageUpdateAutomation commits.

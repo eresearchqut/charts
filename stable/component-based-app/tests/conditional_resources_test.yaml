@@ -137,9 +137,28 @@ tests:
       - hasDocuments:
           count: 0
         template: flux-image-automation.yaml
-  - it: Flux image automation creates one ImageRepository per unique repo
+  - it: Flux resources not created when enabled is false
     set:
-      imageUpdate: {}
+      imageUpdate:
+        enabled: false
+      components:
+        api:
+          image:
+            repository: "example.com/app"
+            tag: "latest"
+          port: 8000
+          command: ["python", "run.py"]
+          livenessProbe:
+            path: /health
+    asserts:
+      - hasDocuments:
+          count: 0
+        template: flux-image-automation.yaml
+  - it: Flux image automation creates ImageUpdateAutomation when enabled is true
+    set:
+      imageUpdate:
+        enabled: true
+        imageTagPattern: "^(?P<ts>[0-9]+)$"
       components:
         api:
           image:
