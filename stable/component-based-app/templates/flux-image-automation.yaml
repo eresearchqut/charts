@@ -1,4 +1,4 @@
-{{- if .Values.imageUpdate }}
+{{- if and .Values.imageUpdate .Values.imageUpdate.enabled }}
 {{- /*
   Collect unique image repositories across all components.
   Each repository gets an ImageRepository + ImagePolicy pair.

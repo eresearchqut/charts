@@ -9,6 +9,15 @@ repos:
         pass_filenames: false
         files: ^stable/component-based-app/
         require_serial: true
+  - repo: local
+    hooks:
+      - id: helm-unittest
+        name: Helm unit tests
+        entry: bash -c 'for d in $(find stable -name Chart.yaml -exec dirname {} \;); do helm unittest "$d" || exit 1; done'
+        language: system
+        pass_filenames: false
+        files: ^stable/
+        require_serial: true
   - repo: https://github.com/norwoodj/helm-docs
     rev: "v1.14.2"
     hooks:

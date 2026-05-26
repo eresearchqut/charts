@@ -149,9 +149,12 @@
             }
         },
         "imageUpdate": {
-            "description": "Flux ImageUpdateAutomation configuration. Omit entirely to skip image automation.",
             "type": "object",
             "properties": {
+                "enabled": {
+                    "description": "Enable Flux image automation (ImageRepository, ImagePolicy, ImageUpdateAutomation). When false, no Flux image resources are created. Set to true to allow Flux to track images and automatically commit updates to git.",
+                    "type": "boolean"
+                },
                 "imageTagPattern": {
                     "description": "Regex with named capture group \"ts\" for chronological tag ordering.",
                     "type": "string"
@@ -265,7 +268,7 @@
             "additionalProperties": false
         },
         "podSecurityContext": {
-            "description": "Pod security context. Provides pod-level security settings. Individual components can override with their own podSecurityContext block.",
+            "description": "Default pod security context, individual components can override with their own podSecurityContext block.",
             "$ref": "#/$defs/_definitions.json/definitions/io.k8s.api.core.v1.PodSecurityContext",
             "type": "object",
             "properties": {
@@ -296,7 +299,7 @@
                     "additionalProperties": false
                 },
                 "automount": {
-                    "description": "Automatically mount API credentials for the service account. Most application pods do not need Kubernetes API access. Defaulting to false reduces the blast radius of a container compromise. Enable when the pod genuinely needs to call the Kubernetes API.",
+                    "description": "Automatically mount API credentials for the service account.",
                     "type": "boolean"
                 },
                 "create": {
