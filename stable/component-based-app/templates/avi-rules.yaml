@@ -20,7 +20,7 @@ spec:
         - robots-disallow-all
     tls:
       sslKeyCertificate:
-        name: {{ .Values.ingress.tlsHost | quote }}
+        name: {{ .Values.ingress.tlsHost | default "" | quote }}
         type: ref
       termination: edge
 ---
