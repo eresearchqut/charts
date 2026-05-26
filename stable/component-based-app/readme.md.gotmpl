@@ -1,112 +1,139 @@
+{{- define "chart.valueTypeColumnRenderMd" -}}
+{{- $type := .Type -}}
+{{- $rawDefault := trimAll "`" (default .Default .AutoDefault) -}}
+{{- $isList := or (eq .NotationType "list") (and (or (hasPrefix "[" $rawDefault) (hasPrefix "[]" $rawDefault)) (ne $type "list")) -}}
+{{- if hasPrefix "k8s/" $type -}}
+  {{- $shortPath := trimPrefix "k8s/" $type -}}
+  {{- $defPath := printf "io.k8s.api.%s" $shortPath -}}
+  {{- $url := printf "https://raw.githubusercontent.com/yannh/kubernetes-json-schema/master/v1.34.3/_definitions.json#/definitions/%s" $defPath -}}
+  {{- if $isList -}}
+    list of [{{ $shortPath }}]({{ $url }})
+  {{- else -}}
+    [{{ $shortPath }}]({{ $url }})
+  {{- end -}}
+{{- else -}}
+  {{- if $isList -}}
+    list of {{ $type }}
+  {{- else -}}
+    {{ $type }}
+  {{- end -}}
+{{- end -}}
+{{- end -}}
+
+{{- define "chart.valuesTable" -}}
+{{ if .Sections.Sections }}
+{{ range .Sections.Sections }}
+
+### {{ .SectionName }}
+
+| Key | Type | Default | Description |
+|-----|------|---------|-------------|
+  {{- range .SectionItems }}
+| {{ .Key }} | {{ template "chart.valueTypeColumnRenderMd" . }} | {{ if .Default }}{{ .Default }}{{ else }}{{ .AutoDefault }}{{ end }} | {{ if .Description }}{{ .Description }}{{ else }}{{ .AutoDescription }}{{ end }} |
+  {{- end }}
+{{- end }}
+{{ if .Sections.DefaultSection.SectionItems }}
+
+### {{ .Sections.DefaultSection.SectionName }}
+
+| Key | Type | Default | Description |
+|-----|------|---------|-------------|
+  {{- range .Sections.DefaultSection.SectionItems }}
+| {{ .Key }} | {{ template "chart.valueTypeColumnRenderMd" . }} | {{ if .Default }}{{ .Default }}{{ else }}{{ .AutoDefault }}{{ end }} | {{ if .Description }}{{ .Description }}{{ else }}{{ .AutoDescription }}{{ end }} |
+  {{- end }}
+{{ end }}
+{{ else }}
+| Key | Type | Default | Description |
+|-----|------|---------|-------------|
+  {{- range .Values }}
+| {{ .Key }} | {{ template "chart.valueTypeColumnRenderMd" . }} | {{ if .Default }}{{ .Default }}{{ else }}{{ .AutoDefault }}{{ end }} | {{ if .Description }}{{ .Description }}{{ else }}{{ .AutoDescription }}{{ end }} |
+  {{- end }}
+{{ end }}
+{{- end -}}
+
+{{- define "chart.sectionTable" -}}
+| Key | Type | Default | Description |
+|-----|------|---------|-------------|
+  {{- range .SectionItems }}
+| {{ .Key }} | {{ template "chart.valueTypeColumnRenderMd" . }} | {{ if .Default }}{{ .Default }}{{ else }}{{ .AutoDefault }}{{ end }} | {{ if .Description }}{{ .Description }}{{ else }}{{ .AutoDescription }}{{ end }} |
+  {{- end }}
+{{- end -}}
 {{ template "chart.header" . }}
-
 {{ template "chart.versionBadge" . }}{{ template "chart.typeBadge" . }}{{ template "chart.appVersionBadge" . }}
-
 {{ template "chart.deprecationWarning" . }}
-
 {{ template "chart.description" . }}
-
-{{ template "chart.requirementsSection" . }}
 
 ## Prerequisites
 
-If `database.enabled` is true (CloudNativePG), the namespace must carry the
-label `app/managed-by: cnpg-operator` for CNPG to discover and manage the
-database cluster:
+When using the database, the following prerequisites are required.
 
-```console
-kubectl label namespace <name> app/managed-by=cnpg-operator
-```
+1. The namespace must have the label `app/managed-by: cnpg-operator` for CNPG
+   to discover and manage the database cluster.
+2. A database credential secret containing a `username` and `password` key provided to `database.secretName`
+
 
 {{ template "extra.usage" . }}
 
-## Prerequisites
+## Configuration
 
-The chart does **not** create Kubernetes Secrets. The following secrets must exist
-before installation:
+{{- if .Sections.Sections }}
+{{- range .Sections.Sections }}
 
-### Database Secret
+{{- if eq .SectionName "Components" }}
+### Components
 
-When `database.enabled` is `true`, a secret containing database credentials is
-required. The secret name defaults to `<fullname>-database` (overridable via
-`database.secretName`).
+Used to create deployment-service-ingress-netpol. Designed to encapsulate a
+"component" of the application, for example the "backend" or "frontend" or even a "worker"
 
-**Required keys:**
+Component keys must be valid Kubernetes DNS label names (lowercase alphanumeric + hyphens).
 
-| Key      | Description          |
-|----------|----------------------|
-| username | Database user name   |
-| password | Database password    |
+Every component requires at minimum `image.repository`, `image.tag`, `port`, and
+`command`.
 
-The chart injects these as `DB_USERNAME`, `DB_PASSWORD`, `DB_HOST`, and
-`DB_PORT` into any component with `injectDatabase: true`.
+Adding extras such as liveness/readiness probes is recommended.
 
-### Application Secrets
+#### Application Secrets
 
-Each component can reference secrets via `appSecretKeys`. The secret name
-defaults to `<fullname>-secrets` (overridable per component via `secretName`).
+Each component can reference secrets via `appSecretKeys`. The values are from the secret in `components.*.secretName`. Each `appSecretKeys` entry maps a secret key to an environment variable:
 
-Each `appSecretKeys` entry maps a secret key to an environment variable:
+{{ template "chart.sectionTable" . }}
 
-```yaml
-components:
-  myapp:
-    secretName: "myapp-secrets"   # optional; defaults to <fullname>-secrets
-    appSecretKeys:
-      - envName: DJANGO_SECRET_KEY
-        secretKey: django-secret-key
-      - envName: API_TOKEN
-        secretKey: api-token
-```
+{{- else if eq .SectionName "Database" }}
 
-The secret named `myapp-secrets` (or `<fullname>-secrets` if `secretName` is
-empty) must contain keys `django-secret-key` and `api-token`.
+### Database
 
-## Upgrade Safety
+CloudNativePG PostgreSQL cluster. When set, creates a `Cluster` resource with
+configurable instances, storage, and resource limits.
 
-### Component Renames Require Re-creation
+- Remember to set the namespace label and secrets.
+- `database.image.tag` is **required** — no default version is applied.
 
-Each component key (e.g. `myapp` in `components.myapp`) is baked into the
-Deployment's immutable `spec.selector.matchLabels`:
+{{ template "chart.sectionTable" . }}
 
-```yaml
-selector:
-  matchLabels:
-    app.kubernetes.io/component: myapp
-    app.kubernetes.io/name: component-based-app
-    app.kubernetes.io/instance: my-release
-```
+{{- else if eq .SectionName "Network Policy"}}
 
-Renaming a component key changes the selector, but Helm cannot update an
-immutable field. Attempting `helm upgrade` after a rename will fail with:
-
-```
-Deployment.apps "<fullname>-<newname>" is invalid:
-spec.selector: Invalid value: ... field is immutable
-```
-
-## NetworkPolicy
+### Network Policy
 
 When `networkPolicy.enabled` is `true` (the default), the chart creates a
 layered set of NetworkPolicy resources:
 
-### Default-Deny Policy
+#### Default-Deny Policy
 
 The chart creates a `<fullname>-default-deny` NetworkPolicy that denies all
 ingress and egress for pods in this release, then re-allows **DNS** (UDP/TCP
 port 53). This ensures pods can resolve cluster-internal names.
 
-### Per-Component Policy
+#### Per-Component Policy
 
 Each component gets a `<fullname>-<name>` NetworkPolicy with `policyTypes:
 [Ingress, Egress]`. Egress rules are built as follows:
 
-| Condition                           | Egress Rules                                   |
-|-------------------------------------|------------------------------------------------|
-| `injectDatabase: true`              | TCP 5432 to the CNPG database pod              |
-| `serviceLinks` entries              | TCP to each linked sibling component's port    |
+| Condition                           | Egress Rules                                       |
+|-------------------------------------|----------------------------------------------------|
+| `injectDatabase: true`              | Database access                                    |
+| `serviceLinks` entries              | TCP to each linked sibling component's port        |
 | Neither of the above                | **No egress rules beyond DNS** (from default-deny) |
-| `extraEgress` entries (always)      | Appended as-is to the egress list              |
+| `extraEgress` entries (always)      | Appended as-is to the egress list                  |
 
 **Components without `injectDatabase` or `serviceLinks` have no egress rules
 beyond DNS.** If your component needs to reach external APIs or any other
@@ -124,17 +151,22 @@ components:
             protocol: TCP
 ```
 
-Standard `NetworkPolicyEgressRule` objects are accepted. See the
-[Kubernetes NetworkPolicy documentation](https://kubernetes.io/docs/concepts/services-networking/network-policies/)
-for the full schema.
+[Standard `NetworkPolicyEgressRule` objects are accepted.](https://kubernetes.io/docs/concepts/services-networking/network-policies/)
 
-### Database Policy (CNPG)
+{{ template "chart.sectionTable" . }}
 
-When `database.enabled` is `true`, a `<fullname>-db` NetworkPolicy allows:
+{{- else }}
+### {{ .SectionName }}
 
-- **Ingress:** TCP 5432 (PostgreSQL) from pods in this release, TCP 9187
-  (metrics) from the monitoring namespace, and CNPG operator traffic.
-- **Egress:** DNS (UDP/TCP 53) plus any `database.extraEgress` entries (e.g. for
-  S3 WAL archiving).
+{{ template "chart.sectionTable" . }}
 
-{{ template "chart.valuesSection" . }}
+{{- end }}
+{{- end }}
+{{- end }}
+
+{{- if .Sections.DefaultSection.SectionItems }}
+### {{ .Sections.DefaultSection.SectionName }}
+
+{{ template "chart.sectionTable" .Sections.DefaultSection }}
+{{- end }}
+

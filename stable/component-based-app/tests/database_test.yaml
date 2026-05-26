@@ -30,7 +30,9 @@ set:
       livenessProbe:
         path: /
       injectDatabase: false
-  database: {}
+  database:
+    image:
+      tag: "17.5"
 
 tests:
   # --- CNPG Cluster exists ---
@@ -90,6 +92,8 @@ tests:
   - it: uses custom secret name when database.secretName is set
     set:
       database:
+        image:
+          tag: "17.5"
         secretName: my-custom-db-secret
     template: database.yaml
     documentIndex: 0
@@ -103,7 +107,9 @@ tests:
     template: deployment.yaml
     documentIndex: 0
     set:
-      database: {}
+      database:
+        image:
+          tag: "17.5"
     asserts:
       - contains:
           path: spec.template.spec.containers[0].env
@@ -130,6 +136,8 @@ tests:
     documentIndex: 0
     set:
       database:
+        image:
+          tag: "17.5"
         secretName: my-custom-db-secret
     asserts:
       - contains:
@@ -157,6 +165,8 @@ tests:
     documentIndex: 0
     set:
       database:
+        image:
+          tag: "17.5"
         secretName: my-custom-db-secret
     asserts:
       - contains:
@@ -191,7 +201,9 @@ tests:
     template: deployment.yaml
     documentIndex: 1
     set:
-      database: {}
+      database:
+        image:
+          tag: "17.5"
     asserts:
       - notContains:
           path: spec.template.spec.containers[0].env
@@ -223,7 +235,9 @@ tests:
           livenessProbe:
             path: /health
           injectDatabase: false
-      database: {}
+      database:
+        image:
+          tag: "17.5"
     template: deployment.yaml
     documentIndex: 0
     asserts:
@@ -243,7 +257,9 @@ tests:
   # --- Database readiness test hook ---
   - it: creates a readiness test Pod when database is enabled
     set:
-      database: {}
+      database:
+        image:
+          tag: "17.5"
     template: tests/database-smoke-test.yaml
     documentIndex: 0
     asserts:
@@ -268,6 +284,8 @@ tests:
   - it: uses custom secret name for test Pod password
     set:
       database:
+        image:
+          tag: "17.5"
         secretName: my-custom-db-secret
     template: tests/database-smoke-test.yaml
     documentIndex: 0

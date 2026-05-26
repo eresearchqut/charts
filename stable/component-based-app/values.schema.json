@@ -3,12 +3,471 @@
     "type": "object",
     "properties": {
         "appVersion": {
-            "description": "Application version. Defaults to empty (no version label emitted). Set this to tag Deployments with a meaningful version string.",
+            "description": "Application version. Set this to tag Deployments with a meaningful version string.",
             "type": "string"
         },
         "components": {
-            "description": "Map of named components; each key becomes a Deployment + Service pair. Each entry generates one Deployment and one ClusterIP Service named `\u003cfullname\u003e-\u003ckey\u003e`. Component keys must be valid Kubernetes DNS label names (lowercase alphanumeric + hyphens). Omit a component from this map to disable it.",
             "type": "object",
+            "properties": {
+                "*": {
+                    "description": "Application component, key must be a valid kubernetes dns label",
+                    "type": "object",
+                    "properties": {
+                        "affinity": {
+                            "description": "Affinity and anti-affinity rules for pod scheduling.",
+                            "type": "object",
+                            "additionalProperties": false
+                        },
+                        "allowedHostsEnvName": {
+                            "description": "Environment variable set to `\u003cservice-name\u003e,$(POD_IP)`. Requires `podIPEnvName`.",
+                            "type": "string"
+                        },
+                        "appSecretKeys": {
+                            "description": "Environment variables sourced from a Kubernetes Secret.",
+                            "type": "array",
+                            "items": {
+                                "type": "object",
+                                "properties": {
+                                    "envName": {
+                                        "description": "Name of the environment variable exposed to the container.",
+                                        "type": "string"
+                                    },
+                                    "secretKey": {
+                                        "description": "Key within the referenced Kubernetes Secret.",
+                                        "type": "string"
+                                    }
+                                },
+                                "additionalProperties": false
+                            }
+                        },
+                        "autoscaling": {
+                            "description": "HorizontalPodAutoscaler configuration. Omit the block to disable HPA. @ignore",
+                            "type": "object",
+                            "properties": {
+                                "behavior": {
+                                    "description": "HPA scaling behavior configuration. Omit for sensible Kubernetes defaults.",
+                                    "type": "object",
+                                    "properties": {
+                                        "scaleDown": {
+                                            "type": "object",
+                                            "properties": {
+                                                "stabilizationWindowSeconds": {
+                                                    "type": "integer"
+                                                }
+                                            },
+                                            "additionalProperties": false
+                                        }
+                                    },
+                                    "additionalProperties": false
+                                },
+                                "maxReplicas": {
+                                    "description": "Maximum number of replicas.",
+                                    "type": "integer"
+                                },
+                                "minReplicas": {
+                                    "description": "Minimum number of replicas.",
+                                    "type": "integer"
+                                },
+                                "targetCPUUtilizationPercentage": {
+                                    "description": "Target average CPU utilization percentage.",
+                                    "type": "integer"
+                                },
+                                "targetMemoryUtilizationPercentage": {
+                                    "description": "Target average memory utilization percentage.",
+                                    "type": "integer"
+                                }
+                            },
+                            "additionalProperties": false
+                        },
+                        "command": {
+                            "description": "Command and arguments passed to the container (overrides image ENTRYPOINT).",
+                            "type": "array",
+                            "items": {
+                                "type": "string"
+                            }
+                        },
+                        "containerSecurityContext": {
+                            "description": "Per-component container security context. Overrides the global `containerSecurityContext`. Set to `{}` to opt out.",
+                            "type": "object",
+                            "properties": {
+                                "allowPrivilegeEscalation": {
+                                    "type": "boolean"
+                                },
+                                "capabilities": {
+                                    "type": "object",
+                                    "properties": {
+                                        "drop": {
+                                            "type": "array",
+                                            "items": {
+                                                "type": "string"
+                                            }
+                                        }
+                                    },
+                                    "additionalProperties": false
+                                },
+                                "readOnlyRootFilesystem": {
+                                    "type": "boolean"
+                                },
+                                "runAsNonRoot": {
+                                    "type": "boolean"
+                                }
+                            },
+                            "additionalProperties": false
+                        },
+                        "env": {
+                            "description": "Additional environment variables in Kubernetes EnvVar format.",
+                            "type": "array",
+                            "items": {
+                                "type": "object",
+                                "properties": {
+                                    "name": {
+                                        "type": "string"
+                                    },
+                                    "value": {
+                                        "type": "string"
+                                    }
+                                },
+                                "additionalProperties": false
+                            }
+                        },
+                        "extraEgress": {
+                            "description": "Additional NetworkPolicy egress rules. Only meaningful when `networkPolicy` is configured.",
+                            "type": "array",
+                            "items": {
+                                "type": "object",
+                                "properties": {
+                                    "ports": {
+                                        "type": "array",
+                                        "items": {
+                                            "type": "object",
+                                            "properties": {
+                                                "port": {
+                                                    "type": "integer"
+                                                },
+                                                "protocol": {
+                                                    "type": "string"
+                                                }
+                                            },
+                                            "additionalProperties": false
+                                        }
+                                    },
+                                    "to": {
+                                        "type": "array",
+                                        "items": {
+                                            "type": "object",
+                                            "properties": {
+                                                "ipBlock": {
+                                                    "type": "object",
+                                                    "properties": {
+                                                        "cidr": {
+                                                            "type": "string"
+                                                        }
+                                                    },
+                                                    "additionalProperties": false
+                                                }
+                                            },
+                                            "additionalProperties": false
+                                        }
+                                    }
+                                },
+                                "additionalProperties": false
+                            }
+                        },
+                        "extraIngress": {
+                            "description": "Additional NetworkPolicy ingress rules. Only meaningful when `networkPolicy` is configured.",
+                            "type": "array"
+                        },
+                        "image": {
+                            "description": "Container image reference.",
+                            "type": "object",
+                            "properties": {
+                                "repository": {
+                                    "description": "Container image repository (e.g., registry.example.com/myapp).",
+                                    "type": "string"
+                                },
+                                "tag": {
+                                    "description": "Container image tag. Required — no default is applied.",
+                                    "type": "string"
+                                }
+                            },
+                            "additionalProperties": false
+                        },
+                        "initContainer": {
+                            "description": "Init container that runs before the main container. Uses the same image as the component.",
+                            "type": "object",
+                            "properties": {
+                                "command": {
+                                    "description": "Init container command and arguments.",
+                                    "type": "array",
+                                    "items": {
+                                        "type": "string"
+                                    }
+                                }
+                            },
+                            "additionalProperties": false
+                        },
+                        "injectDatabase": {
+                            "description": "When true, injects `DB_USERNAME`, `DB_PASSWORD`, `DB_HOST`, and `DB_PORT` from the database secret.",
+                            "type": "boolean"
+                        },
+                        "livenessProbe": {
+                            "description": "Container liveness probe. Omit the block to disable.",
+                            "type": "object",
+                            "properties": {
+                                "failureThreshold": {
+                                    "description": "Consecutive failures before restart.",
+                                    "type": "integer"
+                                },
+                                "initialDelaySeconds": {
+                                    "description": "Delay before first probe.",
+                                    "type": "integer"
+                                },
+                                "path": {
+                                    "description": "HTTP path for the liveness probe (e.g., /healthz).",
+                                    "type": "string"
+                                },
+                                "periodSeconds": {
+                                    "description": "Interval between probes.",
+                                    "type": "integer"
+                                },
+                                "successThreshold": {
+                                    "description": "Consecutive successes to mark ready.",
+                                    "type": "integer"
+                                },
+                                "timeoutSeconds": {
+                                    "description": "Probe timeout.",
+                                    "type": "integer"
+                                }
+                            },
+                            "additionalProperties": false
+                        },
+                        "monitoring": {
+                            "description": "Prometheus ServiceMonitor configuration. Requires prometheus-operator. Omit to disable.",
+                            "type": "object",
+                            "properties": {
+                                "interval": {
+                                    "description": "Prometheus scrape interval.",
+                                    "type": "string"
+                                },
+                                "path": {
+                                    "description": "HTTP path for the metrics endpoint.",
+                                    "type": "string"
+                                },
+                                "port": {
+                                    "description": "Name of the port exposing metrics on the Service.",
+                                    "type": "string"
+                                },
+                                "scrapeTimeout": {
+                                    "description": "Prometheus scrape timeout.",
+                                    "type": "string"
+                                }
+                            },
+                            "additionalProperties": false
+                        },
+                        "nodeSelector": {
+                            "description": "Node labels for pod assignment.",
+                            "type": "object",
+                            "properties": {
+                                "node-role.kubernetes.io/worker": {
+                                    "type": "string"
+                                }
+                            },
+                            "additionalProperties": false
+                        },
+                        "podAnnotations": {
+                            "description": "Annotations added to the component's Pod.",
+                            "type": "object",
+                            "properties": {
+                                "prometheus.io/scrape": {
+                                    "type": "string"
+                                }
+                            },
+                            "additionalProperties": false
+                        },
+                        "podDisruptionBudget": {
+                            "description": "PodDisruptionBudget configuration. Auto-created for components with replicas \u003e 1 or autoscaling. Set explicitly to override.",
+                            "type": "object",
+                            "properties": {
+                                "maxUnavailable": {
+                                    "description": "Maximum number of unavailable pods during voluntary disruptions. Can be int or percentage string.",
+                                    "type": "integer"
+                                },
+                                "minAvailable": {
+                                    "description": "Minimum number of available pods during voluntary disruptions. Can be int or percentage string (e.g., \"50%\").",
+                                    "type": "integer"
+                                }
+                            },
+                            "additionalProperties": false
+                        },
+                        "podIPEnvName": {
+                            "description": "Name of the environment variable that receives the pod's IP via the Downward API.",
+                            "type": "string"
+                        },
+                        "podLabels": {
+                            "description": "Labels added to the component's Pod.",
+                            "type": "object",
+                            "properties": {
+                                "app.kubernetes.io/tier": {
+                                    "type": "string"
+                                }
+                            },
+                            "additionalProperties": false
+                        },
+                        "podSecurityContext": {
+                            "description": "Per-component pod security context. Overrides the global `podSecurityContext`. Set to `{}` to opt out.",
+                            "type": "object",
+                            "properties": {
+                                "seccompProfile": {
+                                    "type": "object",
+                                    "properties": {
+                                        "type": {
+                                            "type": "string"
+                                        }
+                                    },
+                                    "additionalProperties": false
+                                }
+                            },
+                            "additionalProperties": false
+                        },
+                        "port": {
+                            "description": "Port the container listens on. Exposed as the Service port and injected as `PORT`.",
+                            "type": "integer"
+                        },
+                        "readinessProbe": {
+                            "description": "Container readiness probe. Omit the block to disable.",
+                            "type": "object",
+                            "properties": {
+                                "failureThreshold": {
+                                    "description": "Consecutive failures before marking unready.",
+                                    "type": "integer"
+                                },
+                                "initialDelaySeconds": {
+                                    "description": "Delay before first probe.",
+                                    "type": "integer"
+                                },
+                                "path": {
+                                    "description": "HTTP path for the readiness probe.",
+                                    "type": "string"
+                                },
+                                "periodSeconds": {
+                                    "description": "Interval between probes.",
+                                    "type": "integer"
+                                },
+                                "successThreshold": {
+                                    "description": "Consecutive successes to mark ready.",
+                                    "type": "integer"
+                                },
+                                "timeoutSeconds": {
+                                    "description": "Probe timeout.",
+                                    "type": "integer"
+                                }
+                            },
+                            "additionalProperties": false
+                        },
+                        "replicas": {
+                            "description": "Number of replicas.",
+                            "type": "integer"
+                        },
+                        "resources": {
+                            "description": "Per-component resource requests and limits. Falls back to top-level `resources` when not set.",
+                            "type": "object",
+                            "properties": {
+                                "limits": {
+                                    "type": "object",
+                                    "properties": {
+                                        "cpu": {
+                                            "type": "string"
+                                        },
+                                        "memory": {
+                                            "type": "string"
+                                        }
+                                    },
+                                    "additionalProperties": false
+                                },
+                                "requests": {
+                                    "type": "object",
+                                    "properties": {
+                                        "cpu": {
+                                            "type": "string"
+                                        },
+                                        "memory": {
+                                            "type": "string"
+                                        }
+                                    },
+                                    "additionalProperties": false
+                                }
+                            },
+                            "additionalProperties": false
+                        },
+                        "secretName": {
+                            "description": "Name of the Kubernetes Secret that backs `appSecretKeys` entries. Defaults to `\u003cfullname\u003e-secrets` when empty.",
+                            "type": "string"
+                        },
+                        "serviceLinks": {
+                            "description": "Injects HTTP URLs pointing to sibling component Services as environment variables.",
+                            "type": "array",
+                            "items": {
+                                "type": "object",
+                                "properties": {
+                                    "envName": {
+                                        "description": "Name of the environment variable that receives the URL.",
+                                        "type": "string"
+                                    },
+                                    "path": {
+                                        "description": "URL path appended to the service URL.",
+                                        "type": "string"
+                                    },
+                                    "targetName": {
+                                        "description": "Key of the target component in this chart.",
+                                        "type": "string"
+                                    }
+                                },
+                                "additionalProperties": false
+                            }
+                        },
+                        "startupProbe": {
+                            "description": "Startup probe for slow-starting applications. Set `path` to enable; omit to disable.",
+                            "type": "object",
+                            "properties": {
+                                "failureThreshold": {
+                                    "description": "Consecutive failures before the container is killed. Defaults higher (30) for slow starts.",
+                                    "type": "integer"
+                                },
+                                "initialDelaySeconds": {
+                                    "description": "Delay before first probe.",
+                                    "type": "integer"
+                                },
+                                "path": {
+                                    "description": "HTTP path for the startup probe. Empty string disables it.",
+                                    "type": "string"
+                                },
+                                "periodSeconds": {
+                                    "description": "Interval between probes.",
+                                    "type": "integer"
+                                },
+                                "timeoutSeconds": {
+                                    "description": "Probe timeout.",
+                                    "type": "integer"
+                                }
+                            },
+                            "additionalProperties": false
+                        },
+                        "tolerations": {
+                            "description": "Tolerations for pod scheduling onto tainted nodes.",
+                            "type": "array"
+                        },
+                        "volumeMounts": {
+                            "description": "Additional volume mounts into the component's main container.",
+                            "type": "array"
+                        },
+                        "volumes": {
+                            "description": "Additional volumes attached to the component's Pod.",
+                            "type": "array"
+                        }
+                    },
+                    "additionalProperties": false
+                }
+            },
             "patternProperties": {
                 "^[a-z][a-z0-9-]*$": {
                     "$ref": "#/$defs/component.yaml"
@@ -17,7 +476,7 @@
             "additionalProperties": false
         },
         "containerSecurityContext": {
-            "description": "Container security context. Provides container-level security settings. Individual components can override with their own containerSecurityContext block. Override with {} to remove all defaults.",
+            "description": "Container security context. Provides container-level security settings. Individual components can override. Override with {} to remove all defaults.",
             "$ref": "#/$defs/_definitions.json/definitions/io.k8s.api.core.v1.SecurityContext",
             "type": "object",
             "properties": {
@@ -46,7 +505,6 @@
             "additionalProperties": true
         },
         "database": {
-            "description": "CloudNativePG database configuration. Omit entirely to skip database provisioning.",
             "type": "object",
             "properties": {
                 "extraEgress": {
@@ -64,7 +522,7 @@
                             "type": "string"
                         },
                         "tag": {
-                            "description": "CloudNativePG PostgreSQL image tag (version).",
+                            "description": "CloudNativePG PostgreSQL image tag (version). Must be set explicitly.",
                             "type": "string"
                         }
                     },
@@ -142,10 +600,18 @@
             "additionalProperties": true
         },
         "imagePullSecrets": {
-            "description": "List of image pull secret names for the container registry. Each entry must be `name: \u003csecret-name\u003e`, matching Kubernetes imagePullSecrets format.",
+            "description": "List of image pull secret names for the container registry.",
             "type": "array",
             "items": {
-                "$ref": "#/$defs/_definitions.json/definitions/io.k8s.api.core.v1.LocalObjectReference"
+                "$ref": "#/$defs/_definitions.json/definitions/io.k8s.api.core.v1.LocalObjectReference",
+                "type": "object",
+                "properties": {
+                    "name": {
+                        "description": "Name of the Kubernetes Secret in the same namespace.",
+                        "type": "string"
+                    }
+                },
+                "additionalProperties": false
             }
         },
         "imageUpdate": {
@@ -191,14 +657,34 @@
                     "type": "string"
                 },
                 "paths": {
-                    "description": "Multiple path rules. When set, overrides the single targetComponent path. Each entry specifies path, pathType (default: Prefix), and targetComponent. Example: paths: - path: /api targetComponent: api - path: / targetComponent: frontend",
+                    "description": "Multiple path rules. When set, overrides the single targetComponent path. Each entry specifies path, pathType (default: Prefix), and targetComponent.",
                     "type": "array",
                     "items": {
-                        "$ref": "#/$defs/paths-item.yaml"
+                        "$ref": "#/$defs/paths-item.yaml",
+                        "type": "object",
+                        "properties": {
+                            "path": {
+                                "description": "URL path to match (e.g., /api or /).",
+                                "type": "string"
+                            },
+                            "pathType": {
+                                "description": "Kubernetes path matching type (Prefix, Exact, or ImplementationSpecific).",
+                                "type": "string"
+                            },
+                            "portName": {
+                                "description": "Name of the Service port to route to.",
+                                "type": "string"
+                            },
+                            "targetComponent": {
+                                "description": "Component key whose Service receives traffic for this path.",
+                                "type": "string"
+                            }
+                        },
+                        "additionalProperties": false
                     }
                 },
                 "targetComponent": {
-                    "description": "Component key whose Service receives all inbound traffic. Used when a single path `/` routes to one component.",
+                    "description": "Component key whose Service receives all inbound traffic when a single path `/` routes to one component.",
                     "type": "string"
                 },
                 "tlsHost": {
@@ -285,9 +771,35 @@
             "additionalProperties": true
         },
         "resources": {
-            "description": "Default resource requests and limits applied to all components. Individual components can override with their own resources block. Set to {} to opt out of defaults entirely.",
+            "description": "Default resource requests and limits. Individual components can override this.",
             "$ref": "#/$defs/_definitions.json/definitions/io.k8s.api.core.v1.ResourceRequirements",
             "type": "object",
+            "properties": {
+                "limits": {
+                    "type": "object",
+                    "properties": {
+                        "cpu": {
+                            "type": "string"
+                        },
+                        "memory": {
+                            "type": "string"
+                        }
+                    },
+                    "additionalProperties": false
+                },
+                "requests": {
+                    "type": "object",
+                    "properties": {
+                        "cpu": {
+                            "type": "string"
+                        },
+                        "memory": {
+                            "type": "string"
+                        }
+                    },
+                    "additionalProperties": false
+                }
+            },
             "additionalProperties": false
         },
         "serviceAccount": {
@@ -302,7 +814,7 @@
                     "description": "Automatically mount API credentials for the service account.",
                     "type": "boolean"
                 },
-                "create": {
+                "enabled": {
                     "description": "Create a service account for the deployment.",
                     "type": "boolean"
                 },

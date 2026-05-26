@@ -52,12 +52,12 @@ app.kubernetes.io/managed-by: {{ .Release.Service }}
 
 {{/*
 Service account name used by Deployments.
-When serviceAccount.create is true, uses serviceAccount.name if set, otherwise
-falls back to the chart fullname. When create is false, uses serviceAccount.name
+When serviceAccount.enabled is true, uses serviceAccount.name if set, otherwise
+falls back to the chart fullname. When enabled is false, uses serviceAccount.name
 if set, otherwise falls back to "default".
 */}}
 {{- define "component-based-app.serviceAccountName" -}}
-{{- if .Values.serviceAccount.create }}
+{{- if .Values.serviceAccount.enabled }}
 {{- .Values.serviceAccount.name | default (include "component-based-app.fullname" .) }}
 {{- else }}
 {{- .Values.serviceAccount.name | default "default" }}
