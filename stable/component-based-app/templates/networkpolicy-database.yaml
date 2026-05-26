@@ -76,3 +76,30 @@ spec:
     {{- toYaml . | nindent 4 }}
     {{- end }}
 {{- end }}
+
+---
+# Allow database-component pods (e.g. Helm test hooks) to connect to the database cluster.
+# The database netpol above governs the CNPG pods; this one governs auxiliary pods
+# that carry the database component label but are NOT the CNPG instances themselves.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: {{ include "component-based-app.fullname" . }}-database-client
+  labels:
+    app.kubernetes.io/component: database
+    {{- include "component-based-app.labels" . | nindent 4 }}
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/component: database
+      app.kubernetes.io/instance: {{ .Release.Name }}
+  policyTypes:
+    - Egress
+  egress:
+    - to:
+        - podSelector:
+            matchLabels:
+              cnpg.io/cluster: {{ include "component-based-app.fullname" . }}-db
+      ports:
+        - port: 5432
+          protocol: TCP
