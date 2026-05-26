@@ -400,6 +400,9 @@ ingress:
 
 # @schema required: false
 database:
+  # -- Enable or disable the CloudNativePG PostgreSQL database cluster.
+  # @section -- Database
+  enabled: false
   # -- Name of the secret containing database credentials.
   # @section -- Database
   secretName: ""
@@ -453,10 +456,9 @@ database:
 # -- NetworkPolicy configuration
 # @section -- Network Policy
 networkPolicy:
-  # -- When true, allows ingress from any source (0.0.0.0/0) to the ingress.targetComponent.
+  # -- Enable or disable all NetworkPolicy resources for this release.
   # @section -- Network Policy
-  # Only meaningful when ingress.targetComponent is also set.
-  allowPublicIngress: false
+  enabled: true
   # -- NetworkPolicyPeer selecting the Prometheus monitoring namespace.
   # @section -- Network Policy
   # Traffic from this peer is allowed to reach the database metrics port (9187).

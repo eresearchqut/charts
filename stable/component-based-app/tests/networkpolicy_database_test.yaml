@@ -11,15 +11,17 @@ tests:
   - it: creates database policy when database and networkPolicy are both enabled
     set:
       networkPolicy: {}
-      database: {}
+      database:
+        enabled: true
     asserts:
       - hasDocuments:
-          count: 1
+          count: 2
 
   - it: no database policy when database is disabled
     set:
       networkPolicy: {}
       database:
+        enabled: false
     asserts:
       - hasDocuments:
           count: 0
@@ -27,7 +29,9 @@ tests:
   - it: no database policy when networkPolicy is disabled
     set:
       networkPolicy:
-      database: {}
+        enabled: false
+      database:
+        enabled: true
     asserts:
       - hasDocuments:
           count: 0
@@ -36,7 +40,8 @@ tests:
   - it: podSelector targets the CNPG cluster pods
     set:
       networkPolicy: {}
-      database: {}
+      database:
+        enabled: true
     documentIndex: 0
     asserts:
       - equal:
@@ -47,7 +52,8 @@ tests:
   - it: ingress allows PostgreSQL from components that allow database access
     set:
       networkPolicy: {}
-      database: {}
+      database:
+        enabled: true
       components:
         api:
           image:
@@ -94,7 +100,8 @@ tests:
   - it: ingress allows metrics scraping from monitoring namespace
     set:
       networkPolicy: {}
-      database: {}
+      database:
+        enabled: true
     documentIndex: 0
     asserts:
       - contains:
@@ -112,7 +119,8 @@ tests:
   - it: ingress allows the CNPG operator to manage the cluster
     set:
       networkPolicy: {}
-      database: {}
+      database:
+        enabled: true
     documentIndex: 0
     asserts:
       - contains:
@@ -127,7 +135,8 @@ tests:
   - it: ingress allows intra-cluster pod-to-pod traffic for replication
     set:
       networkPolicy: {}
-      database: {}
+      database:
+        enabled: true
     documentIndex: 0
     asserts:
       - contains:
@@ -142,7 +151,8 @@ tests:
   - it: egress contains DNS and nothing unrestricted beyond cluster and API server
     set:
       networkPolicy: {}
-      database: {}
+      database:
+        enabled: true
     documentIndex: 0
     asserts:
       # DNS
@@ -186,7 +196,8 @@ tests:
   - it: no database ingress rules exist for components without allowDatabaseAccess
     set:
       networkPolicy: {}
-      database: {}
+      database:
+        enabled: true
       components:
         web:
           image:

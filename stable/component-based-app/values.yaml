@@ -15,6 +15,7 @@ ingress:
   paths: []
 
 database:
+  enabled: false
   image:
     repository: registry.eres.qut.edu.au/ghcr/cloudnative-pg/postgresql
   storageSize: 8Gi
@@ -30,7 +31,7 @@ database:
   extraEgress: []
 
 networkPolicy:
-  allowPublicIngress: false
+  enabled: true
   monitoringSelector:
     namespaceSelector:
       matchLabels:

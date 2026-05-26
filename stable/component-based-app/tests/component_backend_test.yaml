@@ -29,6 +29,7 @@ set:
       initContainer:
         command: ["python", "manage.py", "migrate"]
   database:
+    enabled: true
     image:
       repository: "example.com/app"
       tag: "latest"

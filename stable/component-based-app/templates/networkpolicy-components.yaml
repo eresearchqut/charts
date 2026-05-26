@@ -1,4 +1,4 @@
-{{- if .Values.networkPolicy }}
+{{- if .Values.networkPolicy.enabled }}
 {{- range $name, $spec := .Values.components }}
 ---
 apiVersion: networking.k8s.io/v1
@@ -43,17 +43,29 @@ spec:
         - port: {{ $targetSpec.port }}
           protocol: TCP
     {{- end }}
+    # Allow pods of this component (including Helm test hooks) to reach their own service.
+    - to:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/component: {{ $name }}
+              app.kubernetes.io/instance: {{ $.Release.Name }}
+      ports:
+        - port: {{ $spec.port }}
+          protocol: TCP
     {{- with $spec.extraEgress }}
     {{- toYaml . | nindent 4 }}
     {{- end }}
   ingress:
-    {{- if and (eq $name $.Values.ingress.targetComponent) $.Values.networkPolicy.allowPublicIngress }}
-    - from:
-        - ipBlock:
-            cidr: 0.0.0.0/0
-      ports:
-        - port: {{ $spec.port }}
-          protocol: TCP
+    {{- if $.Values.ingress.host }}
+    {{- if eq $name $.Values.ingress.targetComponent }}
+    {{- include "component-based-app.ingressPublicRule" $spec.port | nindent 4 }}
+    {{- else }}
+    {{- range $.Values.ingress.paths }}
+    {{- if eq $name .targetComponent }}
+    {{- include "component-based-app.ingressPublicRule" $spec.port | nindent 4 }}
+    {{- end }}
+    {{- end }}
+    {{- end }}
     {{- end }}
     {{- range $siblingName, $siblingSpec := $.Values.components }}
     {{- range $siblingSpec.serviceLinks }}
@@ -67,6 +79,15 @@ spec:
         - port: {{ $spec.port }}
           protocol: TCP
     {{- end }}
+    # Allow pods of this component (including Helm test hooks) to reach their own service.
+    - from:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/component: {{ $name }}
+              app.kubernetes.io/instance: {{ $.Release.Name }}
+      ports:
+        - port: {{ $spec.port }}
+          protocol: TCP
     {{- end }}
     {{- end }}
     {{- with $spec.extraIngress }}
