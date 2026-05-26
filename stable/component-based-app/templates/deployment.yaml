@@ -79,6 +79,10 @@ spec:
                 secretKeyRef:
                   name: {{ $.Values.database.secretName | default (printf "%s-database" (include "component-based-app.fullname" $)) }}
                   key: password
+            - name: DB_HOST
+              value: {{ printf "%s-db-rw" (include "component-based-app.fullname" $) | quote }}
+            - name: DB_PORT
+              value: "5432"
           {{- end }}
       {{- end }}
       containers:
@@ -145,6 +149,10 @@ spec:
                 secretKeyRef:
                   name: {{ $.Values.database.secretName | default (printf "%s-database" (include "component-based-app.fullname" $)) }}
                   key: password
+            - name: DB_HOST
+              value: {{ printf "%s-db-rw" (include "component-based-app.fullname" $) | quote }}
+            - name: DB_PORT
+              value: "5432"
             {{- end }}
             {{- range $spec.appSecretKeys }}
             - name: {{ .envName }}
