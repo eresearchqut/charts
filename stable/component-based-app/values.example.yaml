@@ -169,7 +169,7 @@ components:
     # -- When true, injects `DB_USERNAME`, `DB_PASSWORD`, `DB_HOST`, and `DB_PORT` from the database secret.
     # @section -- Components
     # @default -- `nil`
-    injectDatabase: false
+    allowDatabaseAccess: false
     # -- Name of the Kubernetes Secret that backs `appSecretKeys` entries. Defaults to `<fullname>-secrets` when empty.
     # @section -- Components
     # @default -- `nil`
@@ -399,7 +399,6 @@ ingress:
       portName: "http"
 
 # @schema required: false
-
 database:
   # -- Name of the secret containing database credentials.
   # @section -- Database
@@ -451,7 +450,7 @@ database:
   extraEgress: []
 
 # @schema required: false
-# -- NetworkPolicy configuration. Omit entirely to skip network policy creation.
+# -- NetworkPolicy configuration
 # @section -- Network Policy
 networkPolicy:
   # -- When true, allows ingress from any source (0.0.0.0/0) to the ingress.targetComponent.

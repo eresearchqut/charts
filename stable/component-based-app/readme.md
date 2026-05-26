@@ -50,6 +50,7 @@ Each component can reference secrets via `appSecretKeys`. The values are from th
 |-----|------|---------|-------------|
 | components.* | object | `{}` | Application component, key must be a valid kubernetes dns label |
 | components.*.affinity | [core/v1.Affinity](https://raw.githubusercontent.com/yannh/kubernetes-json-schema/master/v1.34.3/_definitions.json#/definitions/io.k8s.api.core/v1.Affinity) | `nil` | Affinity and anti-affinity rules for pod scheduling. |
+| components.*.allowDatabaseAccess | bool | `nil` | When true, injects `DB_USERNAME`, `DB_PASSWORD`, `DB_HOST`, and `DB_PORT` from the database secret. |
 | components.*.allowedHostsEnvName | string | `nil` | Environment variable set to `<service-name>,$(POD_IP)`. Requires `podIPEnvName`. |
 | components.*.appSecretKeys | list | `nil` | Environment variables sourced from a Kubernetes Secret. |
 | components.*.appSecretKeys[0].envName | string | `nil` | Name of the environment variable exposed to the container. |
@@ -64,7 +65,6 @@ Each component can reference secrets via `appSecretKeys`. The values are from th
 | components.*.image.tag | string | `nil` | Container image tag. Required — no default is applied. |
 | components.*.initContainer | object | `nil` | Init container that runs before the main container. Uses the same image as the component. |
 | components.*.initContainer.command | list | `nil` | Init container command and arguments. |
-| components.*.injectDatabase | bool | `nil` | When true, injects `DB_USERNAME`, `DB_PASSWORD`, `DB_HOST`, and `DB_PORT` from the database secret. |
 | components.*.livenessProbe | object | `nil` | Container liveness probe. Omit the block to disable. |
 | components.*.livenessProbe.failureThreshold | int | `nil` | Consecutive failures before restart. |
 | components.*.livenessProbe.initialDelaySeconds | int | `nil` | Delay before first probe. |
@@ -181,12 +181,12 @@ Each component gets a `<fullname>-<name>` NetworkPolicy with `policyTypes:
 
 | Condition                           | Egress Rules                                       |
 |-------------------------------------|----------------------------------------------------|
-| `injectDatabase: true`              | Database access                                    |
+| `allowDatabaseAccess: true`              | Database access                                    |
 | `serviceLinks` entries              | TCP to each linked sibling component's port        |
 | Neither of the above                | **No egress rules beyond DNS** (from default-deny) |
 | `extraEgress` entries (always)      | Appended as-is to the egress list                  |
 
-**Components without `injectDatabase` or `serviceLinks` have no egress rules
+**Components without `allowDatabaseAccess` or `serviceLinks` have no egress rules
 beyond DNS.** If your component needs to reach external APIs or any other
 outbound destination, use `extraEgress`:
 
@@ -206,7 +206,7 @@ components:
 
 | Key | Type | Default | Description |
 |-----|------|---------|-------------|
-| networkPolicy | object | `{"allowPublicIngress":false,"cnpgOperatorSelector":{"namespaceSelector":{"matchLabels":{"kubernetes.io/metadata.name":"cnpg-system"}}},"monitoringSelector":{"namespaceSelector":{"matchLabels":{"kubernetes.io/metadata.name":"monitoring"}}}}` | NetworkPolicy configuration. Omit entirely to skip network policy creation. |
+| networkPolicy | object | `{"allowPublicIngress":false,"cnpgOperatorSelector":{"namespaceSelector":{"matchLabels":{"kubernetes.io/metadata.name":"cnpg-system"}}},"monitoringSelector":{"namespaceSelector":{"matchLabels":{"kubernetes.io/metadata.name":"monitoring"}}}}` | NetworkPolicy configuration |
 | networkPolicy.allowPublicIngress | bool | `false` | When true, allows ingress from any source (0.0.0.0/0) to the ingress.targetComponent. Only meaningful when ingress.targetComponent is also set. |
 | networkPolicy.cnpgOperatorSelector | object | `{"namespaceSelector":{"matchLabels":{"kubernetes.io/metadata.name":"cnpg-system"}}}` | NetworkPolicyPeer selecting the CloudNativePG operator namespace. Required for CNPG health checks, switchover, and cluster management. |
 | networkPolicy.monitoringSelector | object | `{"namespaceSelector":{"matchLabels":{"kubernetes.io/metadata.name":"monitoring"}}}` | NetworkPolicyPeer selecting the Prometheus monitoring namespace. Traffic from this peer is allowed to reach the database metrics port (9187). |
