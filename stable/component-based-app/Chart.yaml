@@ -3,7 +3,7 @@ name: component-based-app
 description: >
   Generic library chart for a research application deployment.
 type: application
-version: 0.1.2
+version: 0.1.3
 appVersion: ""
 kubeVersion: ">=1.25-0"
 icon: ""

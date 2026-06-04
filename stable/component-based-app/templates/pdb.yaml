@@ -1,8 +1,7 @@
 {{- range $name, $spec := .Values.components }}
 {{- $pdb := $spec.podDisruptionBudget }}
 {{- $hasReplicas := gt (int ($spec.replicas | default 1)) 1 }}
-{{- $hasAutoscaling := $spec.autoscaling }}
-{{- if or $pdb $hasReplicas $hasAutoscaling }}
+{{- if or $pdb $hasReplicas }}
 ---
 apiVersion: policy/v1
 kind: PodDisruptionBudget

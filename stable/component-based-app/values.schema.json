@@ -44,45 +44,6 @@
                                 "additionalProperties": false
                             }
                         },
-                        "autoscaling": {
-                            "description": "HorizontalPodAutoscaler configuration. Omit the block to disable HPA. @ignore",
-                            "type": "object",
-                            "properties": {
-                                "behavior": {
-                                    "description": "HPA scaling behavior configuration. Omit for sensible Kubernetes defaults.",
-                                    "type": "object",
-                                    "properties": {
-                                        "scaleDown": {
-                                            "type": "object",
-                                            "properties": {
-                                                "stabilizationWindowSeconds": {
-                                                    "type": "integer"
-                                                }
-                                            },
-                                            "additionalProperties": false
-                                        }
-                                    },
-                                    "additionalProperties": false
-                                },
-                                "maxReplicas": {
-                                    "description": "Maximum number of replicas.",
-                                    "type": "integer"
-                                },
-                                "minReplicas": {
-                                    "description": "Minimum number of replicas.",
-                                    "type": "integer"
-                                },
-                                "targetCPUUtilizationPercentage": {
-                                    "description": "Target average CPU utilization percentage.",
-                                    "type": "integer"
-                                },
-                                "targetMemoryUtilizationPercentage": {
-                                    "description": "Target average memory utilization percentage.",
-                                    "type": "integer"
-                                }
-                            },
-                            "additionalProperties": false
-                        },
                         "command": {
                             "description": "Command and arguments passed to the container (overrides image ENTRYPOINT).",
                             "type": "array",
@@ -300,7 +261,7 @@
                             "additionalProperties": false
                         },
                         "podDisruptionBudget": {
-                            "description": "PodDisruptionBudget configuration. Auto-created for components with replicas \u003e 1 or autoscaling. Set explicitly to override.",
+                            "description": "PodDisruptionBudget configuration. Auto-created for components with replicas \u003e 1. Set explicitly to override.",
                             "type": "object",
                             "properties": {
                                 "maxUnavailable": {
@@ -3307,43 +3268,6 @@
                         "$ref": "#/$defs/app-secret-item.yaml"
                     }
                 },
-                "autoscaling": {
-                    "description": "HorizontalPodAutoscaler configuration. Omit the block to disable HPA.",
-                    "type": "object",
-                    "required": [
-                        "minReplicas",
-                        "maxReplicas"
-                    ],
-                    "properties": {
-                        "behavior": {
-                            "description": "HPA scaling behavior configuration. Omit for sensible Kubernetes defaults.",
-                            "type": "object",
-                            "additionalProperties": false
-                        },
-                        "maxReplicas": {
-                            "description": "Maximum number of replicas.",
-                            "default": 100,
-                            "type": "integer",
-                            "minimum": 1
-                        },
-                        "minReplicas": {
-                            "description": "Minimum number of replicas.",
-                            "default": 1,
-                            "type": "integer",
-                            "minimum": 1
-                        },
-                        "targetCPUUtilizationPercentage": {
-                            "description": "Target average CPU utilization percentage across all pods.",
-                            "default": 80,
-                            "type": "integer"
-                        },
-                        "targetMemoryUtilizationPercentage": {
-                            "description": "Target average memory utilization percentage across all pods.",
-                            "type": "integer"
-                        }
-                    },
-                    "additionalProperties": false
-                },
                 "command": {
                     "description": "Command and arguments passed to the container (overrides image ENTRYPOINT).",
                     "type": "array",
@@ -3495,7 +3419,7 @@
                     }
                 },
                 "podDisruptionBudget": {
-                    "description": "PodDisruptionBudget configuration. Auto-created for components with replicas \u003e 1 or autoscaling. Set explicitly to override.\n",
+                    "description": "PodDisruptionBudget configuration. Auto-created for components with replicas \u003e 1. Set explicitly to override.\n",
                     "type": "object",
                     "properties": {
                         "maxUnavailable": {

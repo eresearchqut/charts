@@ -213,36 +213,11 @@ properties:
     description: Tolerations for pod scheduling onto tainted nodes.
     items:
       $ref: "https://raw.githubusercontent.com/yannh/kubernetes-json-schema/master/v1.34.3/_definitions.json#/definitions/io.k8s.api.core.v1.Toleration"
-  autoscaling:
-    type: object
-    required: [minReplicas, maxReplicas]
-    description: HorizontalPodAutoscaler configuration. Omit the block to disable HPA.
-    properties:
-      minReplicas:
-        type: integer
-        minimum: 1
-        default: 1
-        description: Minimum number of replicas.
-      maxReplicas:
-        type: integer
-        minimum: 1
-        default: 100
-        description: Maximum number of replicas.
-      targetCPUUtilizationPercentage:
-        type: integer
-        default: 80
-        description: Target average CPU utilization percentage across all pods.
-      targetMemoryUtilizationPercentage:
-        type: integer
-        description: Target average memory utilization percentage across all pods.
-      behavior:
-        type: object
-        description: HPA scaling behavior configuration. Omit for sensible Kubernetes defaults.
   podDisruptionBudget:
     type: object
     description: >
       PodDisruptionBudget configuration. Auto-created for components with
-      replicas > 1 or autoscaling. Set explicitly to override.
+      replicas > 1. Set explicitly to override.
     properties:
       minAvailable:
         description: Minimum number of available pods during voluntary disruptions.
