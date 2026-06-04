@@ -1,19 +1,13 @@
 {{- if and .Values.imageUpdate .Values.imageUpdate.enabled }}
 {{- /*
-  Collect unique image repositories across all components.
-  Each repository gets an ImageRepository + ImagePolicy pair.
-  The resource is named "<fullname>-<component>" for the first component
-  that declares that repository.
+  Create an ImageRepository + ImagePolicy pair for each component image.
+  The resource is named "<fullname>-<component>" so image update
+  annotations can target the component directly.
 */}}
-{{- $repos := dict }}
 {{- range $name, $spec := .Values.components }}
-  {{- $repo := dig "image" "repository" "" $spec }}
-  {{- if and $repo (not (hasKey $repos $repo)) }}
-    {{- $_ := set $repos $repo $name }}
-  {{- end }}
-{{- end }}
-{{- range $repo, $component := $repos }}
-{{- $resourceName := printf "%s-%s" (include "component-based-app.fullname" $) $component }}
+{{- $repo := dig "image" "repository" "" $spec }}
+{{- if $repo }}
+{{- $resourceName := printf "%s-%s" (include "component-based-app.fullname" $) $name }}
 ---
 apiVersion: image.toolkit.fluxcd.io/v1
 kind: ImageRepository
@@ -24,6 +18,13 @@ metadata:
 spec:
   image: {{ $repo }}
   interval: 5m
+{{- with $spec.imagePullSecrets }}
+{{- $secret := first . }}
+{{- with $secret.name }}
+  secretRef:
+    name: {{ . }}
+{{- end }}
+{{- end }}
 ---
 apiVersion: image.toolkit.fluxcd.io/v1
 kind: ImagePolicy
@@ -40,6 +41,7 @@ spec:
   policy:
     numerical:
       order: asc
+{{- end }}
 {{- end }}
 ---
 apiVersion: image.toolkit.fluxcd.io/v1

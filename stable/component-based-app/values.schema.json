@@ -196,6 +196,21 @@
                             },
                             "additionalProperties": false
                         },
+                        "imagePullSecrets": {
+                            "description": "Image pull secrets used by this component's Pods. When image automation is enabled, the first secret is used by this component's ImageRepository.",
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/$defs/_definitions.json/definitions/io.k8s.api.core.v1.LocalObjectReference",
+                                "type": "object",
+                                "properties": {
+                                    "name": {
+                                        "description": "Name of the Kubernetes Secret in the same namespace.",
+                                        "type": "string"
+                                    }
+                                },
+                                "additionalProperties": false
+                            }
+                        },
                         "initContainer": {
                             "description": "Init container that runs before the main container. Uses the same image as the component.",
                             "type": "object",
@@ -602,21 +617,6 @@
             "description": "Global values for subchart inheritance. Reserved for values shared across subcharts via Helm's global convention.",
             "type": "object",
             "additionalProperties": true
-        },
-        "imagePullSecrets": {
-            "description": "List of image pull secret names for the container registry.",
-            "type": "array",
-            "items": {
-                "$ref": "#/$defs/_definitions.json/definitions/io.k8s.api.core.v1.LocalObjectReference",
-                "type": "object",
-                "properties": {
-                    "name": {
-                        "description": "Name of the Kubernetes Secret in the same namespace.",
-                        "type": "string"
-                    }
-                },
-                "additionalProperties": false
-            }
         },
         "imageUpdate": {
             "type": "object",
@@ -3379,6 +3379,13 @@
                         }
                     },
                     "additionalProperties": false
+                },
+                "imagePullSecrets": {
+                    "description": "Image pull secrets used by this component's Pods. When imageUpdate.enabled is true, the first secret is also used as the Flux ImageRepository secretRef for this component.\n",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/$defs/_definitions.json/definitions/io.k8s.api.core.v1.LocalObjectReference"
+                    }
                 },
                 "initContainer": {
                     "description": "Init container that runs before the main application container. Uses the same image as the component.\n",

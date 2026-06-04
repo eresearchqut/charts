@@ -1,9 +1,9 @@
 apiVersion: v2
 name: component-based-app
 description: >
-   Generic library chart for a research application deployment.
+  Generic library chart for a research application deployment.
 type: application
-version: 0.1.0
+version: 0.1.1
 appVersion: ""
 kubeVersion: ">=1.25-0"
 icon: ""
@@ -14,3 +14,4 @@ maintainers:
     email: eresearch@qut.edu.au
 annotations:
   category: Research
+
