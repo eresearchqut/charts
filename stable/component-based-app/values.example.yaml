@@ -277,34 +277,7 @@ components:
     # @section -- Components
     # @default -- `[]`
     tolerations: []
-    # -- HorizontalPodAutoscaler configuration. Omit the block to disable HPA.
-    # @ignore
-    # @section -- Components
-    # @default -- `nil`
-    autoscaling:
-      # -- Minimum number of replicas.
-      # @section -- Components
-      # @default -- `nil`
-      minReplicas: 1
-      # -- Maximum number of replicas.
-      # @section -- Components
-      # @default -- `nil`
-      maxReplicas: 100
-      # -- Target average CPU utilization percentage.
-      # @section -- Components
-      # @default -- `nil`
-      targetCPUUtilizationPercentage: 80
-      # -- Target average memory utilization percentage.
-      # @section -- Components
-      # @default -- `nil`
-      targetMemoryUtilizationPercentage: 80
-      # -- HPA scaling behavior configuration. Omit for sensible Kubernetes defaults.
-      # @section -- Components
-      # @default -- `nil`
-      behavior:
-        scaleDown:
-          stabilizationWindowSeconds: 300
-    # -- PodDisruptionBudget configuration. Auto-created for components with replicas > 1 or autoscaling. Set explicitly to override.
+    # -- PodDisruptionBudget configuration. Auto-created for components with replicas > 1. Set explicitly to override.
     # @section -- Components
     # @default -- `nil`
     podDisruptionBudget:
