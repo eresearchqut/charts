@@ -65,14 +65,6 @@ if set, otherwise falls back to "default".
 {{- end }}
 
 {{/*
-Return the autoscaling configuration for a component, defaulting to disabled.
-Usage: {{ include "component-based-app.autoscaling" (dict "spec" $spec) }}
-*/}}
-{{- define "component-based-app.autoscaling" -}}
-{{- .spec.autoscaling | toYaml -}}
-{{- end -}}
-
-{{/*
 Public ingress rule snippet for the ingress controller (0.0.0.0/0) on the given port.
 Usage: {{ include "component-based-app.ingressPublicRule" <port> | nindent 4 }}
 */}}

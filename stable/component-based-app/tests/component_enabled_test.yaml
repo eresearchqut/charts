@@ -2,7 +2,7 @@
 #
 # Components render a Deployment and Service when present in the
 # `components` map. Removing a component from the map suppresses all
-# its resources (Deployment, Service, HPA, NetworkPolicy, etc.).
+# its resources (Deployment, Service, NetworkPolicy, etc.).
 
 suite: Component Rendering
 templates:
@@ -57,6 +57,25 @@ tests:
       - hasDocuments:
           count: 1
         template: service.yaml
+
+  - it: component replica count propagates to the Deployment
+    set:
+      components:
+        web:
+          replicas: 3
+          image:
+            repository: "example.com/app"
+            tag: "latest"
+          port: 80
+          command: ["nginx"]
+          livenessProbe:
+            path: /
+    template: deployment.yaml
+    documentIndex: 0
+    asserts:
+      - equal:
+          path: spec.replicas
+          value: 3
 
   # --- Multiple components each get their own resources ---
   - it: each component in map produces its own Deployment

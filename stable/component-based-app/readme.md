@@ -1,6 +1,6 @@
 # component-based-app
 
-![Version: 0.1.2](https://img.shields.io/badge/Version-0.1.2-informational?style=flat-square) ![Type: application](https://img.shields.io/badge/Type-application-informational?style=flat-square)
+![Version: 0.1.3](https://img.shields.io/badge/Version-0.1.3-informational?style=flat-square) ![Type: application](https://img.shields.io/badge/Type-application-informational?style=flat-square)
 
 Generic library chart for a research application deployment.
 
@@ -81,7 +81,7 @@ Each component can reference secrets via `appSecretKeys`. The values are from th
 | components.*.monitoring.scrapeTimeout | string | `nil` | Prometheus scrape timeout. |
 | components.*.nodeSelector | object | `nil` | Node labels for pod assignment. |
 | components.*.podAnnotations | object | `nil` | Annotations added to the component's Pod. |
-| components.*.podDisruptionBudget | object | `nil` | PodDisruptionBudget configuration. Auto-created for components with replicas > 1 or autoscaling. Set explicitly to override. |
+| components.*.podDisruptionBudget | object | `nil` | PodDisruptionBudget configuration. Auto-created for components with replicas > 1. Set explicitly to override. |
 | components.*.podDisruptionBudget.maxUnavailable | int | `nil` | Maximum number of unavailable pods during voluntary disruptions. Can be int or percentage string. |
 | components.*.podDisruptionBudget.minAvailable | int | `nil` | Minimum number of available pods during voluntary disruptions. Can be int or percentage string (e.g., "50%"). |
 | components.*.podIPEnvName | string | `nil` | Name of the environment variable that receives the pod's IP via the Downward API. |

@@ -4,7 +4,6 @@
   {{- fail (printf "component '%s': image.tag must be set explicitly. Set components.%s.image.tag" $name $name) }}
 {{- end }}
 {{- $image := printf "%s:%s" (dig "image" "repository" "" $spec) $tag }}
-{{- $autoscaling := include "component-based-app.autoscaling" (dict "spec" $spec) | fromYaml }}
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -14,9 +13,7 @@ metadata:
     app.kubernetes.io/component: {{ $name }}
     {{- include "component-based-app.labels" $ | nindent 4 }}
 spec:
-  {{- if not $spec.autoscaling }}
   replicas: {{ $spec.replicas | default 1 }}
-  {{- end }}
   selector:
     matchLabels:
       {{- include "component-based-app.selectorLabels" $ | nindent 6 }}
