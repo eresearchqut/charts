@@ -27,6 +27,9 @@ database:
       cpu: "1"
       memory: 1Gi
   extraEgress: []
+  backup:
+    enabled: false
+    schedule: "0 0 4 * * *"
 
 networkPolicy:
   enabled: true

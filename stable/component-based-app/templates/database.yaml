@@ -1,15 +1,31 @@
 {{- if .Values.database.enabled }}
+{{- $clusterName := printf "%s-db" (include "component-based-app.fullname" .) }}
+{{- $backupInstanceName := .Values.database.backup.instanceName | default (include "component-based-app.fullname" .) }}
+{{- $backupName := printf "%s-%s-backup" $backupInstanceName .Values.database.backup.envName }}
+{{- $backupResourceName := $backupName | trunc 63 | trimSuffix "-" }}
 {{- $_ := required "database.image.tag is required" .Values.database.image.tag }}
+{{- if .Values.database.backup.enabled }}
+{{- $_ := required "database.backup.secretRef.name is required when database.backup.enabled is true" .Values.database.backup.secretRef.name }}
+{{- $_ := required "database.backup.schedule is required when database.backup.enabled is true" .Values.database.backup.schedule }}
+{{- $_ := required "database.backup.envName is required when database.backup.enabled is true" .Values.database.backup.envName }}
+{{- end }}
 ---
 apiVersion: postgresql.cnpg.io/v1
 kind: Cluster
 metadata:
-  name: {{ include "component-based-app.fullname" . }}-db
+  name: {{ $clusterName }}
   labels:
     {{- include "component-based-app.labels" . | nindent 4 }}
     app.kubernetes.io/component: database
 spec:
   imageName: {{ printf "%s:%s" .Values.database.image.repository .Values.database.image.tag }}
+{{ if .Values.database.backup.enabled }}
+  plugins:
+    - name: barman-cloud.cloudnative-pg.io
+      isWALArchiver: true
+      parameters:
+        barmanObjectName: {{ $backupResourceName }}
+{{ end }}
   instances: {{ .Values.database.instances | default 1 }}
   affinity:
     enablePodAntiAffinity: true
@@ -40,16 +56,62 @@ spec:
 apiVersion: monitoring.coreos.com/v1
 kind: PodMonitor
 metadata:
-  name: {{ include "component-based-app.fullname" . }}-db
+  name: {{ $clusterName }}
   labels:
     {{- include "component-based-app.labels" . | nindent 4 }}
     app.kubernetes.io/component: database
-    cnpg.io/cluster: {{ include "component-based-app.fullname" . }}-db
+    cnpg.io/cluster: {{ $clusterName }}
 spec:
   podMetricsEndpoints:
     - port: metrics
   selector:
     matchLabels:
-      cnpg.io/cluster: {{ include "component-based-app.fullname" . }}-db
+      cnpg.io/cluster: {{ $clusterName }}
       cnpg.io/podRole: instance
+{{ if .Values.database.backup.enabled }}
+---
+apiVersion: barmancloud.cnpg.io/v1
+kind: ObjectStore
+metadata:
+  name: {{ $backupResourceName }}
+  labels:
+    {{- include "component-based-app.labels" . | nindent 4 }}
+    app.kubernetes.io/component: database
+spec:
+  configuration:
+    data:
+      compression: gzip
+      immediateCheckpoint: true
+      jobs: 2
+    destinationPath: {{ printf "s3://eresearch-k8s-postgres-backup/%s" $backupName | quote }}
+    endpointURL: https://s3.ap-southeast-2.amazonaws.com/
+    s3Credentials:
+      accessKeyId:
+        key: ACCESS_KEY_ID
+        name: {{ .Values.database.backup.secretRef.name }}
+      secretAccessKey:
+        key: ACCESS_SECRET_KEY
+        name: {{ .Values.database.backup.secretRef.name }}
+    wal:
+      compression: gzip
+      maxParallel: 32
+  retentionPolicy: 14d
+---
+apiVersion: postgresql.cnpg.io/v1
+kind: ScheduledBackup
+metadata:
+  name: {{ $backupResourceName }}
+  labels:
+    {{- include "component-based-app.labels" . | nindent 4 }}
+    app.kubernetes.io/component: database
+spec:
+  backupOwnerReference: self
+  cluster:
+    name: {{ $clusterName }}
+  method: plugin
+  pluginConfiguration:
+    name: barman-cloud.cloudnative-pg.io
+  schedule: {{ .Values.database.backup.schedule | quote }}
+  target: prefer-standby
+{{ end }}
 {{- end }}

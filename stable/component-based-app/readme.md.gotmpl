@@ -107,6 +107,10 @@ configurable instances, storage, and resource limits.
 
 - Remember to set the namespace label and secrets.
 - `database.image.tag` is **required** — no default version is applied.
+- You must enable backups with `database.backup.enabled`
+  The credentials secret must contain `ACCESS_KEY_ID` and
+  `ACCESS_SECRET_KEY`; CNPG schedules use six cron fields,
+  with seconds first.
 
 {{ template "chart.sectionTable" . }}
 
