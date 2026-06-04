@@ -18,7 +18,6 @@ appVersion: "" # @schema required:false
 # Reserved for values shared across subcharts via Helm's global convention.
 global: {}
 
-
 # @schema $ref: $k8s/_definitions.json#/definitions/io.k8s.api.core.v1.ResourceRequirements
 # -- (k8s/core/v1.ResourceRequirements) Default resource requests and limits. Individual components can override this.
 # @default -- `{}`
@@ -512,9 +511,18 @@ imageUpdate:
   # -- Regex with named capture group "ts" for chronological tag ordering.
   # @section -- Image Automation
   imageTagPattern: "^(?P<ts>[0-9]+)$"
-  # -- Git branch for ImageUpdateAutomation commits.
+  # -- Flux GitRepository source used by ImageUpdateAutomation.
   # @section -- Image Automation
-  imageUpdateBranch: main
+  repository:
+    # -- Name of the Flux GitRepository used as ImageUpdateAutomation sourceRef.name.
+    # @section -- Image Automation
+    name: flux-app-deployment
+    # -- Git branch checked out by ImageUpdateAutomation.
+    # @section -- Image Automation
+    branch: main
+    # -- Namespace of the Flux GitRepository used as ImageUpdateAutomation sourceRef.namespace.
+    # @section -- Image Automation
+    namespace: flux-system
   # -- Repo-relative path scanned for `$imagepolicy` annotations.
   # @section -- Image Automation
   updatePath: "."
