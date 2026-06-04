@@ -158,6 +158,8 @@ tests:
     set:
       imageUpdate:
         enabled: true
+        repository:
+          name: flux-example
         imageTagPattern: "^(?P<ts>[0-9]+)$"
       components:
         api:
@@ -215,4 +217,59 @@ tests:
       - isKind:
           of: ImageUpdateAutomation
         documentIndex: 4
+        template: flux-image-automation.yaml
+      - equal:
+          path: spec.git.checkout.ref.branch
+          value: main
+        documentIndex: 4
+        template: flux-image-automation.yaml
+      - equal:
+          path: spec.sourceRef.name
+          value: flux-example
+        documentIndex: 4
+        template: flux-image-automation.yaml
+      - equal:
+          path: spec.sourceRef.namespace
+          value: flux-system
+        documentIndex: 4
+        template: flux-image-automation.yaml
+  - it: Flux image automation uses configured GitRepository source
+    set:
+      imageUpdate:
+        enabled: true
+        repository:
+          name: platform-config
+          branch: release/2026
+          namespace: platform-system
+      components:
+        api:
+          image:
+            repository: "example.com/app"
+            tag: "latest"
+          port: 8000
+          command: ["python", "run.py"]
+          livenessProbe:
+            path: /health
+    asserts:
+      - hasDocuments:
+          count: 3
+        template: flux-image-automation.yaml
+      - isKind:
+          of: ImageUpdateAutomation
+        documentIndex: 2
+        template: flux-image-automation.yaml
+      - equal:
+          path: spec.git.checkout.ref.branch
+          value: release/2026
+        documentIndex: 2
+        template: flux-image-automation.yaml
+      - equal:
+          path: spec.sourceRef.name
+          value: platform-config
+        documentIndex: 2
+        template: flux-image-automation.yaml
+      - equal:
+          path: spec.sourceRef.namespace
+          value: platform-system
+        documentIndex: 2
         template: flux-image-automation.yaml

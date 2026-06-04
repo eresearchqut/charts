@@ -629,13 +629,28 @@
                     "description": "Regex with named capture group \"ts\" for chronological tag ordering.",
                     "type": "string"
                 },
-                "imageUpdateBranch": {
-                    "description": "Git branch for ImageUpdateAutomation commits.",
-                    "type": "string"
-                },
                 "messageTemplate": {
                     "description": "Commit message template for image update automation.",
                     "type": "string"
+                },
+                "repository": {
+                    "description": "Flux GitRepository source used by ImageUpdateAutomation.",
+                    "type": "object",
+                    "properties": {
+                        "branch": {
+                            "description": "Git branch checked out by ImageUpdateAutomation.",
+                            "type": "string"
+                        },
+                        "name": {
+                            "description": "Name of the Flux GitRepository used as ImageUpdateAutomation sourceRef.name.",
+                            "type": "string"
+                        },
+                        "namespace": {
+                            "description": "Namespace of the Flux GitRepository used as ImageUpdateAutomation sourceRef.namespace.",
+                            "type": "string"
+                        }
+                    },
+                    "additionalProperties": false
                 },
                 "updatePath": {
                     "description": "Repo-relative path scanned for `$imagepolicy` annotations.",

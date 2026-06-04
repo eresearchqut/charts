@@ -1,4 +1,5 @@
 {{- if and .Values.imageUpdate .Values.imageUpdate.enabled }}
+{{- $repository := default (dict) .Values.imageUpdate.repository }}
 {{- /*
   Create an ImageRepository + ImagePolicy pair for each component image.
   The resource is named "<fullname>-<component>" so image update
@@ -54,7 +55,7 @@ spec:
   git:
     checkout:
       ref:
-        branch: {{ .Values.imageUpdate.imageUpdateBranch }}
+        branch: {{ required "imageUpdate.repository.branch is required" $repository.branch | quote }}
     commit:
       author:
         email: fluxcdbot@users.noreply.github.com
@@ -64,8 +65,8 @@ spec:
   interval: 5m0s
   sourceRef:
     kind: GitRepository
-    name: {{ include "component-based-app.fullname" . }}
-    namespace: {{ .Release.Namespace }}
+    name: {{ required "imageUpdate.repository.name is required" $repository.name | quote }}
+    namespace: {{ default "flux-system" $repository.namespace | quote }}
   update:
     path: {{ .Values.imageUpdate.updatePath }}
     strategy: Setters
