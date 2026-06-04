@@ -4,7 +4,6 @@
 
 global: {}
 
-
 resources: {}
 
 components: {}
@@ -60,7 +59,9 @@ containerSecurityContext:
 imageUpdate:
   enabled: false
   imageTagPattern: "^(?P<ts>[0-9]+)$"
-  imageUpdateBranch: main
+  repository:
+    branch: main
+    namespace: flux-system
   updatePath: "."
   messageTemplate: |
     Automated image update

@@ -1,6 +1,6 @@
 # component-based-app
 
-![Version: 0.1.1](https://img.shields.io/badge/Version-0.1.1-informational?style=flat-square) ![Type: application](https://img.shields.io/badge/Type-application-informational?style=flat-square)
+![Version: 0.1.2](https://img.shields.io/badge/Version-0.1.2-informational?style=flat-square) ![Type: application](https://img.shields.io/badge/Type-application-informational?style=flat-square)
 
 Generic library chart for a research application deployment.
 
@@ -142,8 +142,11 @@ configurable instances, storage, and resource limits.
 |-----|------|---------|-------------|
 | imageUpdate.enabled | bool | `false` | Enable Flux image automation (ImageRepository, ImagePolicy, ImageUpdateAutomation). When false, no Flux image resources are created. Set to true to allow Flux to track images and automatically commit updates to git. |
 | imageUpdate.imageTagPattern | string | `"^(?P<ts>[0-9]+)$"` | Regex with named capture group "ts" for chronological tag ordering. |
-| imageUpdate.imageUpdateBranch | string | `"main"` | Git branch for ImageUpdateAutomation commits. |
 | imageUpdate.messageTemplate | string | `"Automated image update\n\nAutomation name: {{ .AutomationObject }}\n\nFiles:\n{{ range $filename, $_ := .Changed.FileChanges -}}\n- {{ $filename }}\n{{ end -}}\n\nObjects:\n{{ range $resource, $changes := .Changed.Objects -}}\n- {{ $resource.Kind }} {{ $resource.Name }}\n  Changes:\n{{- range $_, $change := $changes }}\n    - {{ $change.OldValue }} -> {{ $change.NewValue }}\n{{ end -}}\n{{ end -}}\n"` | Commit message template for image update automation. |
+| imageUpdate.repository | object | `{"branch":"main","name":"flux-app-deployment","namespace":"flux-system"}` | Flux GitRepository source used by ImageUpdateAutomation. |
+| imageUpdate.repository.branch | string | `"main"` | Git branch checked out by ImageUpdateAutomation. |
+| imageUpdate.repository.name | string | `"flux-app-deployment"` | Name of the Flux GitRepository used as ImageUpdateAutomation sourceRef.name. |
+| imageUpdate.repository.namespace | string | `"flux-system"` | Namespace of the Flux GitRepository used as ImageUpdateAutomation sourceRef.namespace. |
 | imageUpdate.updatePath | string | `"."` | Repo-relative path scanned for `$imagepolicy` annotations. |
 ### Ingress
 
