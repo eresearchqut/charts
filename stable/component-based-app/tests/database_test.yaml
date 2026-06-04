@@ -92,8 +92,7 @@ tests:
       database:
         backup:
           enabled: true
-          secretRef:
-            name: backup-keys
+          secretName: backup-keys
           envName: wrk-test
           instanceName: inquisition
     template: database.yaml
@@ -112,8 +111,7 @@ tests:
       database:
         backup:
           enabled: true
-          secretRef:
-            name: backup-keys
+          secretName: backup-keys
           envName: wrk-test
           instanceName: inquisition
     template: database.yaml
@@ -169,8 +167,7 @@ tests:
       database:
         backup:
           enabled: true
-          secretRef:
-            name: backup-keys
+          secretName: backup-keys
           envName: wrk-test
           instanceName: inquisition
           schedule: "0 30 2 * * *"
@@ -204,8 +201,7 @@ tests:
         enabled: false
         backup:
           enabled: true
-          secretRef:
-            name: backup-keys
+          secretName: backup-keys
       components:
         api:
           allowDatabaseAccess: false
