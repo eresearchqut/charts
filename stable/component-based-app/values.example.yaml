@@ -416,6 +416,23 @@ database:
       # -- Memory limit for the database instance.
       # @section -- Database
       memory: 1Gi
+  backup:
+    # -- Enable Barman Cloud Plugin backups for the CNPG cluster.
+    # @section -- Database
+    enabled: false
+    secretRef:
+      # -- Name of the Secret containing S3 `ACCESS_KEY_ID` and `ACCESS_SECRET_KEY` keys for database backups.
+      # @section -- Database
+      name: ""
+    # -- Kubernetes cluster/environment name used in the backup object path. Required when backups are enabled.
+    # @section -- Database
+    envName: ""
+    # -- Application instance name used in the backup object path. Defaults to the chart fullname when empty.
+    # @section -- Database
+    instanceName: ""
+    # -- Six-field CNPG cron schedule, including seconds, for `ScheduledBackup`.
+    # @section -- Database
+    schedule: "0 0 4 * * *"
   # @schema itemRef: $k8s/_definitions.json#/definitions/io.k8s.api.networking.v1.NetworkPolicyEgressRule
   # @notationType -- list
   # -- (k8s/networking/v1.NetworkPolicyEgressRule) Additional NetworkPolicy egress rules appended to the database NetworkPolicy.

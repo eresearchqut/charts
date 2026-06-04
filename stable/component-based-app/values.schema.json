@@ -483,6 +483,38 @@
         "database": {
             "type": "object",
             "properties": {
+                "backup": {
+                    "type": "object",
+                    "properties": {
+                        "enabled": {
+                            "description": "Enable Barman Cloud Plugin backups for the CNPG cluster.",
+                            "type": "boolean"
+                        },
+                        "envName": {
+                            "description": "Kubernetes cluster/environment name used in the backup object path. Required when backups are enabled.",
+                            "type": "string"
+                        },
+                        "instanceName": {
+                            "description": "Application instance name used in the backup object path. Defaults to the chart fullname when empty.",
+                            "type": "string"
+                        },
+                        "schedule": {
+                            "description": "Six-field CNPG cron schedule, including seconds, for `ScheduledBackup`.",
+                            "type": "string"
+                        },
+                        "secretRef": {
+                            "type": "object",
+                            "properties": {
+                                "name": {
+                                    "description": "Name of the Secret containing S3 `ACCESS_KEY_ID` and `ACCESS_SECRET_KEY` keys for database backups.",
+                                    "type": "string"
+                                }
+                            },
+                            "additionalProperties": false
+                        }
+                    },
+                    "additionalProperties": false
+                },
                 "enabled": {
                     "description": "Enable or disable the CloudNativePG PostgreSQL database cluster.",
                     "type": "boolean"
