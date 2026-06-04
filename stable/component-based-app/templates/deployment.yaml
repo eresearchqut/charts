@@ -36,7 +36,7 @@ spec:
     spec:
       serviceAccountName: {{ include "component-based-app.serviceAccountName" $ }}
 
-      {{- with $.Values.imagePullSecrets }}
+      {{- with $spec.imagePullSecrets }}
       imagePullSecrets:
         {{- toYaml . | nindent 8 }}
       {{- end }}

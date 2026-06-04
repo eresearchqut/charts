@@ -154,7 +154,7 @@ tests:
       - hasDocuments:
           count: 0
         template: flux-image-automation.yaml
-  - it: Flux image automation creates ImageUpdateAutomation when enabled is true
+  - it: Flux image automation creates per-component image resources when enabled
     set:
       imageUpdate:
         enabled: true
@@ -164,6 +164,8 @@ tests:
           image:
             repository: "example.com/app"
             tag: "latest"
+          imagePullSecrets:
+            - name: api-regcred
           port: 8000
           command: ["python", "run.py"]
           livenessProbe:
@@ -172,11 +174,45 @@ tests:
           image:
             repository: "example.com/app"
             tag: "latest"
+          imagePullSecrets:
+            - name: worker-regcred
           port: 8080
           command: ["node", "worker.js"]
           livenessProbe:
             path: /health
     asserts:
       - hasDocuments:
-          count: 3
+          count: 5
+        template: flux-image-automation.yaml
+      - isKind:
+          of: ImageRepository
+        documentIndex: 0
+        template: flux-image-automation.yaml
+      - equal:
+          path: metadata.name
+          value: cond-component-based-app-api
+        documentIndex: 0
+        template: flux-image-automation.yaml
+      - equal:
+          path: spec.secretRef.name
+          value: api-regcred
+        documentIndex: 0
+        template: flux-image-automation.yaml
+      - isKind:
+          of: ImageRepository
+        documentIndex: 2
+        template: flux-image-automation.yaml
+      - equal:
+          path: metadata.name
+          value: cond-component-based-app-worker
+        documentIndex: 2
+        template: flux-image-automation.yaml
+      - equal:
+          path: spec.secretRef.name
+          value: worker-regcred
+        documentIndex: 2
+        template: flux-image-automation.yaml
+      - isKind:
+          of: ImageUpdateAutomation
+        documentIndex: 4
         template: flux-image-automation.yaml

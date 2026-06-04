@@ -16,6 +16,13 @@ properties:
       tag:
         type: string
         description: Container image tag. Required — no default is applied.
+  imagePullSecrets:
+    type: array
+    description: >
+      Image pull secrets used by this component's Pods. When imageUpdate.enabled is true,
+      the first secret is also used as the Flux ImageRepository secretRef for this component.
+    items:
+      $ref: "https://raw.githubusercontent.com/yannh/kubernetes-json-schema/master/v1.34.3/_definitions.json#/definitions/io.k8s.api.core.v1.LocalObjectReference"
   replicas:
     type: integer
     minimum: 1

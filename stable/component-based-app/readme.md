@@ -1,6 +1,6 @@
 # component-based-app
 
-![Version: 0.1.0](https://img.shields.io/badge/Version-0.1.0-informational?style=flat-square) ![Type: application](https://img.shields.io/badge/Type-application-informational?style=flat-square)
+![Version: 0.1.1](https://img.shields.io/badge/Version-0.1.1-informational?style=flat-square) ![Type: application](https://img.shields.io/badge/Type-application-informational?style=flat-square)
 
 Generic library chart for a research application deployment.
 
@@ -63,6 +63,8 @@ Each component can reference secrets via `appSecretKeys`. The values are from th
 | components.*.image | object | `nil` | Container image reference. |
 | components.*.image.repository | string | `nil` | Container image repository (e.g., registry.example.com/myapp). |
 | components.*.image.tag | string | `nil` | Container image tag. Required — no default is applied. |
+| components.*.imagePullSecrets | list of [core/v1.LocalObjectReference](https://raw.githubusercontent.com/yannh/kubernetes-json-schema/master/v1.34.3/_definitions.json#/definitions/io.k8s.api.core/v1.LocalObjectReference) | `[]` | Image pull secrets used by this component's Pods. When image automation is enabled, the first secret is used by this component's ImageRepository. |
+| components.*.imagePullSecrets[0].name | string | `nil` | Name of the Kubernetes Secret in the same namespace. |
 | components.*.initContainer | object | `nil` | Init container that runs before the main container. Uses the same image as the component. |
 | components.*.initContainer.command | list | `nil` | Init container command and arguments. |
 | components.*.livenessProbe | object | `nil` | Container liveness probe. Omit the block to disable. |
@@ -134,12 +136,6 @@ configurable instances, storage, and resource limits.
 | database.storageSize | string | `"8Gi"` | PVC storage size for the database (Kubernetes quantity). |
 | database.walStorageClass | string | `""` | PVC storage class for WAL. Defaults to cluster default when empty. |
 | database.walStorageSize | string | `"2Gi"` | PVC storage size for WAL (Kubernetes quantity). |
-### Image Registry
-
-| Key | Type | Default | Description |
-|-----|------|---------|-------------|
-| imagePullSecrets | list of [core/v1.LocalObjectReference](https://raw.githubusercontent.com/yannh/kubernetes-json-schema/master/v1.34.3/_definitions.json#/definitions/io.k8s.api.core/v1.LocalObjectReference) | `[]` | List of image pull secret names for the container registry. |
-| imagePullSecrets[0].name | string | `nil` | Name of the Kubernetes Secret in the same namespace. |
 ### Image Automation
 
 | Key | Type | Default | Description |

@@ -157,10 +157,19 @@ tests:
             readOnly: true
 
   # --- imagePullSecrets ---
-  - it: imagePullSecrets appear in Deployment pod spec
+  - it: component imagePullSecrets appear in Deployment pod spec
     set:
-      imagePullSecrets:
-        - name: regcred
+      components:
+        api:
+          image:
+            repository: "example.com/app"
+            tag: "latest"
+          port: 8000
+          command: ["python", "run.py"]
+          livenessProbe:
+            path: /health
+          imagePullSecrets:
+            - name: regcred
     template: deployment.yaml
     documentIndex: 0
     asserts:
@@ -169,19 +178,26 @@ tests:
           content:
             name: regcred
 
-  - it: imagePullSecrets also appear in ServiceAccount
+  - it: component imagePullSecrets do not appear in ServiceAccount
     set:
       serviceAccount:
         enabled: true
-      imagePullSecrets:
-        - name: regcred
+      components:
+        api:
+          image:
+            repository: "example.com/app"
+            tag: "latest"
+          port: 8000
+          command: ["python", "run.py"]
+          livenessProbe:
+            path: /health
+          imagePullSecrets:
+            - name: regcred
     template: serviceaccount.yaml
     documentIndex: 0
     asserts:
-      - contains:
+      - notExists:
           path: imagePullSecrets
-          content:
-            name: regcred
 
   # --- nodeSelector, affinity, tolerations ---
   - it: nodeSelector propagates to pod spec
