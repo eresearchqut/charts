@@ -1,6 +1,6 @@
 # component-based-app
 
-![Version: 0.1.4](https://img.shields.io/badge/Version-0.1.4-informational?style=flat-square) ![Type: application](https://img.shields.io/badge/Type-application-informational?style=flat-square)
+![Version: 0.1.5](https://img.shields.io/badge/Version-0.1.5-informational?style=flat-square) ![Type: application](https://img.shields.io/badge/Type-application-informational?style=flat-square)
 
 Generic library chart for a research application deployment.
 
@@ -130,7 +130,7 @@ configurable instances, storage, and resource limits.
 | database.backup.envName | string | `""` | Kubernetes cluster/environment name used in the backup object path. Required when backups are enabled. |
 | database.backup.instanceName | string | `""` | Application instance name used in the backup object path. Defaults to the chart fullname when empty. |
 | database.backup.schedule | string | `"0 0 4 * * *"` | Six-field CNPG cron schedule, including seconds, for `ScheduledBackup`. |
-| database.backup.secretRef.name | string | `""` | Name of the Secret containing S3 `ACCESS_KEY_ID` and `ACCESS_SECRET_KEY` keys for database backups. |
+| database.backup.secretName | string | `""` | Name of the Secret containing S3 `ACCESS_KEY_ID` and `ACCESS_SECRET_KEY` keys for database backups. |
 | database.enabled | bool | `false` | Enable or disable the CloudNativePG PostgreSQL database cluster. |
 | database.extraEgress | list of [networking/v1.NetworkPolicyEgressRule](https://raw.githubusercontent.com/yannh/kubernetes-json-schema/master/v1.34.3/_definitions.json#/definitions/io.k8s.api.networking/v1.NetworkPolicyEgressRule) | `[]` | Additional NetworkPolicy egress rules appended to the database NetworkPolicy. Only meaningful when networkPolicy is set. Standard Kubernetes NetworkPolicyEgressRule format (e.g., S3 for WAL archiving). |
 | database.image.repository | string | `"registry.eres.qut.edu.au/ghcr/cloudnative-pg/postgresql"` | CloudNativePG PostgreSQL image repository. |

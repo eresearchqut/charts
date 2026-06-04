@@ -5,7 +5,7 @@
 {{- $backupResourceName := $backupName | trunc 63 | trimSuffix "-" }}
 {{- $_ := required "database.image.tag is required" .Values.database.image.tag }}
 {{- if .Values.database.backup.enabled }}
-{{- $_ := required "database.backup.secretRef.name is required when database.backup.enabled is true" .Values.database.backup.secretRef.name }}
+{{- $_ := required "database.backup.secretName is required when database.backup.enabled is true" .Values.database.backup.secretName }}
 {{- $_ := required "database.backup.schedule is required when database.backup.enabled is true" .Values.database.backup.schedule }}
 {{- $_ := required "database.backup.envName is required when database.backup.enabled is true" .Values.database.backup.envName }}
 {{- end }}
@@ -88,10 +88,10 @@ spec:
     s3Credentials:
       accessKeyId:
         key: ACCESS_KEY_ID
-        name: {{ .Values.database.backup.secretRef.name }}
+        name: {{ .Values.database.backup.secretName }}
       secretAccessKey:
         key: ACCESS_SECRET_KEY
-        name: {{ .Values.database.backup.secretRef.name }}
+        name: {{ .Values.database.backup.secretName }}
     wal:
       compression: gzip
       maxParallel: 32

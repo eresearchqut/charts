@@ -29,6 +29,7 @@ database:
   extraEgress: []
   backup:
     enabled: false
+    secretName: ""
     schedule: "0 0 4 * * *"
 
 networkPolicy:

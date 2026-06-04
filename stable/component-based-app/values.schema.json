@@ -502,15 +502,9 @@
                             "description": "Six-field CNPG cron schedule, including seconds, for `ScheduledBackup`.",
                             "type": "string"
                         },
-                        "secretRef": {
-                            "type": "object",
-                            "properties": {
-                                "name": {
-                                    "description": "Name of the Secret containing S3 `ACCESS_KEY_ID` and `ACCESS_SECRET_KEY` keys for database backups.",
-                                    "type": "string"
-                                }
-                            },
-                            "additionalProperties": false
+                        "secretName": {
+                            "description": "Name of the Secret containing S3 `ACCESS_KEY_ID` and `ACCESS_SECRET_KEY` keys for database backups.",
+                            "type": "string"
                         }
                     },
                     "additionalProperties": false
