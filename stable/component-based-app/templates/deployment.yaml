@@ -80,6 +80,13 @@ spec:
               value: {{ printf "%s-db-rw" (include "component-based-app.fullname" $) | quote }}
             - name: DB_PORT
               value: "5432"
+            {{- range $spec.appSecretKeys }}
+            - name: {{ .envName }}
+              valueFrom:
+                secretKeyRef:
+                  name: {{ $spec.secretName | default (printf "%s-secrets" (include "component-based-app.fullname" $)) }}
+                  key: {{ .secretKey }}
+            {{- end }}
           {{- end }}
       {{- end }}
       containers:
