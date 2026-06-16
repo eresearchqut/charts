@@ -62,6 +62,8 @@ spec:
         name: fluxcdbot
       messageTemplate: |
 {{ .Values.imageUpdate.messageTemplate | nindent 8 }}
+    push:
+      branch: {{ required "imageUpdate.repository.branch is required" $repository.branch | quote }}
   interval: 5m0s
   sourceRef:
     kind: GitRepository
