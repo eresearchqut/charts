@@ -23,7 +23,7 @@
                             "type": "boolean"
                         },
                         "allowedHostsEnvName": {
-                            "description": "Environment variable set to `\u003cservice-name\u003e,$(POD_IP)`. Requires `podIPEnvName`.",
+                            "description": "Environment variable set to `\u003cservice-name\u003e,$(POD_IP),$(NODE_IP)`. Set `nodeIPEnvName` to override the node IP variable name. Requires `podIPEnvName`.",
                             "type": "string"
                         },
                         "appSecretKeys": {
@@ -239,6 +239,10 @@
                                 }
                             },
                             "additionalProperties": false
+                        },
+                        "nodeIPEnvName": {
+                            "description": "Name of the environment variable that receives the node's IP via the Downward API. Used by allowed hosts as `NODE_IP` when omitted.",
+                            "type": "string"
                         },
                         "nodeSelector": {
                             "description": "Node labels for pod assignment.",
@@ -3283,7 +3287,7 @@
                     "type": "boolean"
                 },
                 "allowedHostsEnvName": {
-                    "description": "Name of the environment variable set to `\u003cservice-name\u003e,$(podIPEnvName)`. Requires podIPEnvName.\n",
+                    "description": "Name of the environment variable set to `\u003cservice-name\u003e,$(podIPEnvName),$(nodeIPEnvName)`. The node IP variable defaults to NODE_IP when nodeIPEnvName is omitted. Requires podIPEnvName.\n",
                     "default": "ALLOWED_HOSTS",
                     "type": "string"
                 },
@@ -3429,6 +3433,11 @@
                         }
                     },
                     "additionalProperties": false
+                },
+                "nodeIPEnvName": {
+                    "description": "Name of the environment variable that receives the node's IP address via the Downward API. Used by allowed hosts as NODE_IP when omitted.\n",
+                    "default": "NODE_IP",
+                    "type": "string"
                 },
                 "nodeSelector": {
                     "description": "Node labels for pod assignment.",

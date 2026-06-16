@@ -86,6 +86,29 @@ tests:
               fieldRef:
                 fieldPath: status.podIP
 
+  - it: nodeIPEnvName creates a Downward API env var for the node IP
+    set:
+      components:
+        app:
+          image:
+            repository: "example.com/app"
+            tag: "latest"
+          port: 3000
+          command: ["node", "server.js"]
+          livenessProbe:
+            path: /health
+          nodeIPEnvName: NODE_IP
+    template: deployment.yaml
+    documentIndex: 0
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: NODE_IP
+            valueFrom:
+              fieldRef:
+                fieldPath: status.hostIP
+
   # --- allowedHostsEnvName gated on podIPEnvName ---
   - it: allowedHostsEnvName is NOT rendered when podIPEnvName is missing
     set:

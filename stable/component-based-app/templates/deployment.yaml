@@ -173,9 +173,20 @@ spec:
                 fieldRef:
                   fieldPath: status.podIP
             {{- end }}
+            {{- $nodeIPEnvName := $spec.nodeIPEnvName | default "NODE_IP" }}
+            {{- if or $spec.nodeIPEnvName (and $spec.podIPEnvName $spec.allowedHostsEnvName) }}
+            - name: {{ $nodeIPEnvName }}
+              valueFrom:
+                fieldRef:
+                  fieldPath: status.hostIP
+            {{- end }}
             {{- if and $spec.podIPEnvName $spec.allowedHostsEnvName }}
+            {{- $allowedHosts := printf "%s-%s,$(%s)" (include "component-based-app.fullname" $) $name $spec.podIPEnvName }}
+            {{- if $nodeIPEnvName }}
+            {{- $allowedHosts = printf "%s,$(%s)" $allowedHosts $nodeIPEnvName }}
+            {{- end }}
             - name: {{ $spec.allowedHostsEnvName }}
-              value: {{ printf "%s-%s,$(%s)" (include "component-based-app.fullname" $) $name $spec.podIPEnvName | quote }}
+              value: {{ $allowedHosts | quote }}
             {{- end }}
             {{- range $spec.serviceLinks }}
             {{- $targetSpec := index $.Values.components .targetName }}
