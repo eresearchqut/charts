@@ -93,10 +93,24 @@ tests:
               fieldRef:
                 fieldPath: status.podIP
 
-  - it: ALLOWED_HOSTS references the service name
+  - it: node IP is exposed via the Downward API
     template: deployment.yaml
     documentIndex: 0
     asserts:
-      - matchRegex:
-          path: spec.template.spec.containers[0].env[?(@.name == 'ALLOWED_HOSTS')].value
-          pattern: "^myapp-component-based-app-api,\\$"
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: NODE_IP
+            valueFrom:
+              fieldRef:
+                fieldPath: status.hostIP
+
+  - it: ALLOWED_HOSTS references the service, pod IP, and node IP
+    template: deployment.yaml
+    documentIndex: 0
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: ALLOWED_HOSTS
+            value: myapp-component-based-app-api,$(POD_IP),$(NODE_IP)

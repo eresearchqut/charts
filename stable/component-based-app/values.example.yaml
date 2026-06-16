@@ -189,7 +189,11 @@ components:
     # @section -- Components
     # @default -- `nil`
     podIPEnvName: "POD_IP"
-    # -- Environment variable set to `<service-name>,$(POD_IP)`. Requires `podIPEnvName`.
+    # -- Name of the environment variable that receives the node's IP via the Downward API. Used by allowed hosts as `NODE_IP` when omitted.
+    # @section -- Components
+    # @default -- `nil`
+    nodeIPEnvName: "NODE_IP"
+    # -- Environment variable set to `<service-name>,$(POD_IP),$(NODE_IP)`. Set `nodeIPEnvName` to override the node IP variable name. Requires `podIPEnvName`.
     # @section -- Components
     # @default -- `nil`
     allowedHostsEnvName: "ALLOWED_HOSTS"

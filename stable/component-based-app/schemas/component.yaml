@@ -138,11 +138,18 @@ properties:
     description: >
       Name of the environment variable that receives the pod's IP address
       via the Downward API.
+  nodeIPEnvName:
+    type: string
+    default: NODE_IP
+    description: >
+      Name of the environment variable that receives the node's IP address
+      via the Downward API. Used by allowed hosts as NODE_IP when omitted.
   allowedHostsEnvName:
     type: string
     default: ALLOWED_HOSTS
     description: >
-      Name of the environment variable set to `<service-name>,$(podIPEnvName)`.
+      Name of the environment variable set to `<service-name>,$(podIPEnvName),$(nodeIPEnvName)`.
+      The node IP variable defaults to NODE_IP when nodeIPEnvName is omitted.
       Requires podIPEnvName.
   serviceLinks:
     type: array
