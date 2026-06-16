@@ -92,6 +92,8 @@ Every component requires at minimum `image.repository`, `image.tag`, `port`, and
 
 Adding extras such as liveness/readiness probes is recommended.
 
+Components targeted by `ingress.targetComponent` or `ingress.paths` receive a `FQDN` environment variable set to `ingress.host`.
+
 #### Application Secrets
 
 Each component can reference secrets via `appSecretKeys`. The values are from the secret in `components.*.secretName`. Each `appSecretKeys` entry maps a secret key to an environment variable:

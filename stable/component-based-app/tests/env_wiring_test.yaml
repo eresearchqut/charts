@@ -173,3 +173,78 @@ tests:
           content:
             name: ALLOWED_HOSTS
             value: envtest-component-based-app-app,$(POD_IP),$(NODE_IP),inquisition.dev.eres.qut.edu.au
+
+
+  - it: ingress target component receives FQDN env var
+    set:
+      ingress:
+        host: inquisition.dev.eres.qut.edu.au
+        targetComponent: web
+      components:
+        api:
+          image:
+            repository: "example.com/api"
+            tag: "latest"
+          port: 3000
+          command: ["node", "api.js"]
+          livenessProbe:
+            path: /health
+        web:
+          image:
+            repository: "example.com/web"
+            tag: "latest"
+          port: 8080
+          command: ["node", "web.js"]
+          livenessProbe:
+            path: /health
+    template: deployment.yaml
+    asserts:
+      - notContains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: FQDN
+        documentIndex: 0
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: FQDN
+            value: inquisition.dev.eres.qut.edu.au
+        documentIndex: 1
+
+  - it: ingress path target component receives FQDN env var
+    set:
+      ingress:
+        host: inquisition.dev.eres.qut.edu.au
+        paths:
+          - path: /api
+            targetComponent: api
+      components:
+        api:
+          image:
+            repository: "example.com/api"
+            tag: "latest"
+          port: 3000
+          command: ["node", "api.js"]
+          livenessProbe:
+            path: /health
+        worker:
+          image:
+            repository: "example.com/worker"
+            tag: "latest"
+          port: 8080
+          command: ["node", "worker.js"]
+          livenessProbe:
+            path: /health
+    template: deployment.yaml
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: FQDN
+            value: inquisition.dev.eres.qut.edu.au
+        documentIndex: 0
+      - notContains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: FQDN
+        documentIndex: 1

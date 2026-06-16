@@ -191,6 +191,22 @@ spec:
             - name: {{ $spec.allowedHostsEnvName }}
               value: {{ $allowedHosts | quote }}
             {{- end }}
+            {{- $isIngressComponent := false }}
+            {{- if $.Values.ingress.host }}
+            {{- if $.Values.ingress.paths }}
+            {{- range $.Values.ingress.paths }}
+            {{- if eq $name .targetComponent }}
+            {{- $isIngressComponent = true }}
+            {{- end }}
+            {{- end }}
+            {{- else if eq $name $.Values.ingress.targetComponent }}
+            {{- $isIngressComponent = true }}
+            {{- end }}
+            {{- end }}
+            {{- if $isIngressComponent }}
+            - name: FQDN
+              value: {{ $.Values.ingress.host | quote }}
+            {{- end }}
             {{- range $spec.serviceLinks }}
             {{- $targetSpec := index $.Values.components .targetName }}
             {{- if empty $targetSpec }}
