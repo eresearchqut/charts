@@ -1,6 +1,6 @@
 # component-based-app
 
-![Version: 0.1.6](https://img.shields.io/badge/Version-0.1.6-informational?style=flat-square) ![Type: application](https://img.shields.io/badge/Type-application-informational?style=flat-square)
+![Version: 0.1.7](https://img.shields.io/badge/Version-0.1.7-informational?style=flat-square) ![Type: application](https://img.shields.io/badge/Type-application-informational?style=flat-square)
 
 Generic library chart for a research application deployment.
 
@@ -51,7 +51,7 @@ Each component can reference secrets via `appSecretKeys`. The values are from th
 | components.* | object | `{}` | Application component, key must be a valid kubernetes dns label |
 | components.*.affinity | [core/v1.Affinity](https://raw.githubusercontent.com/yannh/kubernetes-json-schema/master/v1.34.3/_definitions.json#/definitions/io.k8s.api.core/v1.Affinity) | `nil` | Affinity and anti-affinity rules for pod scheduling. |
 | components.*.allowDatabaseAccess | bool | `nil` | When true, injects `DB_USERNAME`, `DB_PASSWORD`, `DB_HOST`, and `DB_PORT` from the database secret. |
-| components.*.allowedHostsEnvName | string | `nil` | Environment variable set to `<service-name>,$(POD_IP)`. Requires `podIPEnvName`. |
+| components.*.allowedHostsEnvName | string | `nil` | Environment variable set to `<service-name>,$(POD_IP),$(NODE_IP)`. Set `nodeIPEnvName` to override the node IP variable name. Requires `podIPEnvName`. |
 | components.*.appSecretKeys | list | `nil` | Environment variables sourced from a Kubernetes Secret. |
 | components.*.appSecretKeys[0].envName | string | `nil` | Name of the environment variable exposed to the container. |
 | components.*.appSecretKeys[0].secretKey | string | `nil` | Key within the referenced Kubernetes Secret. |
@@ -79,6 +79,7 @@ Each component can reference secrets via `appSecretKeys`. The values are from th
 | components.*.monitoring.path | string | `nil` | HTTP path for the metrics endpoint. |
 | components.*.monitoring.port | string | `nil` | Name of the port exposing metrics on the Service. |
 | components.*.monitoring.scrapeTimeout | string | `nil` | Prometheus scrape timeout. |
+| components.*.nodeIPEnvName | string | `nil` | Name of the environment variable that receives the node's IP via the Downward API. Used by allowed hosts as `NODE_IP` when omitted. |
 | components.*.nodeSelector | object | `nil` | Node labels for pod assignment. |
 | components.*.podAnnotations | object | `nil` | Annotations added to the component's Pod. |
 | components.*.podDisruptionBudget | object | `nil` | PodDisruptionBudget configuration. Auto-created for components with replicas > 1. Set explicitly to override. |

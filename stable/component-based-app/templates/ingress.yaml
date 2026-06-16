@@ -31,9 +31,9 @@ spec:
           {{- if empty $pathTarget }}
             {{- fail (printf "ingress.paths: component '%s' not found" .targetComponent) }}
           {{- end }}
-{{- if not $pathTarget }}
-  {{- fail (printf "ingress.paths: component '%s' is disabled" .targetComponent) }}
-{{- end }}
+          {{- if not $pathTarget }}
+            {{- fail (printf "ingress.paths: component '%s' is disabled" .targetComponent) }}
+          {{- end }}
           - path: {{ .path }}
             pathType: {{ .pathType | default "Prefix" }}
             backend:
