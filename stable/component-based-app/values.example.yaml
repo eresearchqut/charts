@@ -193,7 +193,7 @@ components:
     # @section -- Components
     # @default -- `nil`
     nodeIPEnvName: "NODE_IP"
-    # -- Environment variable set to `<service-name>,$(POD_IP),$(NODE_IP)`. Set `nodeIPEnvName` to override the node IP variable name. Requires `podIPEnvName`.
+    # -- Environment variable set to `<service-name>,$(POD_IP),$(NODE_IP),<ingress.host>`. Set `nodeIPEnvName` to override the node IP variable name. The ingress host is included when configured. Requires `podIPEnvName`.
     # @section -- Components
     # @default -- `nil`
     allowedHostsEnvName: "ALLOWED_HOSTS"
@@ -343,6 +343,10 @@ ingress:
   # @section -- Ingress
   # @default -- `""`
   tlsHost: ""
+  # -- AVI HTTPRule health monitor name.
+  # @section -- Ingress
+  # @default -- `"System-HTTP"`
+  healthMonitor: System-HTTP
   # -- Component key whose Service receives all inbound traffic when a single path `/` routes to one component.
   # @section -- Ingress
   # @default -- `""`

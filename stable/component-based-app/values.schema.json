@@ -23,7 +23,7 @@
                             "type": "boolean"
                         },
                         "allowedHostsEnvName": {
-                            "description": "Environment variable set to `\u003cservice-name\u003e,$(POD_IP),$(NODE_IP)`. Set `nodeIPEnvName` to override the node IP variable name. Requires `podIPEnvName`.",
+                            "description": "Environment variable set to `\u003cservice-name\u003e,$(POD_IP),$(NODE_IP),\u003cingress.host\u003e`. Set `nodeIPEnvName` to override the node IP variable name. The ingress host is included when configured. Requires `podIPEnvName`.",
                             "type": "string"
                         },
                         "appSecretKeys": {
@@ -660,6 +660,10 @@
                 },
                 "className": {
                     "description": "Ingress class name (e.g., nginx, avi).",
+                    "type": "string"
+                },
+                "healthMonitor": {
+                    "description": "AVI HTTPRule health monitor name.",
                     "type": "string"
                 },
                 "host": {
@@ -3287,7 +3291,7 @@
                     "type": "boolean"
                 },
                 "allowedHostsEnvName": {
-                    "description": "Name of the environment variable set to `\u003cservice-name\u003e,$(podIPEnvName),$(nodeIPEnvName)`. The node IP variable defaults to NODE_IP when nodeIPEnvName is omitted. Requires podIPEnvName.\n",
+                    "description": "Name of the environment variable set to `\u003cservice-name\u003e,$(podIPEnvName),$(nodeIPEnvName),\u003cingress.host\u003e`. The node IP variable defaults to NODE_IP when nodeIPEnvName is omitted. The ingress host is included when configured. Requires podIPEnvName.\n",
                     "default": "ALLOWED_HOSTS",
                     "type": "string"
                 },
