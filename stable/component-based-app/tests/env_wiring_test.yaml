@@ -149,3 +149,27 @@ tests:
           path: spec.template.spec.containers[0].env
           content:
             name: ALLOWED_HOSTS
+
+  - it: allowedHostsEnvName includes ingress host when configured
+    set:
+      ingress:
+        host: inquisition.dev.eres.qut.edu.au
+      components:
+        app:
+          image:
+            repository: "example.com/app"
+            tag: "latest"
+          port: 3000
+          command: ["node", "server.js"]
+          livenessProbe:
+            path: /health
+          podIPEnvName: POD_IP
+          allowedHostsEnvName: ALLOWED_HOSTS
+    template: deployment.yaml
+    documentIndex: 0
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: ALLOWED_HOSTS
+            value: envtest-component-based-app-app,$(POD_IP),$(NODE_IP),inquisition.dev.eres.qut.edu.au

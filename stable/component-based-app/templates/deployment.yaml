@@ -185,6 +185,9 @@ spec:
             {{- if $nodeIPEnvName }}
             {{- $allowedHosts = printf "%s,$(%s)" $allowedHosts $nodeIPEnvName }}
             {{- end }}
+            {{- if $.Values.ingress.host }}
+            {{- $allowedHosts = printf "%s,%s" $allowedHosts $.Values.ingress.host }}
+            {{- end }}
             - name: {{ $spec.allowedHostsEnvName }}
               value: {{ $allowedHosts | quote }}
             {{- end }}
