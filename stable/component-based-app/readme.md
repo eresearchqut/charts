@@ -1,6 +1,6 @@
 # component-based-app
 
-![Version: 0.1.7](https://img.shields.io/badge/Version-0.1.7-informational?style=flat-square) ![Type: application](https://img.shields.io/badge/Type-application-informational?style=flat-square)
+![Version: 0.1.8](https://img.shields.io/badge/Version-0.1.8-informational?style=flat-square) ![Type: application](https://img.shields.io/badge/Type-application-informational?style=flat-square)
 
 Generic library chart for a research application deployment.
 
@@ -51,7 +51,7 @@ Each component can reference secrets via `appSecretKeys`. The values are from th
 | components.* | object | `{}` | Application component, key must be a valid kubernetes dns label |
 | components.*.affinity | [core/v1.Affinity](https://raw.githubusercontent.com/yannh/kubernetes-json-schema/master/v1.34.3/_definitions.json#/definitions/io.k8s.api.core/v1.Affinity) | `nil` | Affinity and anti-affinity rules for pod scheduling. |
 | components.*.allowDatabaseAccess | bool | `nil` | When true, injects `DB_USERNAME`, `DB_PASSWORD`, `DB_HOST`, and `DB_PORT` from the database secret. |
-| components.*.allowedHostsEnvName | string | `nil` | Environment variable set to `<service-name>,$(POD_IP),$(NODE_IP)`. Set `nodeIPEnvName` to override the node IP variable name. Requires `podIPEnvName`. |
+| components.*.allowedHostsEnvName | string | `nil` | Environment variable set to `<service-name>,$(POD_IP),$(NODE_IP),<ingress.host>`. Set `nodeIPEnvName` to override the node IP variable name. The ingress host is included when configured. Requires `podIPEnvName`. |
 | components.*.appSecretKeys | list | `nil` | Environment variables sourced from a Kubernetes Secret. |
 | components.*.appSecretKeys[0].envName | string | `nil` | Name of the environment variable exposed to the container. |
 | components.*.appSecretKeys[0].secretKey | string | `nil` | Key within the referenced Kubernetes Secret. |
@@ -164,6 +164,7 @@ configurable instances, storage, and resource limits.
 |-----|------|---------|-------------|
 | ingress.annotations | object | `{}` | Annotations to add to the Ingress resource (e.g., cert-manager.io/cluster-issuer). |
 | ingress.className | string | `""` | Ingress class name (e.g., nginx, avi). |
+| ingress.healthMonitor | string | `"System-HTTP"` | AVI HTTPRule health monitor name. |
 | ingress.host | string | `""` | Ingress hostname (e.g., app.example.com). |
 | ingress.paths | list | `[]` | Multiple path rules. When set, overrides the single targetComponent path. Each entry specifies path, pathType (default: Prefix), and targetComponent. |
 | ingress.paths[0].path | string | `nil` | URL path to match (e.g., /api or /). |

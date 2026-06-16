@@ -91,6 +91,32 @@ tests:
       - hasDocuments:
           count: 2
         template: avi-rules.yaml
+      - equal:
+          path: spec.paths[0].healthMonitors[0]
+          value: System-HTTP
+        documentIndex: 1
+        template: avi-rules.yaml
+  - it: uses configured AVI health monitor
+    set:
+      ingress:
+        host: app.example.com
+        healthMonitor: Custom-HTTP
+        targetComponent: web
+      components:
+        web:
+          image:
+            repository: "example.com/app"
+            tag: "latest"
+          port: 80
+          command: ["nginx"]
+          livenessProbe:
+            path: /
+    template: avi-rules.yaml
+    documentIndex: 1
+    asserts:
+      - equal:
+          path: spec.paths[0].healthMonitors[0]
+          value: Custom-HTTP
 
   # --- Readiness probe conditional ---
   - it: readinessProbe is absent when not configured

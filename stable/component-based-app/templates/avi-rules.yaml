@@ -35,7 +35,7 @@ spec:
   paths:
     - target: /
       healthMonitors:
-        - System-HTTP
+        - {{ .Values.ingress.healthMonitor | default "System-HTTP" }}
       loadBalancerPolicy:
         algorithm: LB_ALGORITHM_LEAST_CONNECTIONS
 {{- end }}

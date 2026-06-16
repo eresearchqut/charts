@@ -9,6 +9,7 @@ resources: {}
 components: {}
 
 ingress:
+  healthMonitor: System-HTTP
   annotations: {}
   paths: []
 
