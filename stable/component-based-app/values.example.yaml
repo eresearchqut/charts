@@ -355,6 +355,10 @@ ingress:
   # @section -- Ingress
   # @default -- `"System-HTTP"`
   healthMonitor: System-HTTP
+  # -- AVI HostRule application profile name.
+  # @section -- Ingress
+  # @default -- `"System-HTTP"`
+  applicationProfile: System-HTTP
   # -- Component key whose Service receives all inbound traffic when a single path `/` routes to one component.
   # @section -- Ingress
   # @default -- `""`
