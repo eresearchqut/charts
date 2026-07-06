@@ -1,0 +1,110 @@
+# USECASE: Component with rendered ConfigMaps
+#
+# A component that declares `configMaps` gets one ConfigMap rendered per entry
+# (named by the map key) plus a checksum/config Pod annotation derived from the
+# config, so changing config content rolls the Pods. Components without
+# configMaps keep the previous behaviour (no checksum annotation).
+
+suite: Component ConfigMaps and checksum annotation
+templates:
+  - configmap.yaml
+  - deployment.yaml
+
+release:
+  name: myapp
+  namespace: default
+
+tests:
+  - it: renders a ConfigMap per entry with the declared name, data, and component label
+    template: configmap.yaml
+    set:
+      components:
+        web:
+          image:
+            repository: "example.com/app"
+            tag: "latest"
+          port: 8080
+          command: ["run"]
+          livenessProbe:
+            path: /health
+          configMaps:
+            web-config:
+              settings: |
+                [server]
+                enableXsrfProtection = false
+    asserts:
+      - hasDocuments:
+          count: 1
+      - isKind:
+          of: ConfigMap
+      - equal:
+          path: metadata.name
+          value: web-config
+      - equal:
+          path: metadata.labels["app.kubernetes.io/component"]
+          value: web
+      - matchRegex:
+          path: data.settings
+          pattern: enableXsrfProtection = false
+
+  - it: adds a checksum/config Pod annotation when the component declares configMaps
+    template: deployment.yaml
+    documentIndex: 0
+    set:
+      components:
+        web:
+          image:
+            repository: "example.com/app"
+            tag: "latest"
+          port: 8080
+          command: ["run"]
+          livenessProbe:
+            path: /health
+          configMaps:
+            web-config:
+              settings: "x = 1"
+    asserts:
+      - isNotEmpty:
+          path: spec.template.metadata.annotations["checksum/config"]
+
+  - it: keeps explicit podAnnotations alongside the checksum annotation
+    template: deployment.yaml
+    documentIndex: 0
+    set:
+      components:
+        web:
+          image:
+            repository: "example.com/app"
+            tag: "latest"
+          port: 8080
+          command: ["run"]
+          livenessProbe:
+            path: /health
+          podAnnotations:
+            example.com/owner: platform
+          configMaps:
+            web-config:
+              settings: "x = 1"
+    asserts:
+      - isNotEmpty:
+          path: spec.template.metadata.annotations["checksum/config"]
+      - equal:
+          path: spec.template.metadata.annotations["example.com/owner"]
+          value: platform
+
+  - it: omits the checksum/config annotation when the component has no configMaps
+    template: deployment.yaml
+    documentIndex: 0
+    set:
+      components:
+        web:
+          image:
+            repository: "example.com/app"
+            tag: "latest"
+          port: 8080
+          command: ["run"]
+          livenessProbe:
+            path: /health
+    asserts:
+      - notExists:
+          path: spec.template.metadata.annotations["checksum/config"]
