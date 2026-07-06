@@ -188,6 +188,38 @@ properties:
       networkPolicy is configured.
     items:
       $ref: "https://raw.githubusercontent.com/yannh/kubernetes-json-schema/master/v1.34.3/_definitions.json#/definitions/io.k8s.api.networking.v1.NetworkPolicyIngressRule"
+  allowedFQDNs:
+    type: array
+    description: >
+      Allow egress to external destinations by fully-qualified domain name (FQDN)
+      instead of IP address. Renders an Antrea-native NetworkPolicy
+      (crd.antrea.io/v1beta1) whose Allow rules take precedence over the IP-based
+      Kubernetes NetworkPolicies. Requires the Antrea CNI with the AntreaPolicy
+      feature gate. Only meaningful when networkPolicy is enabled.
+    items:
+      type: object
+      required: [fqdn]
+      properties:
+        fqdn:
+          type: string
+          description: Exact FQDN (api.example.com) or wildcard (*.example.com) to allow egress to.
+        ports:
+          type: array
+          description: Ports to allow. Omit to allow all ports to the FQDN.
+          items:
+            type: object
+            required: [port]
+            properties:
+              port:
+                type: integer
+                minimum: 1
+                maximum: 65535
+                description: Destination port number.
+              protocol:
+                type: string
+                enum: [TCP, UDP, SCTP]
+                default: TCP
+                description: Transport protocol.
   podAnnotations:
     type: object
     description: Annotations added to the component's Pod.

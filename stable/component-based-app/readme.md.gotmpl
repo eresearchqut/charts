@@ -159,6 +159,25 @@ components:
 
 [Standard `NetworkPolicyEgressRule` objects are accepted.](https://kubernetes.io/docs/concepts/services-networking/network-policies/)
 
+
+#### FQDN Egress (Antrea)
+
+To allow egress by domain name instead of IP address, set `allowedFQDNs` on a
+component. This renders an Antrea-native `NetworkPolicy` (`crd.antrea.io`) whose
+`Allow` rules are evaluated before the IP-based Kubernetes NetworkPolicies and
+thus take precedence. Requires the Antrea CNI with the `AntreaPolicy` feature
+gate; DNS resolution is already permitted by the default-deny policy.
+
+```yaml
+components:
+  myapp:
+    allowedFQDNs:
+      - fqdn: "*.googleapis.com"
+        ports:
+          - port: 443
+            protocol: TCP
+      - fqdn: "api.example.com"   # omit ports to allow all ports
+```
 {{ template "chart.sectionTable" . }}
 
 {{- else }}

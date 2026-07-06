@@ -1,6 +1,6 @@
 # component-based-app
 
-![Version: 0.1.12](https://img.shields.io/badge/Version-0.1.12-informational?style=flat-square) ![Type: application](https://img.shields.io/badge/Type-application-informational?style=flat-square)
+![Version: 0.1.13](https://img.shields.io/badge/Version-0.1.13-informational?style=flat-square) ![Type: application](https://img.shields.io/badge/Type-application-informational?style=flat-square)
 
 Generic library chart for a research application deployment.
 
@@ -53,6 +53,7 @@ Each component can reference secrets via `appSecretKeys`. The values are from th
 | components.* | object | `{}` | Application component, key must be a valid kubernetes dns label |
 | components.*.affinity | [core/v1.Affinity](https://raw.githubusercontent.com/yannh/kubernetes-json-schema/master/v1.34.3/_definitions.json#/definitions/io.k8s.api.core/v1.Affinity) | `nil` | Affinity and anti-affinity rules for pod scheduling. |
 | components.*.allowDatabaseAccess | bool | `nil` | When true, injects `DB_USERNAME`, `DB_PASSWORD`, `DB_HOST`, and `DB_PORT` from the database secret. |
+| components.*.allowedFQDNs | list | `[]` | Allow egress to external destinations by FQDN instead of IP address. Renders an Antrea-native NetworkPolicy (crd.antrea.io) whose Allow rules take precedence over the IP-based Kubernetes NetworkPolicies. Requires the Antrea CNI. Only meaningful when `networkPolicy` is enabled. |
 | components.*.allowedHostsEnvName | string | `nil` | Environment variable set to `<service-name>,$(POD_IP),$(NODE_IP),<ingress.host>`. Set `nodeIPEnvName` to override the node IP variable name. The ingress host is included when configured. Requires `podIPEnvName`. |
 | components.*.appSecretKeys | list | `nil` | Environment variables sourced from a Kubernetes Secret. |
 | components.*.appSecretKeys[0].envName | string | `nil` | Name of the environment variable exposed to the container. |
@@ -219,6 +220,24 @@ components:
 
 [Standard `NetworkPolicyEgressRule` objects are accepted.](https://kubernetes.io/docs/concepts/services-networking/network-policies/)
 
+#### FQDN Egress (Antrea)
+
+To allow egress by domain name instead of IP address, set `allowedFQDNs` on a
+component. This renders an Antrea-native `NetworkPolicy` (`crd.antrea.io`) whose
+`Allow` rules are evaluated before the IP-based Kubernetes NetworkPolicies and
+thus take precedence. Requires the Antrea CNI with the `AntreaPolicy` feature
+gate; DNS resolution is already permitted by the default-deny policy.
+
+```yaml
+components:
+  myapp:
+    allowedFQDNs:
+      - fqdn: "*.googleapis.com"
+        ports:
+          - port: 443
+            protocol: TCP
+      - fqdn: "api.example.com"   # omit ports to allow all ports
+```
 | Key | Type | Default | Description |
 |-----|------|---------|-------------|
 | networkPolicy | object | `{"cnpgOperatorSelector":{"namespaceSelector":{"matchLabels":{"kubernetes.io/metadata.name":"cnpg-system"}}},"enabled":true,"monitoringSelector":{"namespaceSelector":{"matchLabels":{"kubernetes.io/metadata.name":"monitoring"}}}}` | NetworkPolicy configuration |

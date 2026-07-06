@@ -243,6 +243,15 @@ components:
           - port: 443
             protocol: "TCP"
     # @notationType -- list
+    # -- Allow egress to external destinations by FQDN instead of IP address. Renders an Antrea-native NetworkPolicy (crd.antrea.io) whose Allow rules take precedence over the IP-based Kubernetes NetworkPolicies. Requires the Antrea CNI. Only meaningful when `networkPolicy` is enabled.
+    # @section -- Components
+    # @default -- `[]`
+    allowedFQDNs:
+      - fqdn: "*.googleapis.com"
+        ports:
+          - port: 443
+            protocol: "TCP"
+    # @notationType -- list
     # -- (k8s/networking/v1.NetworkPolicyIngressRule) Additional NetworkPolicy ingress rules. Only meaningful when `networkPolicy` is configured.
     # @section -- Components
     # @default -- `[]`

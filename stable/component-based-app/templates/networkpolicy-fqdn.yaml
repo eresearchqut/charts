@@ -1,0 +1,40 @@
+{{- if .Values.networkPolicy.enabled }}
+{{- range $name, $spec := .Values.components }}
+{{- with $spec.allowedFQDNs }}
+---
+# Antrea-native NetworkPolicy for FQDN-based egress.
+# Evaluated in the default "application" tier before IP-based Kubernetes
+# NetworkPolicies, so these Allow rules take precedence over any later
+# deny rules. Requires the Antrea CNI with the AntreaPolicy feature gate
+# enabled. DNS egress is already permitted by the release default-deny
+# policy, so no separate DNS rule is needed here.
+apiVersion: crd.antrea.io/v1beta1
+kind: NetworkPolicy
+metadata:
+  name: {{ include "component-based-app.fullname" $ }}-{{ $name }}-fqdn
+  labels:
+    app.kubernetes.io/component: {{ $name }}
+    {{- include "component-based-app.labels" $ | nindent 4 }}
+spec:
+  priority: 5
+  appliedTo:
+    - podSelector:
+        matchLabels:
+          app.kubernetes.io/component: {{ $name }}
+          app.kubernetes.io/instance: {{ $.Release.Name }}
+  egress:
+{{- range . }}
+    - action: Allow
+      to:
+        - fqdn: {{ .fqdn | quote }}
+{{- with .ports }}
+      ports:
+{{- range . }}
+        - port: {{ .port }}
+          protocol: {{ .protocol | default "TCP" }}
+{{- end }}
+{{- end }}
+{{- end }}
+{{- end }}
+{{- end }}
+{{- end }}
