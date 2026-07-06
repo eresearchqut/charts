@@ -20,9 +20,14 @@ spec:
       app.kubernetes.io/component: {{ $name }}
   template:
     metadata:
-      {{- with $spec.podAnnotations }}
+      {{- if or $spec.configMaps $spec.podAnnotations }}
       annotations:
+        {{- if $spec.configMaps }}
+        checksum/config: {{ toYaml $spec.configMaps | sha256sum | quote }}
+        {{- end }}
+        {{- with $spec.podAnnotations }}
         {{- toYaml . | nindent 8 }}
+        {{- end }}
       {{- end }}
       labels:
         app.kubernetes.io/component: {{ $name }}
