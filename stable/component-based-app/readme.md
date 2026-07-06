@@ -1,6 +1,6 @@
 # component-based-app
 
-![Version: 0.1.10](https://img.shields.io/badge/Version-0.1.10-informational?style=flat-square) ![Type: application](https://img.shields.io/badge/Type-application-informational?style=flat-square)
+![Version: 0.1.11](https://img.shields.io/badge/Version-0.1.11-informational?style=flat-square) ![Type: application](https://img.shields.io/badge/Type-application-informational?style=flat-square)
 
 Generic library chart for a research application deployment.
 
@@ -58,6 +58,7 @@ Each component can reference secrets via `appSecretKeys`. The values are from th
 | components.*.appSecretKeys[0].envName | string | `nil` | Name of the environment variable exposed to the container. |
 | components.*.appSecretKeys[0].secretKey | string | `nil` | Key within the referenced Kubernetes Secret. |
 | components.*.command | list | `[]` | Command and arguments passed to the container (overrides image ENTRYPOINT). |
+| components.*.configMaps | object | `nil` | ConfigMaps rendered for this component, keyed by ConfigMap name; each value is a data map of file name to content. A checksum/config Pod annotation is derived from these so config changes trigger a rollout. |
 | components.*.containerSecurityContext | [core/v1.SecurityContext](https://raw.githubusercontent.com/yannh/kubernetes-json-schema/master/v1.34.3/_definitions.json#/definitions/io.k8s.api.core/v1.SecurityContext) | `nil` | Per-component container security context. Overrides the global `containerSecurityContext`. Set to `{}` to opt out. |
 | components.*.env | list of [core/v1.EnvVar](https://raw.githubusercontent.com/yannh/kubernetes-json-schema/master/v1.34.3/_definitions.json#/definitions/io.k8s.api.core/v1.EnvVar) | `[]` | Additional environment variables in Kubernetes EnvVar format. |
 | components.*.extraEgress | list of [networking/v1.NetworkPolicyEgressRule](https://raw.githubusercontent.com/yannh/kubernetes-json-schema/master/v1.34.3/_definitions.json#/definitions/io.k8s.api.networking/v1.NetworkPolicyEgressRule) | `[]` | Additional NetworkPolicy egress rules. Only meaningful when `networkPolicy` is configured. |

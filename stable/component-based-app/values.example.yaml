@@ -267,6 +267,14 @@ components:
     # @section -- Components
     # @default -- `[]`
     volumeMounts: []
+    # -- ConfigMaps rendered for this component, keyed by ConfigMap name; each value is a data map of file name to content. A checksum/config Pod annotation is derived from these so config changes trigger a rollout.
+    # @section -- Components
+    # @default -- `nil`
+    configMaps:
+      myapp-config:
+        settings: |
+          [server]
+          debug = true
     # -- Node labels for pod assignment.
     # @section -- Components
     # @default -- `nil`

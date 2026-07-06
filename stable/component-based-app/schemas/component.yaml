@@ -198,6 +198,16 @@ properties:
     description: Labels added to the component's Pod.
     additionalProperties:
       type: string
+  configMaps:
+    type: object
+    description: >
+      ConfigMaps rendered for this component, keyed by ConfigMap name; each value
+      is a data map of file name to string content. A checksum/config pod
+      annotation is derived from these so config changes trigger a Pod rollout.
+    additionalProperties:
+      type: object
+      additionalProperties:
+        type: string
   volumes:
     type: array
     description: Additional volumes attached to the component's Pod.

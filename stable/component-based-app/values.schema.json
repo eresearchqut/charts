@@ -51,6 +51,22 @@
                                 "type": "string"
                             }
                         },
+                        "configMaps": {
+                            "description": "ConfigMaps rendered for this component, keyed by ConfigMap name; each value is a data map of file name to content. A checksum/config Pod annotation is derived from these so config changes trigger a rollout.",
+                            "type": "object",
+                            "properties": {
+                                "myapp-config": {
+                                    "type": "object",
+                                    "properties": {
+                                        "settings": {
+                                            "type": "string"
+                                        }
+                                    },
+                                    "additionalProperties": false
+                                }
+                            },
+                            "additionalProperties": false
+                        },
                         "containerSecurityContext": {
                             "description": "Per-component container security context. Overrides the global `containerSecurityContext`. Set to `{}` to opt out.",
                             "type": "object",
@@ -3307,6 +3323,16 @@
                     "type": "array",
                     "items": {
                         "type": "string"
+                    }
+                },
+                "configMaps": {
+                    "description": "ConfigMaps rendered for this component, keyed by ConfigMap name; each value is a data map of file name to string content. A checksum/config pod annotation is derived from these so config changes trigger a Pod rollout.\n",
+                    "type": "object",
+                    "additionalProperties": {
+                        "type": "object",
+                        "additionalProperties": {
+                            "type": "string"
+                        }
                     }
                 },
                 "containerSecurityContext": {
