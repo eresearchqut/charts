@@ -674,6 +674,10 @@
                     "type": "object",
                     "additionalProperties": false
                 },
+                "applicationProfile": {
+                    "description": "AVI HostRule application profile name.",
+                    "type": "string"
+                },
                 "className": {
                     "description": "Ingress class name (e.g., nginx, avi).",
                     "type": "string"

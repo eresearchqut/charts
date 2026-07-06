@@ -1,6 +1,6 @@
 # component-based-app
 
-![Version: 0.1.11](https://img.shields.io/badge/Version-0.1.11-informational?style=flat-square) ![Type: application](https://img.shields.io/badge/Type-application-informational?style=flat-square)
+![Version: 0.1.12](https://img.shields.io/badge/Version-0.1.12-informational?style=flat-square) ![Type: application](https://img.shields.io/badge/Type-application-informational?style=flat-square)
 
 Generic library chart for a research application deployment.
 
@@ -166,6 +166,7 @@ configurable instances, storage, and resource limits.
 | Key | Type | Default | Description |
 |-----|------|---------|-------------|
 | ingress.annotations | object | `{}` | Annotations to add to the Ingress resource (e.g., cert-manager.io/cluster-issuer). |
+| ingress.applicationProfile | string | `"System-HTTP"` | AVI HostRule application profile name. |
 | ingress.className | string | `""` | Ingress class name (e.g., nginx, avi). |
 | ingress.healthMonitor | string | `"System-HTTP"` | AVI HTTPRule health monitor name. |
 | ingress.host | string | `""` | Ingress hostname (e.g., app.example.com). |
