@@ -22,6 +22,34 @@
                             "description": "When true, injects `DB_USERNAME`, `DB_PASSWORD`, `DB_HOST`, and `DB_PORT` from the database secret.",
                             "type": "boolean"
                         },
+                        "allowedFQDNs": {
+                            "description": "Allow egress to external destinations by FQDN instead of IP address. Renders an Antrea-native NetworkPolicy (crd.antrea.io) whose Allow rules take precedence over the IP-based Kubernetes NetworkPolicies. Requires the Antrea CNI. Only meaningful when `networkPolicy` is enabled.",
+                            "type": "array",
+                            "items": {
+                                "type": "object",
+                                "properties": {
+                                    "fqdn": {
+                                        "type": "string"
+                                    },
+                                    "ports": {
+                                        "type": "array",
+                                        "items": {
+                                            "type": "object",
+                                            "properties": {
+                                                "port": {
+                                                    "type": "integer"
+                                                },
+                                                "protocol": {
+                                                    "type": "string"
+                                                }
+                                            },
+                                            "additionalProperties": false
+                                        }
+                                    }
+                                },
+                                "additionalProperties": false
+                            }
+                        },
                         "allowedHostsEnvName": {
                             "description": "Environment variable set to `\u003cservice-name\u003e,$(POD_IP),$(NODE_IP),\u003cingress.host\u003e`. Set `nodeIPEnvName` to override the node IP variable name. The ingress host is included when configured. Requires `podIPEnvName`.",
                             "type": "string"
@@ -3309,6 +3337,52 @@
                     "description": "When true, injects DB_USERNAME, DB_PASSWORD, DB_HOST, and DB_PORT environment variables from the database secret.\n",
                     "default": false,
                     "type": "boolean"
+                },
+                "allowedFQDNs": {
+                    "description": "Allow egress to external destinations by fully-qualified domain name (FQDN) instead of IP address. Renders an Antrea-native NetworkPolicy (crd.antrea.io/v1beta1) whose Allow rules take precedence over the IP-based Kubernetes NetworkPolicies. Requires the Antrea CNI with the AntreaPolicy feature gate. Only meaningful when networkPolicy is enabled.\n",
+                    "type": "array",
+                    "items": {
+                        "type": "object",
+                        "required": [
+                            "fqdn"
+                        ],
+                        "properties": {
+                            "fqdn": {
+                                "description": "Exact FQDN (api.example.com) or wildcard (*.example.com) to allow egress to.",
+                                "type": "string"
+                            },
+                            "ports": {
+                                "description": "Ports to allow. Omit to allow all ports to the FQDN.",
+                                "type": "array",
+                                "items": {
+                                    "type": "object",
+                                    "required": [
+                                        "port"
+                                    ],
+                                    "properties": {
+                                        "port": {
+                                            "description": "Destination port number.",
+                                            "type": "integer",
+                                            "maximum": 65535,
+                                            "minimum": 1
+                                        },
+                                        "protocol": {
+                                            "description": "Transport protocol.",
+                                            "default": "TCP",
+                                            "type": "string",
+                                            "enum": [
+                                                "TCP",
+                                                "UDP",
+                                                "SCTP"
+                                            ]
+                                        }
+                                    },
+                                    "additionalProperties": false
+                                }
+                            }
+                        },
+                        "additionalProperties": false
+                    }
                 },
                 "allowedHostsEnvName": {
                     "description": "Name of the environment variable set to `\u003cservice-name\u003e,$(podIPEnvName),$(nodeIPEnvName),\u003cingress.host\u003e`. The node IP variable defaults to NODE_IP when nodeIPEnvName is omitted. The ingress host is included when configured. Requires podIPEnvName.\n",
