@@ -10,6 +10,7 @@ components: {}
 
 ingress:
   healthMonitor: System-HTTP
+  applicationProfile: System-HTTP
   annotations: {}
   paths: []
 

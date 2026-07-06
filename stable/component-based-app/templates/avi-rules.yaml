@@ -10,6 +10,7 @@ spec:
   virtualhost:
     fqdn: {{ .Values.ingress.host }}
     analyticsProfile: System-Analytics-Profile
+    applicationProfile: {{ .Values.ingress.applicationProfile | default "System-HTTP" }}
     enableVirtualHost: true
     errorPageProfile: qut-error-pages
     fqdnType: Exact
