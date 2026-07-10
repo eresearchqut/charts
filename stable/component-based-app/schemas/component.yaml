@@ -95,13 +95,12 @@ properties:
     type: object
     required: [path]
     description: >
-      Startup probe for applications with long initialization.
-      Set `path` to enable; omit to disable.
+      Startup probe for applications with long initialization. Omit to disable.
     properties:
       path:
         type: string
         default: ""
-        description: HTTP path for the startup probe. Empty string disables it.
+        description: HTTP path for the startup probe.
       initialDelaySeconds:
         type: integer
         default: 0
@@ -162,6 +161,14 @@ properties:
     description: Additional environment variables in standard Kubernetes EnvVar format.
     items:
       $ref: "https://raw.githubusercontent.com/yannh/kubernetes-json-schema/master/v1.34.3/_definitions.json#/definitions/io.k8s.api.core.v1.EnvVar"
+  envFrom:
+    type: array
+    description: >
+      Sources to populate environment variables from, in standard Kubernetes
+      EnvFromSource format. Every key in each referenced Secret or ConfigMap
+      becomes an environment variable in the component's container.
+    items:
+      $ref: "https://raw.githubusercontent.com/yannh/kubernetes-json-schema/master/v1.34.3/_definitions.json#/definitions/io.k8s.api.core.v1.EnvFromSource"
   initContainer:
     type: object
     required: [command]
@@ -263,22 +270,6 @@ properties:
     description: Tolerations for pod scheduling onto tainted nodes.
     items:
       $ref: "https://raw.githubusercontent.com/yannh/kubernetes-json-schema/master/v1.34.3/_definitions.json#/definitions/io.k8s.api.core.v1.Toleration"
-  podDisruptionBudget:
-    type: object
-    description: >
-      PodDisruptionBudget configuration. Auto-created for components with
-      replicas > 1. Set explicitly to override.
-    properties:
-      minAvailable:
-        description: Minimum number of available pods during voluntary disruptions.
-        anyOf:
-          - type: integer
-          - type: string
-      maxUnavailable:
-        description: Maximum number of unavailable pods during voluntary disruptions.
-        anyOf:
-          - type: integer
-          - type: string
   monitoring:
     type: object
     description: >

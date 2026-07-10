@@ -44,6 +44,11 @@ spec:
       cpu: {{ .Values.database.resources.limits.cpu | quote }}
   monitoring:
     enablePodMonitor: false
+  {{- /*
+    Contract: the Secret named by database.secretName (default <fullname>-database)
+    MUST be type kubernetes.io/basic-auth with username equal to initdb owner.
+    scripts/generate-secrets.sh produces a compliant placeholder Secret.
+  */}}
   bootstrap:
     initdb:
       dataChecksums: true

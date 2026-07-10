@@ -86,15 +86,15 @@ tests:
             ports:
               - port: 5432
                 protocol: TCP
-              - port: 8000
-                protocol: TCP
       - notContains:
+          any: true
           path: spec.ingress
           content:
             from:
               - podSelector:
                   matchLabels:
                     app.kubernetes.io/component: worker
+                    app.kubernetes.io/instance: myapp
 
   # --- Ingress: monitoring ---
   - it: ingress allows metrics scraping from monitoring namespace
@@ -182,6 +182,8 @@ tests:
               - port: 6443
                 protocol: TCP
       # No unrestricted egress (no to: {} with empty podSelector/namespaceSelector)
+      # any:true deliberately omitted: {} is a subset of every object and
+      # would match legitimate egress peers (e.g. the intra-cluster rule).
       - notContains:
           path: spec.egress
           content:
@@ -211,9 +213,11 @@ tests:
     documentIndex: 0
     asserts:
       - notContains:
+          any: true
           path: spec.ingress
           content:
             from:
               - podSelector:
                   matchLabels:
                     app.kubernetes.io/component: web
+                    app.kubernetes.io/instance: myapp

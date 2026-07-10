@@ -19,11 +19,13 @@ spec:
         - geo-blocking-default
         - ip-reputation-block-all
         - robots-disallow-all
+    {{- with .Values.ingress.tlsHost }}
     tls:
       sslKeyCertificate:
-        name: {{ .Values.ingress.tlsHost | default "" | quote }}
+        name: {{ . | quote }}
         type: ref
       termination: edge
+    {{- end }}
 ---
 apiVersion: ako.vmware.com/v1alpha1
 kind: HTTPRule

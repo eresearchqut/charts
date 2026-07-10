@@ -31,6 +31,7 @@ spec:
       {{- end }}
       labels:
         app.kubernetes.io/component: {{ $name }}
+        app.kubernetes.io/role: server
         {{- include "component-based-app.labels" $ | nindent 8 }}
         {{- with $spec.podLabels }}
         {{- toYaml . | nindent 8 }}
@@ -69,8 +70,20 @@ spec:
           image: {{ $image }}
           command:
             {{- toYaml $spec.initContainer.command | nindent 12 }}
-          {{- if $spec.allowDatabaseAccess }}
+
+          {{- $initResources := or $spec.resources $.Values.resources }}
+          {{- with $initResources }}
+          resources:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          {{- $initSecurityContext := or $spec.containerSecurityContext $.Values.containerSecurityContext }}
+          {{- with $initSecurityContext }}
+          securityContext:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          {{- if or $spec.allowDatabaseAccess $spec.appSecretKeys }}
           env:
+            {{- if $spec.allowDatabaseAccess }}
             - name: DB_USERNAME
               valueFrom:
                 secretKeyRef:
@@ -85,6 +98,7 @@ spec:
               value: {{ printf "%s-db-rw" (include "component-based-app.fullname" $) | quote }}
             - name: DB_PORT
               value: "5432"
+            {{- end }}
             {{- range $spec.appSecretKeys }}
             - name: {{ .envName }}
               valueFrom:
@@ -107,35 +121,37 @@ spec:
           resources:
             {{- toYaml . | nindent 12 }}
           {{- end }}
+          {{- with $spec.livenessProbe }}
           livenessProbe:
             httpGet:
-              path: {{ $spec.livenessProbe.path }}
+              path: {{ .path }}
               port: http
-            initialDelaySeconds: {{ $spec.livenessProbe.initialDelaySeconds | default 0 }}
-            periodSeconds: {{ $spec.livenessProbe.periodSeconds | default 10 }}
-            timeoutSeconds: {{ $spec.livenessProbe.timeoutSeconds | default 1 }}
-            failureThreshold: {{ $spec.livenessProbe.failureThreshold | default 3 }}
-            successThreshold: {{ $spec.livenessProbe.successThreshold | default 1 }}
-          {{- if $spec.readinessProbe }}
+            initialDelaySeconds: {{ .initialDelaySeconds | default 0 }}
+            periodSeconds: {{ .periodSeconds | default 10 }}
+            timeoutSeconds: {{ .timeoutSeconds | default 1 }}
+            failureThreshold: {{ .failureThreshold | default 3 }}
+            successThreshold: {{ .successThreshold | default 1 }}
+          {{- end }}
+          {{- with $spec.readinessProbe }}
           readinessProbe:
             httpGet:
-              path: {{ $spec.readinessProbe.path }}
+              path: {{ .path }}
               port: http
-            initialDelaySeconds: {{ $spec.readinessProbe.initialDelaySeconds | default 0 }}
-            periodSeconds: {{ $spec.readinessProbe.periodSeconds | default 10 }}
-            timeoutSeconds: {{ $spec.readinessProbe.timeoutSeconds | default 1 }}
-            failureThreshold: {{ $spec.readinessProbe.failureThreshold | default 3 }}
-            successThreshold: {{ $spec.readinessProbe.successThreshold | default 1 }}
+            initialDelaySeconds: {{ .initialDelaySeconds | default 0 }}
+            periodSeconds: {{ .periodSeconds | default 10 }}
+            timeoutSeconds: {{ .timeoutSeconds | default 1 }}
+            failureThreshold: {{ .failureThreshold | default 3 }}
+            successThreshold: {{ .successThreshold | default 1 }}
           {{- end }}
-          {{- if and $spec.startupProbe $spec.startupProbe.path }}
+          {{- with $spec.startupProbe }}
           startupProbe:
             httpGet:
-              path: {{ $spec.startupProbe.path }}
+              path: {{ .path }}
               port: http
-            initialDelaySeconds: {{ $spec.startupProbe.initialDelaySeconds | default 0 }}
-            periodSeconds: {{ $spec.startupProbe.periodSeconds | default 10 }}
-            timeoutSeconds: {{ $spec.startupProbe.timeoutSeconds | default 1 }}
-            failureThreshold: {{ $spec.startupProbe.failureThreshold | default 30 }}
+            initialDelaySeconds: {{ .initialDelaySeconds | default 0 }}
+            periodSeconds: {{ .periodSeconds | default 10 }}
+            timeoutSeconds: {{ .timeoutSeconds | default 1 }}
+            failureThreshold: {{ .failureThreshold | default 30 }}
           {{- end }}
           {{- $containerSecurityContext := or $spec.containerSecurityContext $.Values.containerSecurityContext }}
           {{- with $containerSecurityContext }}
@@ -144,6 +160,10 @@ spec:
           {{- end }}
           {{- with $spec.volumeMounts }}
           volumeMounts:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          {{- with $spec.envFrom }}
+          envFrom:
             {{- toYaml . | nindent 12 }}
           {{- end }}
           env:
@@ -221,7 +241,7 @@ spec:
               {{- fail (printf "serviceLinks: component '%s' is disabled" .targetName) }}
             {{- end }}
             - name: {{ .envName }}
-              value: {{ printf "http://%s-%s:%s%s" (include "component-based-app.fullname" $) .targetName (toString $targetSpec.port) .path | quote }}
+              value: {{ printf "http://%s-%s:%s%s" (include "component-based-app.fullname" $) .targetName (toString $targetSpec.port) (.path | default "/") | quote }}
             {{- end }}
             {{- with $spec.env }}
             {{- toYaml . | nindent 12 }}
