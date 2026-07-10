@@ -70,6 +70,7 @@ tests:
     documentIndex: 1
     asserts:
       - notContains:
+          any: true
           path: spec.egress
           content:
             to:
@@ -127,12 +128,46 @@ tests:
     documentIndex: 1
     asserts:
       - notContains:
+          any: true
           path: spec.ingress
           content:
             from:
               - ipBlock:
                   cidr: 0.0.0.0/0
 
+  # --- Self-ingress: rendered exactly once per policy, even without serviceLinks ---
+  - it: component without serviceLinks still gets exactly one self-ingress rule
+    set:
+      components:
+        standalone:
+          image:
+            repository: "example.com/app"
+            tag: "latest"
+          port: 9000
+          command: ["go", "run", "main.go"]
+          livenessProbe:
+            path: /health
+      ingress:
+        host: ""
+      networkPolicy: {}
+    documentIndex: 1
+    asserts:
+      - hasDocuments:
+          count: 3
+      - lengthEqual:
+          path: spec.ingress
+          count: 1
+      - contains:
+          path: spec.ingress
+          content:
+            from:
+              - podSelector:
+                  matchLabels:
+                    app.kubernetes.io/component: standalone
+                    app.kubernetes.io/instance: myapp
+            ports:
+              - port: 9000
+                protocol: TCP
   # --- Disabled: no policies ---
   - it: no component NetworkPolicies when networkPolicy is disabled
     set:

@@ -1,6 +1,6 @@
 # component-based-app
 
-![Version: 0.1.13](https://img.shields.io/badge/Version-0.1.13-informational?style=flat-square) ![Type: application](https://img.shields.io/badge/Type-application-informational?style=flat-square)
+![Version: 0.1.15](https://img.shields.io/badge/Version-0.1.15-informational?style=flat-square) ![Type: application](https://img.shields.io/badge/Type-application-informational?style=flat-square)
 
 Generic library chart for a research application deployment.
 
@@ -86,9 +86,6 @@ Each component can reference secrets via `appSecretKeys`. The values are from th
 | components.*.nodeIPEnvName | string | `nil` | Name of the environment variable that receives the node's IP via the Downward API. Used by allowed hosts as `NODE_IP` when omitted. |
 | components.*.nodeSelector | object | `nil` | Node labels for pod assignment. |
 | components.*.podAnnotations | object | `nil` | Annotations added to the component's Pod. |
-| components.*.podDisruptionBudget | object | `nil` | PodDisruptionBudget configuration. Auto-created for components with replicas > 1. Set explicitly to override. |
-| components.*.podDisruptionBudget.maxUnavailable | int | `nil` | Maximum number of unavailable pods during voluntary disruptions. Can be int or percentage string. |
-| components.*.podDisruptionBudget.minAvailable | int | `nil` | Minimum number of available pods during voluntary disruptions. Can be int or percentage string (e.g., "50%"). |
 | components.*.podIPEnvName | string | `nil` | Name of the environment variable that receives the pod's IP via the Downward API. |
 | components.*.podLabels | object | `nil` | Labels added to the component's Pod. |
 | components.*.podSecurityContext | [core/v1.PodSecurityContext](https://raw.githubusercontent.com/yannh/kubernetes-json-schema/master/v1.34.3/_definitions.json#/definitions/io.k8s.api.core/v1.PodSecurityContext) | `nil` | Per-component pod security context. Overrides the global `podSecurityContext`. Set to `{}` to opt out. |
@@ -141,14 +138,15 @@ configurable instances, storage, and resource limits.
 | database.image.repository | string | `"registry.eres.qut.edu.au/ghcr/cloudnative-pg/postgresql"` | CloudNativePG PostgreSQL image repository. |
 | database.image.tag | Required | `"17"` | CloudNativePG PostgreSQL image tag (version). Must be set explicitly. |
 | database.instances | int | `1` | Number of CNPG cluster instances. Set > 1 for high availability. |
+| database.resources | [core/v1.ResourceRequirements](https://raw.githubusercontent.com/yannh/kubernetes-json-schema/master/v1.34.3/_definitions.json#/definitions/io.k8s.api.core/v1.ResourceRequirements) | `{"limits":{"cpu":"1","memory":"1Gi"},"requests":{"cpu":"0.5","memory":"256Mi"}}` | Resource requests and limits for the database instances. |
 | database.resources.limits.cpu | string | `"1"` | CPU limit for the database instance. |
 | database.resources.limits.memory | string | `"1Gi"` | Memory limit for the database instance. |
 | database.resources.requests.cpu | string | `"0.5"` | CPU request for the database instance. |
 | database.resources.requests.memory | string | `"256Mi"` | Memory request for the database instance. |
 | database.secretName | string | `""` | Name of the secret containing database credentials. |
-| database.storageClass | string | `""` | PVC storage class for the database. Defaults to cluster default when empty. |
+| database.storageClass | string | `""` | PVC storage class for the database. Defaults to vsan-file |
 | database.storageSize | string | `"8Gi"` | PVC storage size for the database (Kubernetes quantity). |
-| database.walStorageClass | string | `""` | PVC storage class for WAL. Defaults to cluster default when empty. |
+| database.walStorageClass | string | `""` | PVC storage class for WAL. Defaults to vsan-file |
 | database.walStorageSize | string | `"2Gi"` | PVC storage size for WAL (Kubernetes quantity). |
 ### Image Automation
 

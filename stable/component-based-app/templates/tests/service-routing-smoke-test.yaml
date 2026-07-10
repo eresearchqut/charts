@@ -9,11 +9,12 @@ metadata:
     {{- include "component-based-app.labels" $ | nindent 4 }}
   annotations:
     "helm.sh/hook": test
+    "helm.sh/hook-delete-policy": before-hook-creation
 spec:
   containers:
     - name: wget
       image: busybox
       command: ['wget', '-q', '-O', '/dev/null']
-      args: ['http://{{ include "component-based-app.fullname" $ }}-{{ $name }}:{{ $spec.port }}{{ $spec.readinessProbe.path | default "/" }}']
+      args: ['http://{{ include "component-based-app.fullname" $ }}-{{ $name }}:{{ $spec.port }}{{ dig "readinessProbe" "path" "/" $spec }}']
   restartPolicy: Never
 {{- end }}

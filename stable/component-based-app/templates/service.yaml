@@ -11,6 +11,7 @@ spec:
   selector:
     {{- include "component-based-app.selectorLabels" $ | nindent 4 }}
     app.kubernetes.io/component: {{ $name }}
+    app.kubernetes.io/role: server
   ports:
     - name: http
       port: {{ $spec.port }}

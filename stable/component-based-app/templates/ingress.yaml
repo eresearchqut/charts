@@ -1,6 +1,9 @@
 {{- if .Values.ingress.host }}
 {{- if not .Values.ingress.paths }}
-{{- $target := index .Values.components .Values.ingress.targetComponent }}
+{{- if not .Values.ingress.targetComponent }}
+  {{- fail "ingress.targetComponent is required when ingress.host is set without ingress.paths" }}
+{{- end }}
+{{- $target := index (.Values.components | default dict) .Values.ingress.targetComponent }}
 {{- if empty $target }}
   {{- fail (printf "ingress.targetComponent '%s' not found in .Values.components" .Values.ingress.targetComponent) }}
 {{- end }}
@@ -27,7 +30,7 @@ spec:
         paths:
           {{- if .Values.ingress.paths }}
           {{- range .Values.ingress.paths }}
-          {{- $pathTarget := index $.Values.components .targetComponent }}
+          {{- $pathTarget := index ($.Values.components | default dict) .targetComponent }}
           {{- if empty $pathTarget }}
             {{- fail (printf "ingress.paths: component '%s' not found" .targetComponent) }}
           {{- end }}

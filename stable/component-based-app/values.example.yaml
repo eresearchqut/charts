@@ -18,7 +18,7 @@ appVersion: "" # @schema required:false
 # Reserved for values shared across subcharts via Helm's global convention.
 global: {}
 
-# @schema $ref: $k8s/_definitions.json#/definitions/io.k8s.api.core.v1.ResourceRequirements
+# @schema $ref: $k8s/_definitions.json#/definitions/io.k8s.api.core.v1.ResourceRequirements; skipProperties: true; additionalProperties: true
 # -- (k8s/core/v1.ResourceRequirements) Default resource requests and limits. Individual components can override this.
 # @default -- `{}`
 resources:
@@ -256,6 +256,7 @@ components:
     # @section -- Components
     # @default -- `[]`
     extraIngress: []
+    # @schema additionalProperties: true
     # -- Annotations added to the component's Pod.
     # @section -- Components
     # @default -- `nil`
@@ -298,18 +299,6 @@ components:
     # @section -- Components
     # @default -- `[]`
     tolerations: []
-    # -- PodDisruptionBudget configuration. Auto-created for components with replicas > 1. Set explicitly to override.
-    # @section -- Components
-    # @default -- `nil`
-    podDisruptionBudget:
-      # -- Minimum number of available pods during voluntary disruptions. Can be int or percentage string (e.g., "50%").
-      # @section -- Components
-      # @default -- `nil`
-      minAvailable: 1
-      # -- Maximum number of unavailable pods during voluntary disruptions. Can be int or percentage string.
-      # @section -- Components
-      # @default -- `nil`
-      maxUnavailable: 1
     # -- Prometheus ServiceMonitor configuration. Requires prometheus-operator. Omit to disable.
     # @section -- Components
     # @default -- `nil`
@@ -334,12 +323,15 @@ components:
     # @section -- Components
     # @default -- `nil`
     podSecurityContext:
+      # @schema $ref: $k8s/_definitions.json#/definitions/io.k8s.api.core.v1.SeccompProfile; skipProperties: true; additionalProperties: true
       seccompProfile:
         type: "RuntimeDefault"
+    # @schema $ref: $k8s/_definitions.json#/definitions/io.k8s.api.core.v1.SecurityContext
     # -- (k8s/core/v1.SecurityContext) Per-component container security context. Overrides the global `containerSecurityContext`. Set to `{}` to opt out.
     # @section -- Components
     # @default -- `nil`
     containerSecurityContext:
+      # @schema $ref: $k8s/_definitions.json#/definitions/io.k8s.api.core.v1.Capabilities; skipProperties: true; additionalProperties: true
       capabilities:
         drop:
           - "ALL"
@@ -372,6 +364,7 @@ ingress:
   # @section -- Ingress
   # @default -- `""`
   targetComponent: ""
+  # @schema additionalProperties: true
   # -- Annotations to add to the Ingress resource (e.g., cert-manager.io/cluster-issuer).
   # @section -- Ingress
   # @default -- `{}`
@@ -420,16 +413,19 @@ database:
   # -- PVC storage size for WAL (Kubernetes quantity).
   # @section -- Database
   walStorageSize: 2Gi
-  # -- PVC storage class for the database. Defaults to cluster default when empty.
+  # -- PVC storage class for the database. Defaults to vsan-file
   # @section -- Database
   storageClass: ""
-  # -- PVC storage class for WAL. Defaults to cluster default when empty.
+  # -- PVC storage class for WAL. Defaults to vsan-file
   # @section -- Database
   walStorageClass: ""
   # @schema minimum: 1
   # -- Number of CNPG cluster instances. Set > 1 for high availability.
   # @section -- Database
   instances: 1
+  # @schema $ref: $k8s/_definitions.json#/definitions/io.k8s.api.core.v1.ResourceRequirements; skipProperties: true; additionalProperties: true
+  # -- (k8s/core/v1.ResourceRequirements) Resource requests and limits for the database instances.
+  # @section -- Database
   resources:
     requests:
       # -- CPU request for the database instance.
@@ -476,6 +472,7 @@ networkPolicy:
   # -- Enable or disable all NetworkPolicy resources for this release.
   # @section -- Network Policy
   enabled: true
+  # @schema $ref: $k8s/_definitions.json#/definitions/io.k8s.api.networking.v1.NetworkPolicyPeer; skipProperties: true; additionalProperties: true
   # -- NetworkPolicyPeer selecting the Prometheus monitoring namespace.
   # @section -- Network Policy
   # Traffic from this peer is allowed to reach the database metrics port (9187).
@@ -483,6 +480,7 @@ networkPolicy:
     namespaceSelector:
       matchLabels:
         kubernetes.io/metadata.name: monitoring
+  # @schema $ref: $k8s/_definitions.json#/definitions/io.k8s.api.networking.v1.NetworkPolicyPeer; skipProperties: true; additionalProperties: true
   # -- NetworkPolicyPeer selecting the CloudNativePG operator namespace.
   # @section -- Network Policy
   # Required for CNPG health checks, switchover, and cluster management.
@@ -494,6 +492,7 @@ networkPolicy:
 serviceAccount:
   # -- Create a service account for the deployment.
   enabled: false
+  # @schema additionalProperties: true
   # -- Annotations to add to the service account.
   annotations: {}
   # -- Name of the service account to use. Defaults to `<fullname>` when empty.
@@ -504,6 +503,7 @@ serviceAccount:
 # @schema $ref: $k8s/_definitions.json#/definitions/io.k8s.api.core.v1.PodSecurityContext; additionalProperties: true
 # -- (k8s/core/v1.PodSecurityContext) Default pod security context, individual components can override with their own podSecurityContext block.
 podSecurityContext:
+  # @schema $ref: $k8s/_definitions.json#/definitions/io.k8s.api.core.v1.SeccompProfile; skipProperties: true; additionalProperties: true
   seccompProfile:
     type: RuntimeDefault
 
@@ -512,6 +512,7 @@ podSecurityContext:
 # Individual components can override. Override with {} to remove all defaults.
 # @default -- drop all capabilities, readonly, nonRoot, no escalation
 containerSecurityContext:
+  # @schema $ref: $k8s/_definitions.json#/definitions/io.k8s.api.core.v1.Capabilities; skipProperties: true; additionalProperties: true
   capabilities:
     drop:
       - ALL

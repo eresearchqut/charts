@@ -79,6 +79,8 @@ spec:
         - port: {{ $spec.port }}
           protocol: TCP
     {{- end }}
+    {{- end }}
+    {{- end }}
     # Allow pods of this component (including Helm test hooks) to reach their own service.
     - from:
         - podSelector:
@@ -88,8 +90,6 @@ spec:
       ports:
         - port: {{ $spec.port }}
           protocol: TCP
-    {{- end }}
-    {{- end }}
     {{- with $spec.extraIngress }}
     {{- toYaml . | nindent 4 }}
     {{- end }}

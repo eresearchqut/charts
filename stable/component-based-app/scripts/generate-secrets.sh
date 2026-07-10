@@ -46,9 +46,10 @@ metadata:
   name: ${FULLNAME}-database
   labels:
     app.kubernetes.io/name: ${FULLNAME}
-type: Opaque
+type: kubernetes.io/basic-auth
 data:
-  username: $(echo -n "CHANGE_ME" | base64)
+  # username MUST match CNPG bootstrap.initdb.owner (chart name). Do not edit.
+  username: $(echo -n "component-based-app" | base64)
   password: $(echo -n "CHANGE_ME" | base64)
 YAML
 echo "Created: $DB_SECRET"
@@ -74,7 +75,7 @@ fi
 
 echo ""
 echo "Next steps:"
-echo "  1. Edit each file and replace CHANGE_ME values"
+echo "  1. Edit each file and replace password CHANGE_ME values (username is pre-filled)"
 echo "  2. Encrypt with SOPS:"
 echo "     sops encrypt --input-type yaml --output-type yaml ${FULLNAME}-database.yaml > ${FULLNAME}-database.enc.yaml"
 echo "     sops encrypt --input-type yaml --output-type yaml ${FULLNAME}-secrets.yaml > ${FULLNAME}-secrets.enc.yaml"
