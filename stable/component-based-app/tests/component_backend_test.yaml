@@ -114,3 +114,37 @@ tests:
           content:
             name: ALLOWED_HOSTS
             value: myapp-component-based-app-api,$(POD_IP),$(NODE_IP)
+
+  - it: init container gets appSecretKeys even without database access
+    set:
+      components:
+        api:
+          image:
+            repository: "example.com/app"
+            tag: "latest"
+          port: 8000
+          command: ["python", "run.py"]
+          livenessProbe:
+            path: /health
+          allowDatabaseAccess: false
+          appSecretKeys:
+            - envName: API_KEY
+              secretKey: api-key
+          initContainer:
+            command: ["python", "manage.py", "migrate"]
+    template: deployment.yaml
+    documentIndex: 0
+    asserts:
+      - contains:
+          path: spec.template.spec.initContainers[0].env
+          content:
+            name: API_KEY
+            valueFrom:
+              secretKeyRef:
+                name: myapp-component-based-app-secrets
+                key: api-key
+      - notContains:
+          path: spec.template.spec.initContainers[0].env
+          content:
+            name: DB_USERNAME
+          any: true

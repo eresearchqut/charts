@@ -126,6 +126,7 @@ tests:
     documentIndex: 0
     asserts:
       - notContains:
+          any: true
           path: spec.template.spec.containers[0].env
           content:
             name: ALLOWED_HOSTS
@@ -146,6 +147,7 @@ tests:
     documentIndex: 0
     asserts:
       - notContains:
+          any: true
           path: spec.template.spec.containers[0].env
           content:
             name: ALLOWED_HOSTS
@@ -174,7 +176,6 @@ tests:
             name: ALLOWED_HOSTS
             value: envtest-component-based-app-app,$(POD_IP),$(NODE_IP),inquisition.dev.eres.qut.edu.au
 
-
   - it: ingress target component receives FQDN env var
     set:
       ingress:
@@ -200,6 +201,7 @@ tests:
     template: deployment.yaml
     asserts:
       - notContains:
+          any: true
           path: spec.template.spec.containers[0].env
           content:
             name: FQDN
@@ -244,7 +246,79 @@ tests:
             value: inquisition.dev.eres.qut.edu.au
         documentIndex: 0
       - notContains:
+          any: true
           path: spec.template.spec.containers[0].env
           content:
             name: FQDN
         documentIndex: 1
+
+  - it: serviceLink without path defaults to trailing slash
+    set:
+      components:
+        web:
+          image:
+            repository: "example.com/web"
+            tag: "latest"
+          port: 8080
+          command: ["node", "web.js"]
+          livenessProbe:
+            path: /health
+        app:
+          image:
+            repository: "example.com/app"
+            tag: "latest"
+          port: 3000
+          command: ["node", "server.js"]
+          livenessProbe:
+            path: /health
+          serviceLinks:
+            - targetName: web
+              envName: WEB_URL
+    template: deployment.yaml
+    documentIndex: 0
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: WEB_URL
+            value: http://envtest-component-based-app-web:8080/
+
+  # --- envFrom ---
+  - it: envFrom renders configured sources on the container
+    set:
+      components:
+        app:
+          image:
+            repository: "example.com/app"
+            tag: "latest"
+          port: 3000
+          command: ["node", "server.js"]
+          livenessProbe:
+            path: /health
+          envFrom:
+            - secretRef:
+                name: app-env
+    template: deployment.yaml
+    documentIndex: 0
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].envFrom
+          content:
+            secretRef:
+              name: app-env
+  - it: envFrom is omitted when not configured
+    set:
+      components:
+        app:
+          image:
+            repository: "example.com/app"
+            tag: "latest"
+          port: 3000
+          command: ["node", "server.js"]
+          livenessProbe:
+            path: /health
+    template: deployment.yaml
+    documentIndex: 0
+    asserts:
+      - notExists:
+          path: spec.template.spec.containers[0].envFrom

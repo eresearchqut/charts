@@ -97,22 +97,16 @@
                         },
                         "containerSecurityContext": {
                             "description": "Per-component container security context. Overrides the global `containerSecurityContext`. Set to `{}` to opt out.",
+                            "$ref": "#/$defs/_definitions.json/definitions/io.k8s.api.core.v1.SecurityContext",
                             "type": "object",
                             "properties": {
                                 "allowPrivilegeEscalation": {
                                     "type": "boolean"
                                 },
                                 "capabilities": {
+                                    "$ref": "#/$defs/_definitions.json/definitions/io.k8s.api.core.v1.Capabilities",
                                     "type": "object",
-                                    "properties": {
-                                        "drop": {
-                                            "type": "array",
-                                            "items": {
-                                                "type": "string"
-                                            }
-                                        }
-                                    },
-                                    "additionalProperties": false
+                                    "additionalProperties": true
                                 },
                                 "readOnlyRootFilesystem": {
                                     "type": "boolean"
@@ -306,22 +300,7 @@
                                     "type": "string"
                                 }
                             },
-                            "additionalProperties": false
-                        },
-                        "podDisruptionBudget": {
-                            "description": "PodDisruptionBudget configuration. Auto-created for components with replicas \u003e 1. Set explicitly to override.",
-                            "type": "object",
-                            "properties": {
-                                "maxUnavailable": {
-                                    "description": "Maximum number of unavailable pods during voluntary disruptions. Can be int or percentage string.",
-                                    "type": "integer"
-                                },
-                                "minAvailable": {
-                                    "description": "Minimum number of available pods during voluntary disruptions. Can be int or percentage string (e.g., \"50%\").",
-                                    "type": "integer"
-                                }
-                            },
-                            "additionalProperties": false
+                            "additionalProperties": true
                         },
                         "podIPEnvName": {
                             "description": "Name of the environment variable that receives the pod's IP via the Downward API.",
@@ -342,13 +321,9 @@
                             "type": "object",
                             "properties": {
                                 "seccompProfile": {
+                                    "$ref": "#/$defs/_definitions.json/definitions/io.k8s.api.core.v1.SeccompProfile",
                                     "type": "object",
-                                    "properties": {
-                                        "type": {
-                                            "type": "string"
-                                        }
-                                    },
-                                    "additionalProperties": false
+                                    "additionalProperties": true
                                 }
                             },
                             "additionalProperties": false
@@ -508,16 +483,9 @@
                     "type": "boolean"
                 },
                 "capabilities": {
+                    "$ref": "#/$defs/_definitions.json/definitions/io.k8s.api.core.v1.Capabilities",
                     "type": "object",
-                    "properties": {
-                        "drop": {
-                            "type": "array",
-                            "items": {
-                                "type": "string"
-                            }
-                        }
-                    },
-                    "additionalProperties": false
+                    "additionalProperties": true
                 },
                 "readOnlyRootFilesystem": {
                     "type": "boolean"
@@ -588,45 +556,17 @@
                     "minimum": 1
                 },
                 "resources": {
+                    "description": "Resource requests and limits for the database instances.",
+                    "$ref": "#/$defs/_definitions.json/definitions/io.k8s.api.core.v1.ResourceRequirements",
                     "type": "object",
-                    "properties": {
-                        "limits": {
-                            "type": "object",
-                            "properties": {
-                                "cpu": {
-                                    "description": "CPU limit for the database instance.",
-                                    "type": "string"
-                                },
-                                "memory": {
-                                    "description": "Memory limit for the database instance.",
-                                    "type": "string"
-                                }
-                            },
-                            "additionalProperties": false
-                        },
-                        "requests": {
-                            "type": "object",
-                            "properties": {
-                                "cpu": {
-                                    "description": "CPU request for the database instance.",
-                                    "type": "string"
-                                },
-                                "memory": {
-                                    "description": "Memory request for the database instance.",
-                                    "type": "string"
-                                }
-                            },
-                            "additionalProperties": false
-                        }
-                    },
-                    "additionalProperties": false
+                    "additionalProperties": true
                 },
                 "secretName": {
                     "description": "Name of the secret containing database credentials.",
                     "type": "string"
                 },
                 "storageClass": {
-                    "description": "PVC storage class for the database. Defaults to cluster default when empty.",
+                    "description": "PVC storage class for the database. Defaults to vsan-file",
                     "type": "string"
                 },
                 "storageSize": {
@@ -634,7 +574,7 @@
                     "type": "string"
                 },
                 "walStorageClass": {
-                    "description": "PVC storage class for WAL. Defaults to cluster default when empty.",
+                    "description": "PVC storage class for WAL. Defaults to vsan-file",
                     "type": "string"
                 },
                 "walStorageSize": {
@@ -700,7 +640,7 @@
                 "annotations": {
                     "description": "Annotations to add to the Ingress resource (e.g., cert-manager.io/cluster-issuer).",
                     "type": "object",
-                    "additionalProperties": false
+                    "additionalProperties": true
                 },
                 "applicationProfile": {
                     "description": "AVI HostRule application profile name.",
@@ -766,25 +706,9 @@
             "properties": {
                 "cnpgOperatorSelector": {
                     "description": "NetworkPolicyPeer selecting the CloudNativePG operator namespace. Required for CNPG health checks, switchover, and cluster management.",
+                    "$ref": "#/$defs/_definitions.json/definitions/io.k8s.api.networking.v1.NetworkPolicyPeer",
                     "type": "object",
-                    "properties": {
-                        "namespaceSelector": {
-                            "type": "object",
-                            "properties": {
-                                "matchLabels": {
-                                    "type": "object",
-                                    "properties": {
-                                        "kubernetes.io/metadata.name": {
-                                            "type": "string"
-                                        }
-                                    },
-                                    "additionalProperties": false
-                                }
-                            },
-                            "additionalProperties": false
-                        }
-                    },
-                    "additionalProperties": false
+                    "additionalProperties": true
                 },
                 "enabled": {
                     "description": "Enable or disable all NetworkPolicy resources for this release.",
@@ -792,25 +716,9 @@
                 },
                 "monitoringSelector": {
                     "description": "NetworkPolicyPeer selecting the Prometheus monitoring namespace. Traffic from this peer is allowed to reach the database metrics port (9187).",
+                    "$ref": "#/$defs/_definitions.json/definitions/io.k8s.api.networking.v1.NetworkPolicyPeer",
                     "type": "object",
-                    "properties": {
-                        "namespaceSelector": {
-                            "type": "object",
-                            "properties": {
-                                "matchLabels": {
-                                    "type": "object",
-                                    "properties": {
-                                        "kubernetes.io/metadata.name": {
-                                            "type": "string"
-                                        }
-                                    },
-                                    "additionalProperties": false
-                                }
-                            },
-                            "additionalProperties": false
-                        }
-                    },
-                    "additionalProperties": false
+                    "additionalProperties": true
                 }
             },
             "additionalProperties": false
@@ -821,13 +729,9 @@
             "type": "object",
             "properties": {
                 "seccompProfile": {
+                    "$ref": "#/$defs/_definitions.json/definitions/io.k8s.api.core.v1.SeccompProfile",
                     "type": "object",
-                    "properties": {
-                        "type": {
-                            "type": "string"
-                        }
-                    },
-                    "additionalProperties": false
+                    "additionalProperties": true
                 }
             },
             "additionalProperties": true
@@ -836,33 +740,7 @@
             "description": "Default resource requests and limits. Individual components can override this.",
             "$ref": "#/$defs/_definitions.json/definitions/io.k8s.api.core.v1.ResourceRequirements",
             "type": "object",
-            "properties": {
-                "limits": {
-                    "type": "object",
-                    "properties": {
-                        "cpu": {
-                            "type": "string"
-                        },
-                        "memory": {
-                            "type": "string"
-                        }
-                    },
-                    "additionalProperties": false
-                },
-                "requests": {
-                    "type": "object",
-                    "properties": {
-                        "cpu": {
-                            "type": "string"
-                        },
-                        "memory": {
-                            "type": "string"
-                        }
-                    },
-                    "additionalProperties": false
-                }
-            },
-            "additionalProperties": false
+            "additionalProperties": true
         },
         "serviceAccount": {
             "type": "object",
@@ -870,7 +748,7 @@
                 "annotations": {
                     "description": "Annotations to add to the service account.",
                     "type": "object",
-                    "additionalProperties": false
+                    "additionalProperties": true
                 },
                 "automount": {
                     "description": "Automatically mount API credentials for the service account.",
@@ -1161,6 +1039,21 @@
                     },
                     "additionalProperties": false
                 },
+                "io.k8s.api.core.v1.ConfigMapEnvSource": {
+                    "description": "ConfigMapEnvSource selects a ConfigMap to populate the environment variables with.\n\nThe contents of the target ConfigMap's Data field will represent the key-value pairs as environment variables.",
+                    "type": "object",
+                    "properties": {
+                        "name": {
+                            "description": "Name of the referent. This field is effectively required, but due to backwards compatibility is allowed to be empty. Instances of this type with an empty value here are almost certainly wrong. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names",
+                            "type": "string"
+                        },
+                        "optional": {
+                            "description": "Specify whether the ConfigMap must be defined",
+                            "type": "boolean"
+                        }
+                    },
+                    "additionalProperties": false
+                },
                 "io.k8s.api.core.v1.ConfigMapKeySelector": {
                     "description": "Selects a key from a ConfigMap.",
                     "type": "object",
@@ -1303,6 +1196,25 @@
                         "sizeLimit": {
                             "description": "sizeLimit is the total amount of local storage required for this EmptyDir volume. The size limit is also applicable for memory medium. The maximum usage on memory medium EmptyDir would be the minimum value between the SizeLimit specified here and the sum of memory limits of all containers in a pod. The default is nil which means that the limit is undefined. More info: https://kubernetes.io/docs/concepts/storage/volumes#emptydir",
                             "$ref": "#/$defs/_definitions.json/definitions/io.k8s.apimachinery.pkg.api.resource.Quantity"
+                        }
+                    },
+                    "additionalProperties": false
+                },
+                "io.k8s.api.core.v1.EnvFromSource": {
+                    "description": "EnvFromSource represents the source of a set of ConfigMaps or Secrets",
+                    "type": "object",
+                    "properties": {
+                        "configMapRef": {
+                            "description": "The ConfigMap to select from",
+                            "$ref": "#/$defs/_definitions.json/definitions/io.k8s.api.core.v1.ConfigMapEnvSource"
+                        },
+                        "prefix": {
+                            "description": "Optional text to prepend to the name of each environment variable. May consist of any printable ASCII characters except '='.",
+                            "type": "string"
+                        },
+                        "secretRef": {
+                            "description": "The Secret to select from",
+                            "$ref": "#/$defs/_definitions.json/definitions/io.k8s.api.core.v1.SecretEnvSource"
                         }
                     },
                     "additionalProperties": false
@@ -2393,6 +2305,21 @@
                     },
                     "additionalProperties": false
                 },
+                "io.k8s.api.core.v1.SecretEnvSource": {
+                    "description": "SecretEnvSource selects a Secret to populate the environment variables with.\n\nThe contents of the target Secret's Data field will represent the key-value pairs as environment variables.",
+                    "type": "object",
+                    "properties": {
+                        "name": {
+                            "description": "Name of the referent. This field is effectively required, but due to backwards compatibility is allowed to be empty. Instances of this type with an empty value here are almost certainly wrong. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names",
+                            "type": "string"
+                        },
+                        "optional": {
+                            "description": "Specify whether the Secret must be defined",
+                            "type": "boolean"
+                        }
+                    },
+                    "additionalProperties": false
+                },
                 "io.k8s.api.core.v1.SecretKeySelector": {
                     "description": "SecretKeySelector selects a key of a Secret.",
                     "type": "object",
@@ -3424,6 +3351,13 @@
                         "$ref": "#/$defs/_definitions.json/definitions/io.k8s.api.core.v1.EnvVar"
                     }
                 },
+                "envFrom": {
+                    "description": "Sources to populate environment variables from, in standard Kubernetes EnvFromSource format. Every key in each referenced Secret or ConfigMap becomes an environment variable in the component's container.\n",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/$defs/_definitions.json/definitions/io.k8s.api.core.v1.EnvFromSource"
+                    }
+                },
                 "extraEgress": {
                     "description": "Additional NetworkPolicy egress rules. Only meaningful when networkPolicy is configured.\n",
                     "type": "array",
@@ -3561,35 +3495,6 @@
                         "type": "string"
                     }
                 },
-                "podDisruptionBudget": {
-                    "description": "PodDisruptionBudget configuration. Auto-created for components with replicas \u003e 1. Set explicitly to override.\n",
-                    "type": "object",
-                    "properties": {
-                        "maxUnavailable": {
-                            "description": "Maximum number of unavailable pods during voluntary disruptions.",
-                            "anyOf": [
-                                {
-                                    "type": "integer"
-                                },
-                                {
-                                    "type": "string"
-                                }
-                            ]
-                        },
-                        "minAvailable": {
-                            "description": "Minimum number of available pods during voluntary disruptions.",
-                            "anyOf": [
-                                {
-                                    "type": "integer"
-                                },
-                                {
-                                    "type": "string"
-                                }
-                            ]
-                        }
-                    },
-                    "additionalProperties": false
-                },
                 "podIPEnvName": {
                     "description": "Name of the environment variable that receives the pod's IP address via the Downward API.\n",
                     "default": "POD_IP",
@@ -3669,7 +3574,7 @@
                     }
                 },
                 "startupProbe": {
-                    "description": "Startup probe for applications with long initialization. Set `path` to enable; omit to disable.\n",
+                    "description": "Startup probe for applications with long initialization. Omit to disable.\n",
                     "type": "object",
                     "required": [
                         "path"
@@ -3685,7 +3590,7 @@
                             "type": "integer"
                         },
                         "path": {
-                            "description": "HTTP path for the startup probe. Empty string disables it.",
+                            "description": "HTTP path for the startup probe.",
                             "default": "",
                             "type": "string"
                         },

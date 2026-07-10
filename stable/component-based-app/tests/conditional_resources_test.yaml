@@ -101,6 +101,36 @@ tests:
           value: System-HTTP
         documentIndex: 1
         template: avi-rules.yaml
+      - equal:
+          path: spec.virtualhost.tls.sslKeyCertificate.name
+          value: "*.example.com"
+        documentIndex: 0
+        template: avi-rules.yaml
+      - equal:
+          path: spec.virtualhost.tls.termination
+          value: edge
+        documentIndex: 0
+        template: avi-rules.yaml
+  - it: HostRule tls block is absent when ingress.tlsHost is not set
+    set:
+      ingress:
+        host: app.example.com
+        targetComponent: web
+      components:
+        web:
+          image:
+            repository: "example.com/app"
+            tag: "latest"
+          port: 80
+          command: ["nginx"]
+          livenessProbe:
+            path: /
+    template: avi-rules.yaml
+    documentIndex: 0
+    asserts:
+      - notExists:
+          path: spec.virtualhost.tls
+
   - it: uses configured AVI health monitor
     set:
       ingress:
