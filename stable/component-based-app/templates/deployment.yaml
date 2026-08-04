@@ -76,9 +76,13 @@ spec:
           resources:
             {{- toYaml . | nindent 12 }}
           {{- end }}
-          {{- $initSecurityContext := or $spec.containerSecurityContext $.Values.containerSecurityContext }}
+          {{- $initSecurityContext := or $spec.initContainer.containerSecurityContext $spec.containerSecurityContext $.Values.containerSecurityContext }}
           {{- with $initSecurityContext }}
           securityContext:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          {{- with $spec.volumeMounts }}
+          volumeMounts:
             {{- toYaml . | nindent 12 }}
           {{- end }}
           {{- if or $spec.allowDatabaseAccess $spec.appSecretKeys }}

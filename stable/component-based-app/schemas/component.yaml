@@ -174,13 +174,21 @@ properties:
     required: [command]
     description: >
       Init container that runs before the main application container.
-      Uses the same image as the component.
+      Uses the same image, and the same `volumes`/`volumeMounts`, as the
+      component.
     properties:
       command:
         type: array
         description: Init container command and arguments.
         items:
           type: string
+      containerSecurityContext:
+        description: >
+          Security context for the init container only. Overrides the
+          component's containerSecurityContext for this container; unlike
+          it, runAsUser/runAsGroup are permitted here (e.g. for a one-shot
+          root chown of a volume before the non-root main container starts).
+        $ref: "https://raw.githubusercontent.com/yannh/kubernetes-json-schema/master/v1.34.3/_definitions.json#/definitions/io.k8s.api.core.v1.SecurityContext"
   extraEgress:
     type: array
     description: >

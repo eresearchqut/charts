@@ -220,6 +220,34 @@
                                     "items": {
                                         "type": "string"
                                     }
+                                },
+                                "containerSecurityContext": {
+                                    "description": "Security context for the init container only. Overrides the component's `containerSecurityContext` for this container. Unlike it, `runAsUser`/`runAsGroup` are permitted here — e.g. for a one-shot root chown of a volume before the non-root main container starts.",
+                                    "$ref": "#/$defs/_definitions.json/definitions/io.k8s.api.core.v1.SecurityContext",
+                                    "type": "object",
+                                    "properties": {
+                                        "allowPrivilegeEscalation": {
+                                            "type": "boolean"
+                                        },
+                                        "capabilities": {
+                                            "$ref": "#/$defs/_definitions.json/definitions/io.k8s.api.core.v1.Capabilities",
+                                            "type": "object",
+                                            "additionalProperties": true
+                                        },
+                                        "readOnlyRootFilesystem": {
+                                            "type": "boolean"
+                                        },
+                                        "runAsGroup": {
+                                            "type": "integer"
+                                        },
+                                        "runAsNonRoot": {
+                                            "type": "boolean"
+                                        },
+                                        "runAsUser": {
+                                            "type": "integer"
+                                        }
+                                    },
+                                    "additionalProperties": false
                                 }
                             },
                             "additionalProperties": false
@@ -3429,7 +3457,7 @@
                     }
                 },
                 "initContainer": {
-                    "description": "Init container that runs before the main application container. Uses the same image as the component.\n",
+                    "description": "Init container that runs before the main application container. Uses the same image, and the same `volumes`/`volumeMounts`, as the component.\n",
                     "type": "object",
                     "required": [
                         "command"
@@ -3441,6 +3469,10 @@
                             "items": {
                                 "type": "string"
                             }
+                        },
+                        "containerSecurityContext": {
+                            "description": "Security context for the init container only. Overrides the component's containerSecurityContext for this container; unlike it, runAsUser/runAsGroup are permitted here (e.g. for a one-shot root chown of a volume before the non-root main container starts).\n",
+                            "$ref": "#/$defs/_definitions.json/definitions/io.k8s.api.core.v1.SecurityContext"
                         }
                     },
                     "additionalProperties": false
