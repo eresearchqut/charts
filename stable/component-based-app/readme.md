@@ -1,6 +1,6 @@
 # component-based-app
 
-![Version: 0.1.15](https://img.shields.io/badge/Version-0.1.15-informational?style=flat-square) ![Type: application](https://img.shields.io/badge/Type-application-informational?style=flat-square)
+![Version: 0.1.16](https://img.shields.io/badge/Version-0.1.16-informational?style=flat-square) ![Type: application](https://img.shields.io/badge/Type-application-informational?style=flat-square)
 
 Generic library chart for a research application deployment.
 
@@ -126,6 +126,22 @@ configurable instances, storage, and resource limits.
   `ACCESS_SECRET_KEY`; CNPG schedules use six cron fields,
   with seconds first.
 
+#### Extensions
+
+`database.extensions` declares PostgreSQL extensions via CNPG's `Database`
+resource (`CREATE EXTENSION IF NOT EXISTS`), applied non-destructively to an
+already-bootstrapped cluster.
+
+- Extensions bundled in the CNPG operand image (e.g. `pg_trgm`) need only a
+  `name`.
+- Extensions requiring a separate binary (e.g. `vector`/pgvector) must also
+  set `image.reference`, which mounts the extension as a read-only
+  ImageVolume on the `Cluster`. This requires PostgreSQL 18+, Kubernetes
+  1.35+ (or 1.33/1.34 with the `ImageVolume` feature gate manually enabled),
+  and containerd >=2.1.0 or CRI-O >=1.31 — verify this against the target
+  cluster before enabling, or the extension image silently fails to mount.
+- Adding an `image` entry triggers a CNPG rolling restart of the cluster.
+
 | Key | Type | Default | Description |
 |-----|------|---------|-------------|
 | database.backup.enabled | bool | `false` | Enable Barman Cloud Plugin backups for the CNPG cluster. |
@@ -134,6 +150,11 @@ configurable instances, storage, and resource limits.
 | database.backup.schedule | string | `"0 0 4 * * *"` | Six-field CNPG cron schedule, including seconds, for `ScheduledBackup`. |
 | database.backup.secretName | string | `""` | Name of the Secret containing S3 `ACCESS_KEY_ID` and `ACCESS_SECRET_KEY` keys for database backups. |
 | database.enabled | bool | `false` | Enable or disable the CloudNativePG PostgreSQL database cluster. |
+| database.extensions | list | `[]` | List of PostgreSQL extensions to declaratively manage via CNPG's Database resource. Extensions bundled with the base CNPG operand image (e.g. pg_trgm) need only `name`. Extensions requiring a separate binary (e.g. pgvector) must also set `image.reference` to mount via CloudNativePG's ImageVolume support (requires PostgreSQL 18+, Kubernetes 1.35+ or 1.33/1.34 with the ImageVolume feature gate, and containerd >=2.1 or CRI-O >=1.31). |
+| database.extensions[0].image | object | `nil` | Mounts the extension as a read-only ImageVolume on the Cluster. Only needed for extensions not already bundled in the base operand image. |
+| database.extensions[0].image.reference | string | `nil` | Container image reference for the extension. |
+| database.extensions[0].name | string | `nil` | Extension name to create (e.g. pg_trgm, vector). |
+| database.extensions[0].version | string | `nil` | Extension version to install. Omit to use the latest available version. |
 | database.extraEgress | list of [networking/v1.NetworkPolicyEgressRule](https://raw.githubusercontent.com/yannh/kubernetes-json-schema/master/v1.34.3/_definitions.json#/definitions/io.k8s.api.networking/v1.NetworkPolicyEgressRule) | `[]` | Additional NetworkPolicy egress rules appended to the database NetworkPolicy. Only meaningful when networkPolicy is set. Standard Kubernetes NetworkPolicyEgressRule format (e.g., S3 for WAL archiving). |
 | database.image.repository | string | `"registry.eres.qut.edu.au/ghcr/cloudnative-pg/postgresql"` | CloudNativePG PostgreSQL image repository. |
 | database.image.tag | Required | `"17"` | CloudNativePG PostgreSQL image tag (version). Must be set explicitly. |

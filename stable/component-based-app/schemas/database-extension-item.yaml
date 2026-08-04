@@ -1,0 +1,28 @@
+$schema: "https://json-schema.org/draft/2020-12/schema"
+type: object
+required: [name]
+description: >
+  A PostgreSQL extension declaratively created via CNPG's Database resource.
+  Extensions bundled with the base CNPG operand image (e.g. pg_trgm) need
+  only `name`. Extensions requiring a separate binary (e.g. pgvector) must
+  also set `image.reference` to mount it via CloudNativePG's ImageVolume
+  support.
+properties:
+  name:
+    type: string
+    description: Extension name to create (e.g. pg_trgm, vector).
+  version:
+    type: string
+    description: Extension version to install. Omit to use the latest available version.
+  image:
+    type: object
+    required: [reference]
+    description: >
+      Mounts the extension as a read-only ImageVolume on the Cluster.
+      Requires PostgreSQL 18+, Kubernetes 1.35+ (or 1.33/1.34 with the
+      ImageVolume feature gate enabled), and containerd >=2.1.0 or CRI-O
+      >=1.31. Omit for extensions already bundled in the operand image.
+    properties:
+      reference:
+        type: string
+        description: Container image reference for the extension (e.g. ghcr.io/cloudnative-pg/pgvector:0.8.6-18-bookworm).

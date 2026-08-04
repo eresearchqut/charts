@@ -464,6 +464,29 @@ database:
   # Only meaningful when networkPolicy is set.
   # Standard Kubernetes NetworkPolicyEgressRule format (e.g., S3 for WAL archiving).
   extraEgress: []
+  # @schema itemRef: schemas/database-extension-item.yaml
+  # @notationType -- list
+  # -- List of PostgreSQL extensions to declaratively manage via CNPG's Database resource. Extensions bundled with the base CNPG operand image (e.g. pg_trgm) need only `name`. Extensions requiring a separate binary (e.g. pgvector) must also set `image.reference` to mount via CloudNativePG's ImageVolume support (requires PostgreSQL 18+, Kubernetes 1.35+ or 1.33/1.34 with the ImageVolume feature gate, and containerd >=2.1 or CRI-O >=1.31).
+  # @section -- Database
+  # @default -- `[]`
+  extensions:
+    - # -- Extension name to create (e.g. pg_trgm, vector).
+      # @section -- Database
+      # @default -- `nil`
+      name: vector
+      # -- Extension version to install. Omit to use the latest available version.
+      # @section -- Database
+      # @default -- `nil`
+      version: "0.8.6"
+      # -- Mounts the extension as a read-only ImageVolume on the Cluster. Only needed for extensions not already bundled in the base operand image.
+      # @section -- Database
+      # @default -- `nil`
+      image:
+        # -- Container image reference for the extension.
+        # @section -- Database
+        # @default -- `nil`
+        reference: ghcr.io/cloudnative-pg/pgvector:0.8.6-18-bookworm
+    - name: pg_trgm
 
 # @schema required: false
 # -- NetworkPolicy configuration
