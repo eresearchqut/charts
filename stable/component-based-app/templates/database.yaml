@@ -3,6 +3,10 @@
 {{- $backupInstanceName := .Values.database.backup.instanceName | default (include "component-based-app.fullname" .) }}
 {{- $backupName := printf "%s-%s-backup" $backupInstanceName .Values.database.backup.envName }}
 {{- $backupResourceName := $backupName | trunc 63 | trimSuffix "-" }}
+{{- $imageExtensions := list }}
+{{- range .Values.database.extensions }}
+{{- if .image }}{{ $imageExtensions = append $imageExtensions . }}{{ end }}
+{{- end }}
 {{- $_ := required "database.image.tag is required" .Values.database.image.tag }}
 {{- if .Values.database.backup.enabled }}
 {{- $_ := required "database.backup.secretName is required when database.backup.enabled is true" .Values.database.backup.secretName }}
@@ -44,6 +48,15 @@ spec:
       cpu: {{ .Values.database.resources.limits.cpu | quote }}
   monitoring:
     enablePodMonitor: false
+  {{- if $imageExtensions }}
+  postgresql:
+    extensions:
+      {{- range $imageExtensions }}
+      - name: {{ .name }}
+        image:
+          reference: {{ .image.reference | quote }}
+      {{- end }}
+  {{- end }}
   {{- /*
     Contract: the Secret named by database.secretName (default <fullname>-database)
     MUST be type kubernetes.io/basic-auth with username equal to initdb owner.
@@ -119,4 +132,26 @@ spec:
   schedule: {{ .Values.database.backup.schedule | quote }}
   target: prefer-standby
 {{ end }}
+{{- if .Values.database.extensions }}
+---
+apiVersion: postgresql.cnpg.io/v1
+kind: Database
+metadata:
+  name: {{ printf "%s-app" $clusterName | trunc 63 | trimSuffix "-" }}
+  labels:
+    {{- include "component-based-app.labels" . | nindent 4 }}
+    app.kubernetes.io/component: database
+spec:
+  name: {{ include "component-based-app.name" . }}
+  owner: {{ include "component-based-app.name" . }}
+  cluster:
+    name: {{ $clusterName }}
+  extensions:
+    {{- range .Values.database.extensions }}
+    - name: {{ .name }}
+      {{- if .version }}
+      version: {{ .version | quote }}
+      {{- end }}
+    {{- end }}
+{{- end }}
 {{- end }}

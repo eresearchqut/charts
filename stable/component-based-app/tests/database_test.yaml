@@ -223,6 +223,109 @@ tests:
           count: 0
         template: database.yaml
 
+  # --- Extensions: none configured (default) ---
+  - it: no extension surfaces when database.extensions is unset
+    template: database.yaml
+    documentIndex: 0
+    asserts:
+      - notExists:
+          path: spec.postgresql
+      - hasDocuments:
+          count: 2
+
+  # --- Extensions: pg_trgm only (bundled, no image) ---
+  - it: pg_trgm-only cluster has no spec.postgresql.extensions key
+    set:
+      database:
+        extensions:
+          - name: pg_trgm
+    template: database.yaml
+    documentIndex: 0
+    asserts:
+      - notExists:
+          path: spec.postgresql
+      - hasDocuments:
+          count: 3
+
+  - it: pg_trgm-only creates a Database document with no version key
+    set:
+      database:
+        extensions:
+          - name: pg_trgm
+    template: database.yaml
+    documentIndex: 2
+    asserts:
+      - isKind:
+          of: Database
+      - equal:
+          path: spec.name
+          value: component-based-app
+      - equal:
+          path: spec.cluster.name
+          value: dataapp-component-based-app-db
+      - equal:
+          path: spec.extensions
+          value:
+            - name: pg_trgm
+
+  # --- Extensions: pg_trgm + vector (vector needs an image) ---
+  - it: vector's image renders in Cluster spec.postgresql.extensions, pg_trgm does not
+    set:
+      database:
+        extensions:
+          - name: pg_trgm
+          - name: vector
+            version: "0.8.6"
+            image:
+              reference: ghcr.io/cloudnative-pg/pgvector:0.8.6-18-bookworm
+    template: database.yaml
+    documentIndex: 0
+    asserts:
+      - equal:
+          path: spec.postgresql.extensions
+          value:
+            - name: vector
+              image:
+                reference: ghcr.io/cloudnative-pg/pgvector:0.8.6-18-bookworm
+      - hasDocuments:
+          count: 3
+
+  - it: Database document contains both extensions with vector's version
+    set:
+      database:
+        extensions:
+          - name: pg_trgm
+          - name: vector
+            version: "0.8.6"
+            image:
+              reference: ghcr.io/cloudnative-pg/pgvector:0.8.6-18-bookworm
+    template: database.yaml
+    documentIndex: 2
+    asserts:
+      - isKind:
+          of: Database
+      - equal:
+          path: spec.extensions
+          value:
+            - name: pg_trgm
+            - name: vector
+              version: "0.8.6"
+
+  # --- Extensions: database disabled still yields zero documents ---
+  - it: creates no resources when database is disabled even with extensions set
+    set:
+      database:
+        enabled: false
+        extensions:
+          - name: pg_trgm
+      components:
+        api:
+          allowDatabaseAccess: false
+    template: database.yaml
+    asserts:
+      - hasDocuments:
+          count: 0
+
   # --- Custom database secret name ---
   - it: uses custom secret name when database.secretName is set
     set:
