@@ -156,6 +156,17 @@ tests:
             mountPath: /etc/tls
             readOnly: true
 
+  - it: volumeMounts specified on component appear in init container
+    template: deployment.yaml
+    documentIndex: 0
+    asserts:
+      - contains:
+          path: spec.template.spec.initContainers[0].volumeMounts
+          content:
+            name: tls
+            mountPath: /etc/tls
+            readOnly: true
+
   # --- imagePullSecrets ---
   - it: component imagePullSecrets appear in Deployment pod spec
     set:
@@ -260,4 +271,37 @@ tests:
           value: false
       - equal:
           path: spec.template.spec.initContainers[0].securityContext.readOnlyRootFilesystem
+          value: true
+
+  - it: initContainer.containerSecurityContext overrides component containerSecurityContext for the init container only
+    set:
+      components:
+        api:
+          image:
+            repository: "example.com/app"
+            tag: "latest"
+          port: 8000
+          command: ["python", "run.py"]
+          livenessProbe:
+            path: /health
+          containerSecurityContext:
+            runAsNonRoot: true
+            readOnlyRootFilesystem: true
+          initContainer:
+            command: ["chown", "-R", "1000:1000", "/data"]
+            containerSecurityContext:
+              runAsNonRoot: false
+              runAsUser: 0
+              readOnlyRootFilesystem: true
+    template: deployment.yaml
+    documentIndex: 0
+    asserts:
+      - equal:
+          path: spec.template.spec.initContainers[0].securityContext.runAsUser
+          value: 0
+      - equal:
+          path: spec.template.spec.initContainers[0].securityContext.runAsNonRoot
+          value: false
+      - equal:
+          path: spec.template.spec.containers[0].securityContext.runAsNonRoot
           value: true

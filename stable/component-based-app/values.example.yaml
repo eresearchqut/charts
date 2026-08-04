@@ -231,6 +231,22 @@ components:
         - "python"
         - "manage.py"
         - "migrate"
+      # @schema $ref: $k8s/_definitions.json#/definitions/io.k8s.api.core.v1.SecurityContext
+      # -- (k8s/core/v1.SecurityContext) Security context for the init container only. Overrides the component's `containerSecurityContext` for this container. Unlike it, `runAsUser`/`runAsGroup` are permitted here — e.g. for a one-shot root chown of a volume before the non-root main container starts.
+      # @section -- Components
+      # @default -- `nil`
+      containerSecurityContext:
+        # @schema $ref: $k8s/_definitions.json#/definitions/io.k8s.api.core.v1.Capabilities; skipProperties: true; additionalProperties: true
+        capabilities:
+          drop:
+            - "ALL"
+          add:
+            - "CHOWN"
+        readOnlyRootFilesystem: true
+        runAsNonRoot: false
+        runAsUser: 0
+        runAsGroup: 0
+        allowPrivilegeEscalation: false
     # @notationType -- list
     # -- (k8s/networking/v1.NetworkPolicyEgressRule) Additional NetworkPolicy egress rules. Only meaningful when `networkPolicy` is configured.
     # @section -- Components

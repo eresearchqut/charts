@@ -1,6 +1,6 @@
 # component-based-app
 
-![Version: 0.1.16](https://img.shields.io/badge/Version-0.1.16-informational?style=flat-square) ![Type: application](https://img.shields.io/badge/Type-application-informational?style=flat-square)
+![Version: 0.1.18](https://img.shields.io/badge/Version-0.1.18-informational?style=flat-square) ![Type: application](https://img.shields.io/badge/Type-application-informational?style=flat-square)
 
 Generic library chart for a research application deployment.
 
@@ -71,6 +71,7 @@ Each component can reference secrets via `appSecretKeys`. The values are from th
 | components.*.imagePullSecrets[0].name | string | `nil` | Name of the Kubernetes Secret in the same namespace. |
 | components.*.initContainer | object | `nil` | Init container that runs before the main container. Uses the same image as the component. |
 | components.*.initContainer.command | list | `nil` | Init container command and arguments. |
+| components.*.initContainer.containerSecurityContext | [core/v1.SecurityContext](https://raw.githubusercontent.com/yannh/kubernetes-json-schema/master/v1.34.3/_definitions.json#/definitions/io.k8s.api.core/v1.SecurityContext) | `nil` | Security context for the init container only. Overrides the component's `containerSecurityContext` for this container. Unlike it, `runAsUser`/`runAsGroup` are permitted here — e.g. for a one-shot root chown of a volume before the non-root main container starts. |
 | components.*.livenessProbe | object | `nil` | Container liveness probe. Omit the block to disable. |
 | components.*.livenessProbe.failureThreshold | int | `nil` | Consecutive failures before restart. |
 | components.*.livenessProbe.initialDelaySeconds | int | `nil` | Delay before first probe. |
