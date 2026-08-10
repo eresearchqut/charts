@@ -147,6 +147,25 @@ tests:
                   matchLabels:
                     cnpg.io/cluster: myapp-database
 
+  # --- Ingress: upstream cnpg chart's own ping-test Helm hook ---
+  - it: ingress allows the upstream cnpg cluster chart's ping-test hook pod
+    set:
+      networkPolicy: {}
+      database:
+        enabled: true
+    documentIndex: 0
+    asserts:
+      - contains:
+          path: spec.ingress
+          content:
+            from:
+              - podSelector:
+                  matchLabels:
+                    app.kubernetes.io/component: database-ping-test
+            ports:
+              - port: 5432
+                protocol: TCP
+
   # --- Egress: ONLY DNS, intra-cluster, and API server ---
   - it: egress contains DNS and nothing unrestricted beyond cluster and API server
     set:

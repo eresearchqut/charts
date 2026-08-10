@@ -36,6 +36,17 @@ spec:
       ports:
         - port: 5432
           protocol: TCP
+    # Allow the upstream cnpg "cluster" chart's own Helm test hook (the
+    # ping-test Job in charts/cluster templates/tests/ping.yaml) to connect.
+    # That Job's pod only carries app.kubernetes.io/component: database-ping-test
+    # (no instance label), so it doesn't match the rule above.
+    - from:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/component: database-ping-test
+      ports:
+        - port: 5432
+          protocol: TCP
     {{- if .Values.networkPolicy.monitoringSelector }}
     - from:
 {{- toYaml (list .Values.networkPolicy.monitoringSelector) | nindent 8 }}
