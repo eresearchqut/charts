@@ -202,6 +202,22 @@ components:
             protocol: TCP
       - fqdn: "api.example.com"   # omit ports to allow all ports
 ```
+
+#### Database Ingress
+
+When `database.enabled` is `true`, the CNPG cluster's pods (`cnpg.io/cluster`
+label) only accept inbound PostgreSQL (5432) traffic from:
+
+- Components with `allowDatabaseAccess: true`.
+- This chart's own `component-based-app-db-test-connection` Helm test hook
+  (`app.kubernetes.io/component: database`).
+- The upstream cnpg `cluster` chart's built-in ping-test Helm hook
+  (`app.kubernetes.io/component: database-ping-test`), so `helm test` passes
+  out of the box.
+- `networkPolicy.monitoringSelector` (metrics, port 9187) and
+  `networkPolicy.cnpgOperatorSelector` (cluster management).
+- Other pods in the same CNPG cluster (replication).
+
 {{ template "chart.sectionTable" . }}
 
 {{- else }}
