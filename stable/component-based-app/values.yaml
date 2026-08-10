@@ -1,6 +1,7 @@
 # Default values for the chart
 # For usage view values.example.yaml, which also generates the documentation.
 # This is the source of truth for the defaults.
+# Defaults must stay in sync with values.example.yaml; enforced by scripts/check-values-sync.py.
 
 # Helm release name override; falls back to the chart name.
 nameOverride: ""
@@ -69,6 +70,7 @@ database:
       name: ""
     wal:
       maxParallel: 32
+    # @sync-ignore: kept out of values.example.yaml - would modify the allowed schema
     scheduledBackups:
       - name: daily-backup
         schedule: "0 0 4 * * *"

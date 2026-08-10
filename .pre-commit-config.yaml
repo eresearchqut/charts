@@ -11,6 +11,13 @@ repos:
         require_serial: true
   - repo: local
     hooks:
+      - id: values-sync
+        name: Values files in sync
+        entry: scripts/check-values-sync.py
+        language: system
+        pass_filenames: false
+        files: ^stable/
+        require_serial: true
       - id: helm-unittest
         name: Helm unit tests
         entry: bash -c 'for d in $(find stable -name Chart.yaml -exec dirname {} \;); do helm unittest "$d" || exit 1; done'

@@ -104,3 +104,21 @@ CNPG auto-generated "<cluster>-app" secret.
 {{- $initdbSecret := dig "cluster" "initdb" "secret" "name" "" .Values.database }}
 {{- $initdbSecret | default (printf "%s-app" (include "component-based-app.databaseClusterName" .)) }}
 {{- end }}
+
+{{/*
+HTTP probe body with chart defaults. Key validation is enforced by
+values.schema.json (additionalProperties: false per probe), so unknown keys
+hard-fail at helm template time; anything the schema admits passes through.
+Context: dict "kind" <"liveness"|"readiness"|"startup"> "probe" <map>
+*/}}
+{{- define "component-based-app.httpProbe" -}}
+{{- $defaults := dict "initialDelaySeconds" 0 "periodSeconds" 10 "timeoutSeconds" 1 "failureThreshold" 3 "successThreshold" 1 }}
+{{- if eq .kind "startup" }}
+{{- /* Kubernetes fixes successThreshold=1 for startup probes; slow starts get a higher failureThreshold */}}
+{{- $defaults = dict "initialDelaySeconds" 0 "periodSeconds" 10 "timeoutSeconds" 1 "failureThreshold" 30 }}
+{{- end -}}
+httpGet:
+  path: {{ .probe.path }}
+  port: http
+{{ mergeOverwrite $defaults (omit .probe "path") | toYaml }}
+{{- end }}
