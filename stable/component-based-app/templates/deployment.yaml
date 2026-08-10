@@ -91,15 +91,15 @@ spec:
             - name: DB_USERNAME
               valueFrom:
                 secretKeyRef:
-                  name: {{ $.Values.database.secretName | default (printf "%s-database" (include "component-based-app.fullname" $)) }}
+                  name: {{ include "component-based-app.databaseSecretName" $ }}
                   key: username
             - name: DB_PASSWORD
               valueFrom:
                 secretKeyRef:
-                  name: {{ $.Values.database.secretName | default (printf "%s-database" (include "component-based-app.fullname" $)) }}
+                  name: {{ include "component-based-app.databaseSecretName" $ }}
                   key: password
             - name: DB_HOST
-              value: {{ printf "%s-db-rw" (include "component-based-app.fullname" $) | quote }}
+              value: {{ printf "%s-rw" (include "component-based-app.databaseClusterName" $) | quote }}
             - name: DB_PORT
               value: "5432"
             {{- end }}
@@ -175,15 +175,15 @@ spec:
             - name: DB_USERNAME
               valueFrom:
                 secretKeyRef:
-                  name: {{ $.Values.database.secretName | default (printf "%s-database" (include "component-based-app.fullname" $)) }}
+                  name: {{ include "component-based-app.databaseSecretName" $ }}
                   key: username
             - name: DB_PASSWORD
               valueFrom:
                 secretKeyRef:
-                  name: {{ $.Values.database.secretName | default (printf "%s-database" (include "component-based-app.fullname" $)) }}
+                  name: {{ include "component-based-app.databaseSecretName" $ }}
                   key: password
             - name: DB_HOST
-              value: {{ printf "%s-db-rw" (include "component-based-app.fullname" $) | quote }}
+              value: {{ printf "%s-rw" (include "component-based-app.databaseClusterName" $) | quote }}
             - name: DB_PORT
               value: "5432"
             {{- end }}

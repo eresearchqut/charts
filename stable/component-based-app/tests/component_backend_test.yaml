@@ -45,13 +45,13 @@ tests:
             name: DB_USERNAME
             valueFrom:
               secretKeyRef:
-                name: myapp-component-based-app-database
+                name: myapp-database-app
                 key: username
       - contains:
           path: spec.template.spec.containers[0].env
           content:
             name: DB_HOST
-            value: myapp-component-based-app-db-rw
+            value: myapp-database-rw
       - contains:
           path: spec.template.spec.containers[0].env
           content:
@@ -68,13 +68,13 @@ tests:
             name: DB_USERNAME
             valueFrom:
               secretKeyRef:
-                name: myapp-component-based-app-database
+                name: myapp-database-app
                 key: username
       - contains:
           path: spec.template.spec.initContainers[0].env
           content:
             name: DB_HOST
-            value: myapp-component-based-app-db-rw
+            value: myapp-database-rw
       - contains:
           path: spec.template.spec.initContainers[0].env
           content:

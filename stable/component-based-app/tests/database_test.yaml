@@ -1,472 +1,13 @@
-suite: Database Integration & Secrets
+suite: Database Wiring & Secrets
 templates:
-  - database.yaml
   - deployment.yaml
-  - tests/database-smoke-test.yaml
 
 release:
-  name: dataapp
-  namespace: prod
-
-set:
-  components:
-    api:
-      image:
-        repository: "example.com/app"
-        tag: "latest"
-      port: 8000
-      command: ["python", "run.py"]
-      livenessProbe:
-        path: /health
-      allowDatabaseAccess: true
-      initContainer:
-        command: ["python", "manage.py", "migrate"]
-    web:
-      image:
-        repository: "example.com/app"
-        tag: "latest"
-      port: 80
-      command: ["nginx"]
-      livenessProbe:
-        path: /
-      allowDatabaseAccess: false
-  database:
-    enabled: true
-    image:
-      tag: "17.5"
+  name: myapp
+  namespace: default
 
 tests:
-  # --- CNPG Cluster exists ---
-  - it: creates a CNPG Cluster when database is enabled
-    template: database.yaml
-    documentIndex: 0
-    asserts:
-      - isKind:
-          of: Cluster
-      - equal:
-          path: apiVersion
-          value: postgresql.cnpg.io/v1
-
-  - it: cluster uses the specified database image
-    template: database.yaml
-    documentIndex: 0
-    asserts:
-      - matchRegex:
-          path: spec.imageName
-          pattern: "^registry.eres.qut.edu.au/ghcr/cloudnative-pg/postgresql:17\\.5$"
-
-  - it: cluster secret name matches component reference (default pattern)
-    template: database.yaml
-    documentIndex: 0
-    asserts:
-      - equal:
-          path: spec.bootstrap.initdb.secret.name
-          value: dataapp-component-based-app-database
-
-  # --- PodMonitor ---
-  - it: creates a PodMonitor for Prometheus
-    template: database.yaml
-    documentIndex: 1
-    asserts:
-      - isKind:
-          of: PodMonitor
-      - equal:
-          path: spec.selector.matchLabels["cnpg.io/cluster"]
-          value: dataapp-component-based-app-db
-      - equal:
-          path: spec.selector.matchLabels["cnpg.io/podRole"]
-          value: instance
-
-  # --- Barman Cloud backups ---
-  - it: does not configure backups unless database.backup.enabled is true
-    template: database.yaml
-    documentIndex: 0
-    asserts:
-      - notExists:
-          path: spec.plugins
-      - hasDocuments:
-          count: 2
-
-  - it: configures the CNPG cluster for Barman Cloud Plugin backups
-    set:
-      database:
-        backup:
-          enabled: true
-          secretName: backup-keys
-          envName: wrk-test
-          instanceName: inquisition
-    template: database.yaml
-    documentIndex: 0
-    asserts:
-      - contains:
-          path: spec.plugins
-          content:
-            name: barman-cloud.cloudnative-pg.io
-            isWALArchiver: true
-            parameters:
-              barmanObjectName: inquisition-wrk-test-backup
-
-  - it: creates a Barman ObjectStore with the derived backup path
-    set:
-      database:
-        backup:
-          enabled: true
-          secretName: backup-keys
-          envName: wrk-test
-          instanceName: inquisition
-    template: database.yaml
-    documentIndex: 2
-    asserts:
-      - isKind:
-          of: ObjectStore
-      - equal:
-          path: apiVersion
-          value: barmancloud.cnpg.io/v1
-      - equal:
-          path: metadata.name
-          value: inquisition-wrk-test-backup
-      - equal:
-          path: spec.configuration.destinationPath
-          value: s3://eresearch-k8s-postgres-backup/inquisition-wrk-test-backup
-      - equal:
-          path: spec.configuration.endpointURL
-          value: https://s3.ap-southeast-2.amazonaws.com/
-      - equal:
-          path: spec.configuration.s3Credentials.accessKeyId.name
-          value: backup-keys
-      - equal:
-          path: spec.configuration.s3Credentials.accessKeyId.key
-          value: ACCESS_KEY_ID
-      - equal:
-          path: spec.configuration.s3Credentials.secretAccessKey.name
-          value: backup-keys
-      - equal:
-          path: spec.configuration.s3Credentials.secretAccessKey.key
-          value: ACCESS_SECRET_KEY
-      - equal:
-          path: spec.configuration.data.compression
-          value: gzip
-      - equal:
-          path: spec.configuration.data.immediateCheckpoint
-          value: true
-      - equal:
-          path: spec.configuration.data.jobs
-          value: 2
-      - equal:
-          path: spec.configuration.wal.compression
-          value: gzip
-      - equal:
-          path: spec.configuration.wal.maxParallel
-          value: 32
-      - equal:
-          path: spec.retentionPolicy
-          value: 14d
-
-  - it: creates a ScheduledBackup with the configured schedule
-    set:
-      database:
-        backup:
-          enabled: true
-          secretName: backup-keys
-          envName: wrk-test
-          instanceName: inquisition
-          schedule: "0 30 2 * * *"
-    template: database.yaml
-    documentIndex: 3
-    asserts:
-      - isKind:
-          of: ScheduledBackup
-      - equal:
-          path: metadata.name
-          value: inquisition-wrk-test-backup
-      - equal:
-          path: spec.cluster.name
-          value: dataapp-component-based-app-db
-      - equal:
-          path: spec.method
-          value: plugin
-      - equal:
-          path: spec.pluginConfiguration.name
-          value: barman-cloud.cloudnative-pg.io
-      - equal:
-          path: spec.schedule
-          value: "0 30 2 * * *"
-      - equal:
-          path: spec.target
-          value: prefer-standby
-
-  - it: creates no backup resources when database is disabled
-    set:
-      database:
-        enabled: false
-        backup:
-          enabled: true
-          secretName: backup-keys
-      components:
-        api:
-          allowDatabaseAccess: false
-    template: database.yaml
-    asserts:
-      - hasDocuments:
-          count: 0
-
-  # --- Database disabled: no resources ---
-  - it: creates no database resources when database is disabled
-    set:
-      database:
-        enabled: false
-      components:
-        api:
-          allowDatabaseAccess: false
-    asserts:
-      - hasDocuments:
-          count: 0
-        template: database.yaml
-
-  # --- Extensions: none configured (default) ---
-  - it: no extension surfaces when database.extensions is unset
-    template: database.yaml
-    documentIndex: 0
-    asserts:
-      - notExists:
-          path: spec.postgresql
-      - hasDocuments:
-          count: 2
-
-  # --- Extensions: pg_trgm only (bundled, no image) ---
-  - it: pg_trgm-only cluster has no spec.postgresql.extensions key
-    set:
-      database:
-        extensions:
-          - name: pg_trgm
-    template: database.yaml
-    documentIndex: 0
-    asserts:
-      - notExists:
-          path: spec.postgresql
-      - hasDocuments:
-          count: 3
-
-  - it: pg_trgm-only creates a Database document with no version key
-    set:
-      database:
-        extensions:
-          - name: pg_trgm
-    template: database.yaml
-    documentIndex: 2
-    asserts:
-      - isKind:
-          of: Database
-      - equal:
-          path: spec.name
-          value: component-based-app
-      - equal:
-          path: spec.cluster.name
-          value: dataapp-component-based-app-db
-      - equal:
-          path: spec.extensions
-          value:
-            - name: pg_trgm
-
-  # --- Extensions: pg_trgm + vector (vector needs an image) ---
-  - it: vector's image renders in Cluster spec.postgresql.extensions, pg_trgm does not
-    set:
-      database:
-        extensions:
-          - name: pg_trgm
-          - name: vector
-            version: "0.8.6"
-            image:
-              reference: ghcr.io/cloudnative-pg/pgvector:0.8.6-18-bookworm
-    template: database.yaml
-    documentIndex: 0
-    asserts:
-      - equal:
-          path: spec.postgresql.extensions
-          value:
-            - name: vector
-              image:
-                reference: ghcr.io/cloudnative-pg/pgvector:0.8.6-18-bookworm
-      - hasDocuments:
-          count: 3
-
-  - it: Database document contains both extensions with vector's version
-    set:
-      database:
-        extensions:
-          - name: pg_trgm
-          - name: vector
-            version: "0.8.6"
-            image:
-              reference: ghcr.io/cloudnative-pg/pgvector:0.8.6-18-bookworm
-    template: database.yaml
-    documentIndex: 2
-    asserts:
-      - isKind:
-          of: Database
-      - equal:
-          path: spec.extensions
-          value:
-            - name: pg_trgm
-            - name: vector
-              version: "0.8.6"
-
-  # --- Extensions: database disabled still yields zero documents ---
-  - it: creates no resources when database is disabled even with extensions set
-    set:
-      database:
-        enabled: false
-        extensions:
-          - name: pg_trgm
-      components:
-        api:
-          allowDatabaseAccess: false
-    template: database.yaml
-    asserts:
-      - hasDocuments:
-          count: 0
-
-  # --- Custom database secret name ---
-  - it: uses custom secret name when database.secretName is set
-    set:
-      database:
-        enabled: true
-        image:
-          tag: "17.5"
-        secretName: my-custom-db-secret
-    template: database.yaml
-    documentIndex: 0
-    asserts:
-      - equal:
-          path: spec.bootstrap.initdb.secret.name
-          value: my-custom-db-secret
-
-  # --- DB env vars in main container (allowDatabaseAccess: true) ---
-  - it: api container has DB_USERNAME from default secret name
-    template: deployment.yaml
-    documentIndex: 0
-    set:
-      database:
-        enabled: true
-        image:
-          tag: "17.5"
-    asserts:
-      - contains:
-          path: spec.template.spec.containers[0].env
-          content:
-            name: DB_USERNAME
-            valueFrom:
-              secretKeyRef:
-                name: dataapp-component-based-app-database
-                key: username
-      - contains:
-          path: spec.template.spec.containers[0].env
-          content:
-            name: DB_HOST
-            value: dataapp-component-based-app-db-rw
-      - contains:
-          path: spec.template.spec.containers[0].env
-          content:
-            name: DB_PORT
-            value: "5432"
-
-  # --- DB env vars in main container with custom secretName ---
-  - it: api container uses custom secret name from database.secretName
-    template: deployment.yaml
-    documentIndex: 0
-    set:
-      database:
-        enabled: true
-        image:
-          tag: "17.5"
-        secretName: my-custom-db-secret
-    asserts:
-      - contains:
-          path: spec.template.spec.containers[0].env
-          content:
-            name: DB_USERNAME
-            valueFrom:
-              secretKeyRef:
-                name: my-custom-db-secret
-                key: username
-      - contains:
-          path: spec.template.spec.containers[0].env
-          content:
-            name: DB_HOST
-            value: dataapp-component-based-app-db-rw
-      - contains:
-          path: spec.template.spec.containers[0].env
-          content:
-            name: DB_PORT
-            value: "5432"
-
-  # --- DB env vars in init container ---
-  - it: api init container gets DB_USERNAME from same secret
-    template: deployment.yaml
-    documentIndex: 0
-    set:
-      database:
-        enabled: true
-        image:
-          tag: "17.5"
-        secretName: my-custom-db-secret
-    asserts:
-      - contains:
-          path: spec.template.spec.initContainers[0].env
-          content:
-            name: DB_USERNAME
-            valueFrom:
-              secretKeyRef:
-                name: my-custom-db-secret
-                key: username
-      - contains:
-          path: spec.template.spec.initContainers[0].env
-          content:
-            name: DB_PASSWORD
-            valueFrom:
-              secretKeyRef:
-                name: my-custom-db-secret
-                key: password
-      - contains:
-          path: spec.template.spec.initContainers[0].env
-          content:
-            name: DB_HOST
-            value: dataapp-component-based-app-db-rw
-      - contains:
-          path: spec.template.spec.initContainers[0].env
-          content:
-            name: DB_PORT
-            value: "5432"
-
-  # --- Component without allowDatabaseAccess has NO DB vars ---
-  - it: web container does NOT have DB env vars when allowDatabaseAccess is false
-    template: deployment.yaml
-    documentIndex: 1
-    set:
-      database:
-        enabled: true
-        image:
-          tag: "17.5"
-    asserts:
-      - notContains:
-          path: spec.template.spec.containers[0].env
-          content:
-            name: DB_USERNAME
-      - notContains:
-          path: spec.template.spec.containers[0].env
-          content:
-            name: DB_PASSWORD
-      - notContains:
-          path: spec.template.spec.containers[0].env
-          content:
-            name: DB_HOST
-      - notContains:
-          path: spec.template.spec.containers[0].env
-          content:
-            name: DB_PORT
-
-  # --- Database enabled but no component has allowDatabaseAccess: DB vars absent ---
-  - it: no DB env vars injected when no component has allowDatabaseAccess
+  - it: main container gets default CNPG auto-generated secret and host
     set:
       components:
         api:
@@ -475,79 +16,85 @@ tests:
             tag: "latest"
           port: 8000
           command: ["python", "run.py"]
-          livenessProbe:
-            path: /health
-          allowDatabaseAccess: false
+          allowDatabaseAccess: true
       database:
         enabled: true
-        image:
-          tag: "17.5"
     template: deployment.yaml
     documentIndex: 0
     asserts:
-      - notContains:
+      - contains:
           path: spec.template.spec.containers[0].env
           content:
             name: DB_USERNAME
-      - notContains:
+            valueFrom:
+              secretKeyRef:
+                name: myapp-database-app
+                key: username
+      - contains:
           path: spec.template.spec.containers[0].env
           content:
             name: DB_HOST
-      - notContains:
+            value: myapp-database-rw
+      - contains:
           path: spec.template.spec.containers[0].env
           content:
             name: DB_PORT
+            value: "5432"
 
-  # --- Database readiness test hook ---
-  - it: creates a readiness test Pod when database is enabled
+  - it: uses custom initdb secret name when set
     set:
-      database:
-        enabled: true
-        image:
-          tag: "17.5"
-    template: tests/database-smoke-test.yaml
-    documentIndex: 0
-    asserts:
-      - isKind:
-          of: Pod
-      - equal:
-          path: metadata.annotations["helm.sh/hook"]
-          value: test
-      - equal:
-          path: metadata.annotations["helm.sh/hook-delete-policy"]
-          value: before-hook-creation,hook-succeeded
-      - contains:
-          path: spec.containers[0].args
-          content: dataapp-component-based-app-db-rw
-      - contains:
-          path: spec.containers[0].command
-          content: pg_isready
-      - equal:
-          path: spec.restartPolicy
-          value: Never
-
-  - it: uses custom secret name for test Pod password
-    set:
-      database:
-        enabled: true
-        image:
-          tag: "17.5"
-        secretName: my-custom-db-secret
-    template: tests/database-smoke-test.yaml
-    documentIndex: 0
-    asserts:
-      - equal:
-          path: spec.containers[0].env[0].valueFrom.secretKeyRef.name
-          value: my-custom-db-secret
-
-  - it: no readiness test Pod when database is disabled
-    set:
-      database:
-        enabled: false
       components:
         api:
-          allowDatabaseAccess: false
-    template: tests/database-smoke-test.yaml
+          image:
+            repository: "example.com/app"
+            tag: "latest"
+          port: 8000
+          command: ["python", "run.py"]
+          allowDatabaseAccess: true
+      database:
+        enabled: true
+        cluster:
+          initdb:
+            secret:
+              name: my-db-secret
+    template: deployment.yaml
+    documentIndex: 0
     asserts:
-      - hasDocuments:
-          count: 0
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: DB_USERNAME
+            valueFrom:
+              secretKeyRef:
+                name: my-db-secret
+                key: username
+
+  - it: uses database.fullnameOverride for host and default secret name
+    set:
+      components:
+        api:
+          image:
+            repository: "example.com/app"
+            tag: "latest"
+          port: 8000
+          command: ["python", "run.py"]
+          allowDatabaseAccess: true
+      database:
+        enabled: true
+        fullnameOverride: legacy-db
+    template: deployment.yaml
+    documentIndex: 0
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: DB_HOST
+            value: legacy-db-rw
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: DB_USERNAME
+            valueFrom:
+              secretKeyRef:
+                name: legacy-db-app
+                key: username

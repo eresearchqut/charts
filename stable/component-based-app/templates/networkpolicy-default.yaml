@@ -2,7 +2,6 @@
 ---
 # Baseline: deny all ingress and egress for every pod belonging to this release,
 # then restore DNS so pods can resolve cluster-internal names.
-# Per-component and database policies layer additional allows on top of this.
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
 metadata:
