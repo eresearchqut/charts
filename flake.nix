@@ -1,5 +1,5 @@
 {
-  description = "Description for the project";
+  description = "Development tools for Helm chart development";
 
   inputs = {
     devenv-root = {
@@ -46,12 +46,6 @@
           devenv.shells.default = {
             name = "eres-charts";
 
-            imports = [
-              # This is just like the imports in devenv.nix.
-              # See https://devenv.sh/guides/using-with-flake-parts/#import-a-devenv-module
-              # ./devenv-foo.nix
-            ];
-
             # https://devenv.sh/reference/options/
             packages = with pkgs; [
               (wrapHelm kubernetes-helm {
@@ -71,7 +65,6 @@
         # The usual flake attributes can be defined here, including system-
         # agnostic ones like nixosModule and system-enumerating ones, although
         # those are more easily expressed in perSystem.
-
       };
     };
 }

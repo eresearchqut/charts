@@ -413,28 +413,151 @@ ingress:
 # @section -- Database
 # All keys except `enabled` are forwarded verbatim to the subchart; see
 # https://github.com/cloudnative-pg/charts/tree/cluster-v0.8.1/charts/cluster for the full reference.
-# This chart layers infra defaults: mirror-registry image, vsan-file storage classes,
-# 1 instance, pod anti-affinity, PodMonitor on, barman-cloud plugin backups (S3 ap-southeast-2,
+# This chart layers infra defaults (all documented below): mirror-registry image,
+# vsan-file storage classes, 1 instance, pod anti-affinity, PodMonitor on (PrometheusRule
+# off), per-instance resource requests/limits, barman-cloud plugin backups (S3 ap-southeast-2,
 # existing-secret credentials, 14d retention, daily 04:00 schedule).
 database:
   # -- Enable or disable the CloudNativePG PostgreSQL database cluster.
   # @section -- Database
   enabled: false
-  # @schema additionalProperties: true; skipProperties: true
-  # @ignore -- example
+  # @schema additionalProperties: true
+  # -- Configuration of the PostgreSQL cluster, forwarded to the subchart's `cluster` values. The keys below are this chart's layered infra defaults; any upstream key may be added.
+  # @section -- Database
   cluster:
+    # -- Number of PostgreSQL instances.
+    # @section -- Database
     instances: 1
+    # -- PostgreSQL operand image (mirrored from ghcr.io/cloudnative-pg/postgresql).
+    # @section -- Database
     imageName: registry.eres.qut.edu.au/ghcr/cloudnative-pg/postgresql:17
+    # @schema additionalProperties: true
+    # -- Primary data volume.
+    # @section -- Database
     storage:
+      # -- Data volume size.
+      # @section -- Database
       size: 8Gi
-    initdb: {}   # default: CNPG bootstraps database "app", owner "app", secret "<cluster>-app"
-  # @schema additionalProperties: true; skipProperties: true
-  # @ignore -- example
+      # -- Data volume StorageClass.
+      # @section -- Database
+      storageClass: vsan-file
+    # @schema additionalProperties: true
+    # -- Separate WAL volume.
+    # @section -- Database
+    walStorage:
+      # -- Enable a dedicated WAL volume.
+      # @section -- Database
+      enabled: true
+      # -- WAL volume size.
+      # @section -- Database
+      size: 2Gi
+      # -- WAL volume StorageClass.
+      # @section -- Database
+      storageClass: vsan-file
+    # @schema additionalProperties: true
+    # -- Compute resources for the PostgreSQL pods.
+    # @section -- Database
+    resources:
+      # @schema additionalProperties: true
+      # -- Resource requests.
+      # @section -- Database
+      requests:
+        # -- Requested CPU.
+        # @section -- Database
+        cpu: "0.5"
+        # -- Requested memory.
+        # @section -- Database
+        memory: 256Mi
+      # @schema additionalProperties: true
+      # -- Resource limits.
+      # @section -- Database
+      limits:
+        # -- Maximum CPU.
+        # @section -- Database
+        cpu: "1"
+        # -- Maximum memory.
+        # @section -- Database
+        memory: 1Gi
+    # @schema additionalProperties: true
+    # -- Pod affinity/anti-affinity for the PostgreSQL pods.
+    # @section -- Database
+    affinity:
+      # -- Spread instances across the topology domain.
+      # @section -- Database
+      enablePodAntiAffinity: true
+      # -- Topology domain used for pod anti-affinity.
+      # @section -- Database
+      topologyKey: kubernetes.io/hostname
+    # @schema additionalProperties: true
+    # -- Prometheus monitoring for the cluster (PodMonitor).
+    # @section -- Database
+    monitoring:
+      # -- Enable monitoring (PodMonitor).
+      # @section -- Database
+      enabled: true
+      # @schema additionalProperties: true
+      # -- Default alert rules.
+      # @section -- Database
+      prometheusRule:
+        # -- Create the default PrometheusRule alerts.
+        # @section -- Database
+        enabled: false
+    # @schema additionalProperties: true
+    # -- Bootstrap of a newly created cluster. CNPG additionally defaults database and owner to "app" and creates secret "<cluster>-app" unless overridden here.
+    # @section -- Database
+    initdb:
+      # -- Enable page checksums.
+      # @section -- Database
+      dataChecksums: true
+      # -- WAL segment size in MB.
+      # @section -- Database
+      walSegmentSize: 32
+  # @schema additionalProperties: true
+  # -- Backup configuration (barman-cloud plugin to S3), forwarded to the subchart's `backups` values. The keys below are this chart's layered infra defaults; any upstream key may be added.
+  # @section -- Database
   backups:
+    # -- Enable automated backups. Requires destinationPath and secret.name.
+    # @section -- Database
     enabled: false
-    destinationPath: ""  # required when enabled, e.g. s3://eresearch-k8s-postgres-backup/<app>-<env>-backup
+    # -- Backup method; `plugin` uses the barman-cloud ObjectStore.
+    # @section -- Database
+    method: plugin
+    # @schema additionalProperties: true
+    # -- barman-cloud plugin reference.
+    # @section -- Database
+    pluginConfiguration:
+      # -- Plugin name.
+      # @section -- Database
+      name: barman-cloud.cloudnative-pg.io
+    # -- Object store provider.
+    # @section -- Database
+    provider: s3
+    # -- Object store endpoint.
+    # @section -- Database
+    endpointURL: https://s3.ap-southeast-2.amazonaws.com/
+    # -- S3 destination for backups. Required when enabled, e.g. s3://eresearch-k8s-postgres-backup/<app>-<env>-backup
+    # @section -- Database
+    destinationPath: ""
+    # @schema additionalProperties: true
+    # -- Object store credentials.
+    # @section -- Database
     secret:
-      name: ""           # required when enabled: existing Secret with ACCESS_KEY_ID / ACCESS_SECRET_KEY
+      # -- Create the credentials Secret from values instead of referencing an existing one.
+      # @section -- Database
+      create: false
+      # -- Existing Secret with ACCESS_KEY_ID / ACCESS_SECRET_KEY. Required when backups are enabled.
+      # @section -- Database
+      name: ""
+    # @schema additionalProperties: true
+    # -- WAL archiving.
+    # @section -- Database
+    wal:
+      # -- Maximum parallel WAL archive/restore operations.
+      # @section -- Database
+      maxParallel: 32
+    # -- How long backups are retained.
+    # @section -- Database
+    retentionPolicy: 14d
   # @ignore -- example
   databases: []          # CNPG Database resources; entries take name/owner/extensions etc.
 

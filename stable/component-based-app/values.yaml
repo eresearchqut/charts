@@ -2,6 +2,13 @@
 # For usage view values.example.yaml, which also generates the documentation.
 # This is the source of truth for the defaults.
 
+# Helm release name override; falls back to the chart name.
+nameOverride: ""
+# Helm release full name override; falls back to <release>-<chart> (or the release name when it already contains the chart name).
+fullnameOverride: ""
+# Application version; when set, tags resources with the app.kubernetes.io/version label.
+appVersion: ""
+
 global: {}
 
 resources: {}
