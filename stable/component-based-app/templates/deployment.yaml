@@ -127,35 +127,15 @@ spec:
           {{- end }}
           {{- with $spec.livenessProbe }}
           livenessProbe:
-            httpGet:
-              path: {{ .path }}
-              port: http
-            initialDelaySeconds: {{ .initialDelaySeconds | default 0 }}
-            periodSeconds: {{ .periodSeconds | default 10 }}
-            timeoutSeconds: {{ .timeoutSeconds | default 1 }}
-            failureThreshold: {{ .failureThreshold | default 3 }}
-            successThreshold: {{ .successThreshold | default 1 }}
+            {{- include "component-based-app.httpProbe" (dict "kind" "liveness" "probe" .) | nindent 12 }}
           {{- end }}
           {{- with $spec.readinessProbe }}
           readinessProbe:
-            httpGet:
-              path: {{ .path }}
-              port: http
-            initialDelaySeconds: {{ .initialDelaySeconds | default 0 }}
-            periodSeconds: {{ .periodSeconds | default 10 }}
-            timeoutSeconds: {{ .timeoutSeconds | default 1 }}
-            failureThreshold: {{ .failureThreshold | default 3 }}
-            successThreshold: {{ .successThreshold | default 1 }}
+            {{- include "component-based-app.httpProbe" (dict "kind" "readiness" "probe" .) | nindent 12 }}
           {{- end }}
           {{- with $spec.startupProbe }}
           startupProbe:
-            httpGet:
-              path: {{ .path }}
-              port: http
-            initialDelaySeconds: {{ .initialDelaySeconds | default 0 }}
-            periodSeconds: {{ .periodSeconds | default 10 }}
-            timeoutSeconds: {{ .timeoutSeconds | default 1 }}
-            failureThreshold: {{ .failureThreshold | default 30 }}
+            {{- include "component-based-app.httpProbe" (dict "kind" "startup" "probe" .) | nindent 12 }}
           {{- end }}
           {{- $containerSecurityContext := or $spec.containerSecurityContext $.Values.containerSecurityContext }}
           {{- with $containerSecurityContext }}

@@ -276,6 +276,10 @@
                                     "description": "Consecutive successes to mark ready.",
                                     "type": "integer"
                                 },
+                                "terminationGracePeriodSeconds": {
+                                    "description": "Grace period for pod shutdown after the probe fails. Falls back to the pod-level grace period when unset.",
+                                    "type": "integer"
+                                },
                                 "timeoutSeconds": {
                                     "description": "Probe timeout.",
                                     "type": "integer"
@@ -470,6 +474,10 @@
                                 },
                                 "periodSeconds": {
                                     "description": "Interval between probes.",
+                                    "type": "integer"
+                                },
+                                "terminationGracePeriodSeconds": {
+                                    "description": "Grace period for pod shutdown after the probe fails. Falls back to the pod-level grace period when unset.",
                                     "type": "integer"
                                 },
                                 "timeoutSeconds": {
@@ -3613,6 +3621,10 @@
                             "default": 1,
                             "type": "integer"
                         },
+                        "terminationGracePeriodSeconds": {
+                            "description": "Grace period for pod shutdown after the probe fails. Falls back to the pod-level grace period when unset.",
+                            "type": "integer"
+                        },
                         "timeoutSeconds": {
                             "default": 1,
                             "type": "integer"
@@ -3767,6 +3779,10 @@
                         },
                         "periodSeconds": {
                             "default": 10,
+                            "type": "integer"
+                        },
+                        "terminationGracePeriodSeconds": {
+                            "description": "Grace period for pod shutdown after the probe fails. Falls back to the pod-level grace period when unset.",
                             "type": "integer"
                         },
                         "timeoutSeconds": {

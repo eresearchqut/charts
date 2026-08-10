@@ -22,7 +22,7 @@ global: {}
 # -- (k8s/core/v1.ResourceRequirements) Default resource requests and limits. Individual components can override this.
 # @default -- `{}`
 resources:
-  # @ignore -- example
+  # @ignore
   requests:
     cpu: "100m"
     memory: "128Mi"
@@ -113,6 +113,10 @@ components:
       # @section -- Components
       # @default -- `nil`
       successThreshold: 1
+      # -- (int) Grace period for pod shutdown after the probe fails. Falls back to the pod-level grace period when unset.
+      # @section -- Components
+      # @default -- `nil`
+      terminationGracePeriodSeconds: 30
     # -- Container readiness probe. Omit the block to disable.
     # @section -- Components
     # @default -- `nil`
@@ -165,6 +169,10 @@ components:
       # @section -- Components
       # @default -- `nil`
       failureThreshold: 30
+      # -- (int) Grace period for pod shutdown after the probe fails. Falls back to the pod-level grace period when unset.
+      # @section -- Components
+      # @default -- `nil`
+      terminationGracePeriodSeconds: 30
     # -- When true, injects `DB_USERNAME`, `DB_PASSWORD`, `DB_HOST`, and `DB_PORT` from the database secret.
     # @section -- Components
     # @default -- `nil`
@@ -559,7 +567,7 @@ database:
     # @section -- Database
     retentionPolicy: 14d
   # @ignore -- example
-  databases: []          # CNPG Database resources; entries take name/owner/extensions etc.
+  databases: [] # CNPG Database resources; entries take name/owner/extensions etc.
 
 # @schema required: false
 # -- NetworkPolicy configuration

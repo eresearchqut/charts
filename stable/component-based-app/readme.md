@@ -79,6 +79,7 @@ Each component can reference secrets via `appSecretKeys`. The values are from th
 | components.*.livenessProbe.path | string | `nil` | HTTP path for the liveness probe (e.g., /healthz). |
 | components.*.livenessProbe.periodSeconds | int | `nil` | Interval between probes. |
 | components.*.livenessProbe.successThreshold | int | `nil` | Consecutive successes to mark ready. |
+| components.*.livenessProbe.terminationGracePeriodSeconds | int | `nil` | Grace period for pod shutdown after the probe fails. Falls back to the pod-level grace period when unset. |
 | components.*.livenessProbe.timeoutSeconds | int | `nil` | Probe timeout. |
 | components.*.monitoring | object | `nil` | Prometheus ServiceMonitor configuration. Requires prometheus-operator. Omit to disable. |
 | components.*.monitoring.interval | string | `nil` | Prometheus scrape interval. |
@@ -111,6 +112,7 @@ Each component can reference secrets via `appSecretKeys`. The values are from th
 | components.*.startupProbe.initialDelaySeconds | int | `nil` | Delay before first probe. |
 | components.*.startupProbe.path | string | `nil` | HTTP path for the startup probe. Empty string disables it. |
 | components.*.startupProbe.periodSeconds | int | `nil` | Interval between probes. |
+| components.*.startupProbe.terminationGracePeriodSeconds | int | `nil` | Grace period for pod shutdown after the probe fails. Falls back to the pod-level grace period when unset. |
 | components.*.startupProbe.timeoutSeconds | int | `nil` | Probe timeout. |
 | components.*.tolerations | list of [core/v1.Toleration](https://raw.githubusercontent.com/yannh/kubernetes-json-schema/master/v1.34.3/_definitions.json#/definitions/io.k8s.api.core/v1.Toleration) | `[]` | Tolerations for pod scheduling onto tainted nodes. |
 | components.*.volumeMounts | list of [core/v1.VolumeMount](https://raw.githubusercontent.com/yannh/kubernetes-json-schema/master/v1.34.3/_definitions.json#/definitions/io.k8s.api.core/v1.VolumeMount) | `[]` | Additional volume mounts into the component's main container. |
