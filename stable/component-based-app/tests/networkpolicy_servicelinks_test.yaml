@@ -60,7 +60,7 @@ tests:
             to:
               - podSelector:
                   matchLabels:
-                    cnpg.io/cluster: myapp-component-based-app-db
+                    cnpg.io/cluster: myapp-database
             ports:
               - port: 5432
                 protocol: TCP
@@ -76,7 +76,7 @@ tests:
             to:
               - podSelector:
                   matchLabels:
-                    cnpg.io/cluster: myapp-component-based-app-db
+                    cnpg.io/cluster: myapp-database
 
   # --- serviceLinks: egress from source to target ---
   - it: serviceLink creates egress rule from source to target component's port

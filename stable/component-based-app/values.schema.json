@@ -525,122 +525,26 @@
             "additionalProperties": true
         },
         "database": {
+            "description": "CloudNativePG `cluster` subchart passthrough (cloudnative-pg/charts, pinned in Chart.yaml). All keys except `enabled` are forwarded verbatim to the subchart; see https://github.com/cloudnative-pg/charts/tree/cluster-v0.8.1/charts/cluster for the full reference. This chart layers infra defaults: mirror-registry image, vsan-file storage classes, 1 instance, pod anti-affinity, PodMonitor on, barman-cloud plugin backups (S3 ap-southeast-2, existing-secret credentials, 14d retention, daily 04:00 schedule).",
             "type": "object",
             "properties": {
-                "backup": {
+                "backups": {
                     "type": "object",
-                    "properties": {
-                        "enabled": {
-                            "description": "Enable Barman Cloud Plugin backups for the CNPG cluster.",
-                            "type": "boolean"
-                        },
-                        "envName": {
-                            "description": "Kubernetes cluster/environment name used in the backup object path. Required when backups are enabled.",
-                            "type": "string"
-                        },
-                        "instanceName": {
-                            "description": "Application instance name used in the backup object path. Defaults to the chart fullname when empty.",
-                            "type": "string"
-                        },
-                        "schedule": {
-                            "description": "Six-field CNPG cron schedule, including seconds, for `ScheduledBackup`.",
-                            "type": "string"
-                        },
-                        "secretName": {
-                            "description": "Name of the Secret containing S3 `ACCESS_KEY_ID` and `ACCESS_SECRET_KEY` keys for database backups.",
-                            "type": "string"
-                        }
-                    },
-                    "additionalProperties": false
+                    "additionalProperties": true
+                },
+                "cluster": {
+                    "type": "object",
+                    "additionalProperties": true
+                },
+                "databases": {
+                    "type": "array"
                 },
                 "enabled": {
                     "description": "Enable or disable the CloudNativePG PostgreSQL database cluster.",
                     "type": "boolean"
-                },
-                "extensions": {
-                    "description": "List of PostgreSQL extensions to declaratively manage via CNPG's Database resource. Extensions bundled with the base CNPG operand image (e.g. pg_trgm) need only `name`. Extensions requiring a separate binary (e.g. pgvector) must also set `image.reference` to mount via CloudNativePG's ImageVolume support (requires PostgreSQL 18+, Kubernetes 1.35+ or 1.33/1.34 with the ImageVolume feature gate, and containerd \u003e=2.1 or CRI-O \u003e=1.31).",
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/$defs/database-extension-item.yaml",
-                        "type": "object",
-                        "properties": {
-                            "image": {
-                                "description": "Mounts the extension as a read-only ImageVolume on the Cluster. Only needed for extensions not already bundled in the base operand image.",
-                                "type": "object",
-                                "properties": {
-                                    "reference": {
-                                        "description": "Container image reference for the extension.",
-                                        "type": "string"
-                                    }
-                                },
-                                "additionalProperties": false
-                            },
-                            "name": {
-                                "description": "Extension name to create (e.g. pg_trgm, vector).",
-                                "type": "string"
-                            },
-                            "version": {
-                                "description": "Extension version to install. Omit to use the latest available version.",
-                                "type": "string"
-                            }
-                        },
-                        "additionalProperties": false
-                    }
-                },
-                "extraEgress": {
-                    "description": "Additional NetworkPolicy egress rules appended to the database NetworkPolicy. Only meaningful when networkPolicy is set. Standard Kubernetes NetworkPolicyEgressRule format (e.g., S3 for WAL archiving).",
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/$defs/_definitions.json/definitions/io.k8s.api.networking.v1.NetworkPolicyEgressRule"
-                    }
-                },
-                "image": {
-                    "type": "object",
-                    "properties": {
-                        "repository": {
-                            "description": "CloudNativePG PostgreSQL image repository.",
-                            "type": "string"
-                        },
-                        "tag": {
-                            "description": "CloudNativePG PostgreSQL image tag (version). Must be set explicitly.",
-                            "type": "string"
-                        }
-                    },
-                    "additionalProperties": false
-                },
-                "instances": {
-                    "description": "Number of CNPG cluster instances. Set \u003e 1 for high availability.",
-                    "type": "integer",
-                    "minimum": 1
-                },
-                "resources": {
-                    "description": "Resource requests and limits for the database instances.",
-                    "$ref": "#/$defs/_definitions.json/definitions/io.k8s.api.core.v1.ResourceRequirements",
-                    "type": "object",
-                    "additionalProperties": true
-                },
-                "secretName": {
-                    "description": "Name of the secret containing database credentials.",
-                    "type": "string"
-                },
-                "storageClass": {
-                    "description": "PVC storage class for the database. Defaults to vsan-file",
-                    "type": "string"
-                },
-                "storageSize": {
-                    "description": "PVC storage size for the database (Kubernetes quantity).",
-                    "type": "string"
-                },
-                "walStorageClass": {
-                    "description": "PVC storage class for WAL. Defaults to vsan-file",
-                    "type": "string"
-                },
-                "walStorageSize": {
-                    "description": "PVC storage size for WAL (Kubernetes quantity).",
-                    "type": "string"
                 }
             },
-            "additionalProperties": false
+            "additionalProperties": true
         },
         "fullnameOverride": {
             "description": "Helm release full name override.",
@@ -767,6 +671,13 @@
                     "$ref": "#/$defs/_definitions.json/definitions/io.k8s.api.networking.v1.NetworkPolicyPeer",
                     "type": "object",
                     "additionalProperties": true
+                },
+                "databaseExtraEgress": {
+                    "description": "Additional NetworkPolicy egress rules appended to the database NetworkPolicy. Only meaningful when database is enabled. Standard Kubernetes NetworkPolicyEgressRule format (e.g., S3 for WAL archiving).",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/$defs/_definitions.json/definitions/io.k8s.api.networking.v1.NetworkPolicyEgressRule"
+                    }
                 },
                 "enabled": {
                     "description": "Enable or disable all NetworkPolicy resources for this release.",
@@ -3687,39 +3598,6 @@
                     "items": {
                         "$ref": "#/$defs/_definitions.json/definitions/io.k8s.api.core.v1.Volume"
                     }
-                }
-            },
-            "additionalProperties": false
-        },
-        "database-extension-item.yaml": {
-            "$schema": "https://json-schema.org/draft/2020-12/schema",
-            "description": "A PostgreSQL extension declaratively created via CNPG's Database resource. Extensions bundled with the base CNPG operand image (e.g. pg_trgm) need only `name`. Extensions requiring a separate binary (e.g. pgvector) must also set `image.reference` to mount it via CloudNativePG's ImageVolume support.\n",
-            "type": "object",
-            "required": [
-                "name"
-            ],
-            "properties": {
-                "image": {
-                    "description": "Mounts the extension as a read-only ImageVolume on the Cluster. Requires PostgreSQL 18+, Kubernetes 1.35+ (or 1.33/1.34 with the ImageVolume feature gate enabled), and containerd \u003e=2.1.0 or CRI-O \u003e=1.31. Omit for extensions already bundled in the operand image.\n",
-                    "type": "object",
-                    "required": [
-                        "reference"
-                    ],
-                    "properties": {
-                        "reference": {
-                            "description": "Container image reference for the extension (e.g. ghcr.io/cloudnative-pg/pgvector:0.8.6-18-bookworm).",
-                            "type": "string"
-                        }
-                    },
-                    "additionalProperties": false
-                },
-                "name": {
-                    "description": "Extension name to create (e.g. pg_trgm, vector).",
-                    "type": "string"
-                },
-                "version": {
-                    "description": "Extension version to install. Omit to use the latest available version.",
-                    "type": "string"
                 }
             },
             "additionalProperties": false

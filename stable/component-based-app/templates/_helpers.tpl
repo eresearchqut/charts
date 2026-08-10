@@ -76,3 +76,31 @@ Usage: {{ include "component-based-app.ingressPublicRule" <port> | nindent 4 }}
     - port: {{ . }}
       protocol: TCP
 {{- end -}}
+
+{{/*
+Name of the CNPG Cluster created by the aliased "database" subchart
+(cloudnative-pg "cluster" chart). Mirrors the subchart's "cluster.fullname"
+helper: alias rewrites .Chart.Name to "database".
+*/}}
+{{- define "component-based-app.databaseClusterName" -}}
+{{- if .Values.database.fullnameOverride }}
+{{- .Values.database.fullnameOverride | trunc 63 | trimSuffix "-" }}
+{{- else }}
+{{- $name := .Values.database.nameOverride | default "database" }}
+{{- if contains $name .Release.Name }}
+{{- .Release.Name | trunc 63 | trimSuffix "-" }}
+{{- else }}
+{{- printf "%s-%s" .Release.Name $name | trunc 63 | trimSuffix "-" }}
+{{- end }}
+{{- end }}
+{{- end }}
+
+{{/*
+Secret holding the application database credentials (keys: username, password).
+Uses cluster.initdb.secret.name when the user supplies one, otherwise the
+CNPG auto-generated "<cluster>-app" secret.
+*/}}
+{{- define "component-based-app.databaseSecretName" -}}
+{{- $initdbSecret := dig "cluster" "initdb" "secret" "name" "" .Values.database }}
+{{- $initdbSecret | default (printf "%s-app" (include "component-based-app.databaseClusterName" .)) }}
+{{- end }}

@@ -10,7 +10,7 @@ metadata:
 spec:
   podSelector:
     matchLabels:
-      cnpg.io/cluster: {{ include "component-based-app.fullname" . }}-db
+      cnpg.io/cluster: {{ include "component-based-app.databaseClusterName" . }}
   policyTypes:
     - Ingress
     - Egress
@@ -50,7 +50,7 @@ spec:
     - from:
         - podSelector:
             matchLabels:
-              cnpg.io/cluster: {{ include "component-based-app.fullname" . }}-db
+              cnpg.io/cluster: {{ include "component-based-app.databaseClusterName" . }}
   egress:
     - ports:
         - port: 53
@@ -60,15 +60,15 @@ spec:
     - to:
         - podSelector:
             matchLabels:
-              cnpg.io/cluster: {{ include "component-based-app.fullname" . }}-db
+              cnpg.io/cluster: {{ include "component-based-app.databaseClusterName" . }}
     {{- /* Kubernetes API server: required by CNPG for leader election and cluster management.
-         Restrict further via database.extraEgress if the API server CIDR is known. */}}
+         Restrict further via networkPolicy.databaseExtraEgress if the API server CIDR is known. */}}
     - ports:
         - port: 443
           protocol: TCP
         - port: 6443
           protocol: TCP
-    {{- with .Values.database.extraEgress }}
+    {{- with .Values.networkPolicy.databaseExtraEgress }}
     {{- toYaml . | nindent 4 }}
     {{- end }}
 
@@ -94,7 +94,7 @@ spec:
     - to:
         - podSelector:
             matchLabels:
-              cnpg.io/cluster: {{ include "component-based-app.fullname" . }}-db
+              cnpg.io/cluster: {{ include "component-based-app.databaseClusterName" . }}
       ports:
         - port: 5432
           protocol: TCP

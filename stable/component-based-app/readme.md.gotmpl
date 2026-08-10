@@ -69,7 +69,7 @@ When using the database, the following prerequisites are required.
 
 1. The namespace must have the label `app/managed-by: cnpg-operator` for CNPG
    to discover and manage the database cluster.
-2. A database credential secret containing a `username` and `password` key provided to `database.secretName`
+2. For backups, an existing Secret with `ACCESS_KEY_ID`/`ACCESS_SECRET_KEY` referenced by `database.backups.secret.name`.
 
 
 {{ template "extra.usage" . }}
@@ -104,31 +104,63 @@ Each component can reference secrets via `appSecretKeys`. The values are from th
 
 ### Database
 
-CloudNativePG PostgreSQL cluster. When set, creates a `Cluster` resource with
-configurable instances, storage, and resource limits.
+The database is the upstream [CloudNativePG `cluster` chart](https://github.com/cloudnative-pg/charts/tree/cluster-v0.8.1/charts/cluster)
+(cloudnative-pg/charts), mounted as a Helm dependency aliased `database` and version-pinned
+in `Chart.yaml`. Every value under `database.*` except `enabled` is forwarded verbatim to the
+subchart — see the [pinned `cluster-v0.8.1` values reference](https://github.com/cloudnative-pg/charts/blob/cluster-v0.8.1/charts/cluster/values.yaml)
+for the full set of options.
 
-- Remember to set the namespace label and secrets.
-- `database.image.tag` is **required** — no default version is applied.
-- You must enable backups with `database.backup.enabled`
-  The credentials secret must contain `ACCESS_KEY_ID` and
-  `ACCESS_SECRET_KEY`; CNPG schedules use six cron fields,
-  with seconds first.
+#### Infra defaults
 
-#### Extensions
+This chart layers the following defaults over the upstream chart (all overridable per-release):
 
-`database.extensions` declares PostgreSQL extensions via CNPG's `Database`
-resource (`CREATE EXTENSION IF NOT EXISTS`), applied non-destructively to an
-already-bootstrapped cluster.
+| Concern | Default |
+|---|---|
+| Image | `registry.eres.qut.edu.au/ghcr/cloudnative-pg/postgresql:17` (mirror registry) |
+| Instances | 1 |
+| Storage | `vsan-file`, 8Gi; `walStorage` enabled, 2Gi `vsan-file` |
+| Resources | 0.5→1 CPU, 256Mi→1Gi |
+| Anti-affinity | enabled, `topologyKey: kubernetes.io/hostname` |
+| Monitoring | PodMonitor on, PrometheusRule off |
+| initdb | `dataChecksums: true`, `walSegmentSize: 32` |
+| Backups | barman-cloud plugin method, S3 `ap-southeast-2`, existing Secret credentials, `walMaxParallel: 32`, 14d retention, daily 04:00 schedule |
 
-- Extensions bundled in the CNPG operand image (e.g. `pg_trgm`) need only a
-  `name`.
-- Extensions requiring a separate binary (e.g. `vector`/pgvector) must also
-  set `image.reference`, which mounts the extension as a read-only
-  ImageVolume on the `Cluster`. This requires PostgreSQL 18+, Kubernetes
-  1.35+ (or 1.33/1.34 with the `ImageVolume` feature gate manually enabled),
-  and containerd >=2.1.0 or CRI-O >=1.31 — verify this against the target
-  cluster before enabling, or the extension image silently fails to mount.
-- Adding an `image` entry triggers a CNPG rolling restart of the cluster.
+#### Credentials
+
+CNPG auto-generates the app database (`app`), owner (`app`), and a `kubernetes.io/basic-auth`
+secret named `<cluster>-app` unless `database.cluster.initdb.secret.name` points at an existing
+secret. When supplying your own secret, its `username` key must equal `cluster.initdb.owner`
+(which defaults to the database name).
+
+#### Connecting
+
+The cluster is named `<release>-database` by default (`database.fullnameOverride` to change it).
+Components with `allowDatabaseAccess: true` reach it at `<cluster>-rw:5432` via the injected
+`DB_HOST`, `DB_PORT`, `DB_USERNAME`, `DB_PASSWORD` environment variables.
+
+#### Migrating from 0.1.x
+
+| 0.1.x key | 0.2.x key |
+|---|---|
+| `database.image.repository` + `database.image.tag` | `database.cluster.imageName` (single `repo:tag` string) |
+| `database.instances` | `database.cluster.instances` |
+| `database.storageSize` / `database.storageClass` | `database.cluster.storage.size` / `.storageClass` |
+| `database.walStorageSize` / `database.walStorageClass` | `database.cluster.walStorage.size` / `.storageClass` |
+| `database.resources` | `database.cluster.resources` |
+| `database.secretName` | `database.cluster.initdb.secret.name` (omit for auto-generated) |
+| `database.extensions` (bundled, e.g. pg_trgm) | `database.databases[]` entry with `name`, `owner`, `extensions` |
+| `database.extensions[].image` (ImageVolume) | **removed** — bake the extension into the operand image |
+| `database.backup.enabled` | `database.backups.enabled` |
+| `database.backup.secretName` | `database.backups.secret.name` |
+| `database.backup.schedule` | `database.backups.scheduledBackups[0].schedule` |
+| `database.backup.envName` / `instanceName` | `database.backups.destinationPath` (explicit `s3://eresearch-k8s-postgres-backup/<instance>-<env>-backup`) |
+| `database.extraEgress` | `networkPolicy.databaseExtraEgress` |
+
+**Existing releases (data preservation):** the Cluster is renamed `<fullname>-db` → `<release>-database`;
+upgrading in place provisions a NEW empty cluster. To keep the existing cluster, set
+`database.fullnameOverride: <old fullname>-db` and
+`database.cluster.initdb: { database: <chart name>, owner: <chart name>, secret: { name: <old secret name> } }`,
+and keep storage sizes identical.
 
 {{ template "chart.sectionTable" . }}
 

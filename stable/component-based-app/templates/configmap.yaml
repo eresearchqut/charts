@@ -1,8 +1,6 @@
 {{- /*
 Render ConfigMaps declared per component under components.<name>.configMaps.
-Each entry is `<configmap-name>: { <fileKey>: <content> }`. A matching
-checksum/config pod annotation (see deployment.yaml) is derived from these so
-that changing config content rolls the component's Pods.
+Each entry is `<configmap-name>: { <fileKey>: <content> }`.
 */}}
 {{- range $name, $spec := .Values.components }}
 {{- range $cmName, $cmData := $spec.configMaps }}

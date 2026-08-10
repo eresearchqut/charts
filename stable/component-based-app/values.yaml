@@ -14,26 +14,62 @@ ingress:
   annotations: {}
   paths: []
 
+# CloudNativePG cluster subchart (cloudnative-pg/charts, chart "cluster", aliased "database").
+# Every key except `enabled` is passed through to the subchart; see upstream docs:
+# https://github.com/cloudnative-pg/charts/tree/cluster-v0.8.1/charts/cluster
+# The keys below are our infra defaults layered over the upstream values.
 database:
   enabled: false
-  image:
-    repository: registry.eres.qut.edu.au/ghcr/cloudnative-pg/postgresql
-  storageSize: 8Gi
-  walStorageSize: 2Gi
-  instances: 1
-  resources:
-    requests:
-      cpu: "0.5"
-      memory: 256Mi
-    limits:
-      cpu: "1"
-      memory: 1Gi
-  extraEgress: []
-  extensions: []
-  backup:
+  cluster:
+    instances: 1
+    imageName: registry.eres.qut.edu.au/ghcr/cloudnative-pg/postgresql:17
+    storage:
+      size: 8Gi
+      storageClass: vsan-file
+    walStorage:
+      enabled: true
+      size: 2Gi
+      storageClass: vsan-file
+    resources:
+      requests:
+        cpu: "0.5"
+        memory: 256Mi
+      limits:
+        cpu: "1"
+        memory: 1Gi
+    affinity:
+      enablePodAntiAffinity: true
+      topologyKey: kubernetes.io/hostname
+    monitoring:
+      enabled: true
+      prometheusRule:
+        enabled: false
+    initdb:
+      dataChecksums: true
+      walSegmentSize: 32
+  backups:
     enabled: false
-    secretName: ""
-    schedule: "0 0 4 * * *"
+    method: plugin
+    pluginConfiguration:
+      name: barman-cloud.cloudnative-pg.io
+    provider: s3
+    endpointURL: https://s3.ap-southeast-2.amazonaws.com/
+    # Required when backups are enabled, e.g. s3://eresearch-k8s-postgres-backup/<app>-<env>-backup
+    destinationPath: ""
+    secret:
+      create: false
+      # Required when backups are enabled: existing Secret with ACCESS_KEY_ID / ACCESS_SECRET_KEY
+      name: ""
+    wal:
+      maxParallel: 32
+    scheduledBackups:
+      - name: daily-backup
+        schedule: "0 0 4 * * *"
+        backupOwnerReference: self
+        method: plugin
+        pluginConfiguration:
+          name: barman-cloud.cloudnative-pg.io
+    retentionPolicy: 14d
 
 networkPolicy:
   enabled: true
@@ -45,6 +81,8 @@ networkPolicy:
     namespaceSelector:
       matchLabels:
         kubernetes.io/metadata.name: cnpg-system
+  # Additional egress rules appended to the database NetworkPolicy (k8s NetworkPolicyEgressRule format).
+  databaseExtraEgress: []
 
 serviceAccount:
   enabled: false

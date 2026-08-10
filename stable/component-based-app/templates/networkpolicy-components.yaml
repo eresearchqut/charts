@@ -21,7 +21,7 @@ spec:
     - to:
         - podSelector:
             matchLabels:
-              cnpg.io/cluster: {{ include "component-based-app.fullname" $ }}-db
+              cnpg.io/cluster: {{ include "component-based-app.databaseClusterName" $ }}
       ports:
         - port: 5432
           protocol: TCP

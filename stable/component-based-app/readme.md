@@ -1,6 +1,6 @@
 # component-based-app
 
-![Version: 0.1.18](https://img.shields.io/badge/Version-0.1.18-informational?style=flat-square) ![Type: application](https://img.shields.io/badge/Type-application-informational?style=flat-square)
+![Version: 0.2.0](https://img.shields.io/badge/Version-0.2.0-informational?style=flat-square) ![Type: application](https://img.shields.io/badge/Type-application-informational?style=flat-square)
 
 Generic library chart for a research application deployment.
 
@@ -10,7 +10,7 @@ When using the database, the following prerequisites are required.
 
 1. The namespace must have the label `app/managed-by: cnpg-operator` for CNPG
    to discover and manage the database cluster.
-2. A database credential secret containing a `username` and `password` key provided to `database.secretName`
+2. For backups, an existing Secret with `ACCESS_KEY_ID`/`ACCESS_SECRET_KEY` referenced by `database.backups.secret.name`.
 
 ## Installing the Chart
 
@@ -117,59 +117,68 @@ Each component can reference secrets via `appSecretKeys`. The values are from th
 
 ### Database
 
-CloudNativePG PostgreSQL cluster. When set, creates a `Cluster` resource with
-configurable instances, storage, and resource limits.
+The database is the upstream [CloudNativePG `cluster` chart](https://github.com/cloudnative-pg/charts/tree/cluster-v0.8.1/charts/cluster)
+(cloudnative-pg/charts), mounted as a Helm dependency aliased `database` and version-pinned
+in `Chart.yaml`. Every value under `database.*` except `enabled` is forwarded verbatim to the
+subchart — see the [pinned `cluster-v0.8.1` values reference](https://github.com/cloudnative-pg/charts/blob/cluster-v0.8.1/charts/cluster/values.yaml)
+for the full set of options.
 
-- Remember to set the namespace label and secrets.
-- `database.image.tag` is **required** — no default version is applied.
-- You must enable backups with `database.backup.enabled`
-  The credentials secret must contain `ACCESS_KEY_ID` and
-  `ACCESS_SECRET_KEY`; CNPG schedules use six cron fields,
-  with seconds first.
+#### Infra defaults
 
-#### Extensions
+This chart layers the following defaults over the upstream chart (all overridable per-release):
 
-`database.extensions` declares PostgreSQL extensions via CNPG's `Database`
-resource (`CREATE EXTENSION IF NOT EXISTS`), applied non-destructively to an
-already-bootstrapped cluster.
+| Concern | Default |
+|---|---|
+| Image | `registry.eres.qut.edu.au/ghcr/cloudnative-pg/postgresql:17` (mirror registry) |
+| Instances | 1 |
+| Storage | `vsan-file`, 8Gi; `walStorage` enabled, 2Gi `vsan-file` |
+| Resources | 0.5→1 CPU, 256Mi→1Gi |
+| Anti-affinity | enabled, `topologyKey: kubernetes.io/hostname` |
+| Monitoring | PodMonitor on, PrometheusRule off |
+| initdb | `dataChecksums: true`, `walSegmentSize: 32` |
+| Backups | barman-cloud plugin method, S3 `ap-southeast-2`, existing Secret credentials, `walMaxParallel: 32`, 14d retention, daily 04:00 schedule |
 
-- Extensions bundled in the CNPG operand image (e.g. `pg_trgm`) need only a
-  `name`.
-- Extensions requiring a separate binary (e.g. `vector`/pgvector) must also
-  set `image.reference`, which mounts the extension as a read-only
-  ImageVolume on the `Cluster`. This requires PostgreSQL 18+, Kubernetes
-  1.35+ (or 1.33/1.34 with the `ImageVolume` feature gate manually enabled),
-  and containerd >=2.1.0 or CRI-O >=1.31 — verify this against the target
-  cluster before enabling, or the extension image silently fails to mount.
-- Adding an `image` entry triggers a CNPG rolling restart of the cluster.
+#### Credentials
+
+CNPG auto-generates the app database (`app`), owner (`app`), and a `kubernetes.io/basic-auth`
+secret named `<cluster>-app` unless `database.cluster.initdb.secret.name` points at an existing
+secret. When supplying your own secret, its `username` key must equal `cluster.initdb.owner`
+(which defaults to the database name).
+
+#### Connecting
+
+The cluster is named `<release>-database` by default (`database.fullnameOverride` to change it).
+Components with `allowDatabaseAccess: true` reach it at `<cluster>-rw:5432` via the injected
+`DB_HOST`, `DB_PORT`, `DB_USERNAME`, `DB_PASSWORD` environment variables.
+
+#### Migrating from 0.1.x
+
+| 0.1.x key | 0.2.x key |
+|---|---|
+| `database.image.repository` + `database.image.tag` | `database.cluster.imageName` (single `repo:tag` string) |
+| `database.instances` | `database.cluster.instances` |
+| `database.storageSize` / `database.storageClass` | `database.cluster.storage.size` / `.storageClass` |
+| `database.walStorageSize` / `database.walStorageClass` | `database.cluster.walStorage.size` / `.storageClass` |
+| `database.resources` | `database.cluster.resources` |
+| `database.secretName` | `database.cluster.initdb.secret.name` (omit for auto-generated) |
+| `database.extensions` (bundled, e.g. pg_trgm) | `database.databases[]` entry with `name`, `owner`, `extensions` |
+| `database.extensions[].image` (ImageVolume) | **removed** — bake the extension into the operand image |
+| `database.backup.enabled` | `database.backups.enabled` |
+| `database.backup.secretName` | `database.backups.secret.name` |
+| `database.backup.schedule` | `database.backups.scheduledBackups[0].schedule` |
+| `database.backup.envName` / `instanceName` | `database.backups.destinationPath` (explicit `s3://eresearch-k8s-postgres-backup/<instance>-<env>-backup`) |
+| `database.extraEgress` | `networkPolicy.databaseExtraEgress` |
+
+**Existing releases (data preservation):** the Cluster is renamed `<fullname>-db` → `<release>-database`;
+upgrading in place provisions a NEW empty cluster. To keep the existing cluster, set
+`database.fullnameOverride: <old fullname>-db` and
+`database.cluster.initdb: { database: <chart name>, owner: <chart name>, secret: { name: <old secret name> } }`,
+and keep storage sizes identical.
 
 | Key | Type | Default | Description |
 |-----|------|---------|-------------|
-| database.backup.enabled | bool | `false` | Enable Barman Cloud Plugin backups for the CNPG cluster. |
-| database.backup.envName | string | `""` | Kubernetes cluster/environment name used in the backup object path. Required when backups are enabled. |
-| database.backup.instanceName | string | `""` | Application instance name used in the backup object path. Defaults to the chart fullname when empty. |
-| database.backup.schedule | string | `"0 0 4 * * *"` | Six-field CNPG cron schedule, including seconds, for `ScheduledBackup`. |
-| database.backup.secretName | string | `""` | Name of the Secret containing S3 `ACCESS_KEY_ID` and `ACCESS_SECRET_KEY` keys for database backups. |
+| database | object | `{"enabled":false}` | CloudNativePG `cluster` subchart passthrough (cloudnative-pg/charts, pinned in Chart.yaml). All keys except `enabled` are forwarded verbatim to the subchart; see https://github.com/cloudnative-pg/charts/tree/cluster-v0.8.1/charts/cluster for the full reference. This chart layers infra defaults: mirror-registry image, vsan-file storage classes, 1 instance, pod anti-affinity, PodMonitor on, barman-cloud plugin backups (S3 ap-southeast-2, existing-secret credentials, 14d retention, daily 04:00 schedule). |
 | database.enabled | bool | `false` | Enable or disable the CloudNativePG PostgreSQL database cluster. |
-| database.extensions | list | `[]` | List of PostgreSQL extensions to declaratively manage via CNPG's Database resource. Extensions bundled with the base CNPG operand image (e.g. pg_trgm) need only `name`. Extensions requiring a separate binary (e.g. pgvector) must also set `image.reference` to mount via CloudNativePG's ImageVolume support (requires PostgreSQL 18+, Kubernetes 1.35+ or 1.33/1.34 with the ImageVolume feature gate, and containerd >=2.1 or CRI-O >=1.31). |
-| database.extensions[0].image | object | `nil` | Mounts the extension as a read-only ImageVolume on the Cluster. Only needed for extensions not already bundled in the base operand image. |
-| database.extensions[0].image.reference | string | `nil` | Container image reference for the extension. |
-| database.extensions[0].name | string | `nil` | Extension name to create (e.g. pg_trgm, vector). |
-| database.extensions[0].version | string | `nil` | Extension version to install. Omit to use the latest available version. |
-| database.extraEgress | list of [networking/v1.NetworkPolicyEgressRule](https://raw.githubusercontent.com/yannh/kubernetes-json-schema/master/v1.34.3/_definitions.json#/definitions/io.k8s.api.networking/v1.NetworkPolicyEgressRule) | `[]` | Additional NetworkPolicy egress rules appended to the database NetworkPolicy. Only meaningful when networkPolicy is set. Standard Kubernetes NetworkPolicyEgressRule format (e.g., S3 for WAL archiving). |
-| database.image.repository | string | `"registry.eres.qut.edu.au/ghcr/cloudnative-pg/postgresql"` | CloudNativePG PostgreSQL image repository. |
-| database.image.tag | Required | `"17"` | CloudNativePG PostgreSQL image tag (version). Must be set explicitly. |
-| database.instances | int | `1` | Number of CNPG cluster instances. Set > 1 for high availability. |
-| database.resources | [core/v1.ResourceRequirements](https://raw.githubusercontent.com/yannh/kubernetes-json-schema/master/v1.34.3/_definitions.json#/definitions/io.k8s.api.core/v1.ResourceRequirements) | `{"limits":{"cpu":"1","memory":"1Gi"},"requests":{"cpu":"0.5","memory":"256Mi"}}` | Resource requests and limits for the database instances. |
-| database.resources.limits.cpu | string | `"1"` | CPU limit for the database instance. |
-| database.resources.limits.memory | string | `"1Gi"` | Memory limit for the database instance. |
-| database.resources.requests.cpu | string | `"0.5"` | CPU request for the database instance. |
-| database.resources.requests.memory | string | `"256Mi"` | Memory request for the database instance. |
-| database.secretName | string | `""` | Name of the secret containing database credentials. |
-| database.storageClass | string | `""` | PVC storage class for the database. Defaults to vsan-file |
-| database.storageSize | string | `"8Gi"` | PVC storage size for the database (Kubernetes quantity). |
-| database.walStorageClass | string | `""` | PVC storage class for WAL. Defaults to vsan-file |
-| database.walStorageSize | string | `"2Gi"` | PVC storage size for WAL (Kubernetes quantity). |
 ### Image Automation
 
 | Key | Type | Default | Description |
@@ -260,8 +269,9 @@ components:
 ```
 | Key | Type | Default | Description |
 |-----|------|---------|-------------|
-| networkPolicy | object | `{"cnpgOperatorSelector":{"namespaceSelector":{"matchLabels":{"kubernetes.io/metadata.name":"cnpg-system"}}},"enabled":true,"monitoringSelector":{"namespaceSelector":{"matchLabels":{"kubernetes.io/metadata.name":"monitoring"}}}}` | NetworkPolicy configuration |
+| networkPolicy | object | `{"cnpgOperatorSelector":{"namespaceSelector":{"matchLabels":{"kubernetes.io/metadata.name":"cnpg-system"}}},"databaseExtraEgress":[],"enabled":true,"monitoringSelector":{"namespaceSelector":{"matchLabels":{"kubernetes.io/metadata.name":"monitoring"}}}}` | NetworkPolicy configuration |
 | networkPolicy.cnpgOperatorSelector | object | `{"namespaceSelector":{"matchLabels":{"kubernetes.io/metadata.name":"cnpg-system"}}}` | NetworkPolicyPeer selecting the CloudNativePG operator namespace. Required for CNPG health checks, switchover, and cluster management. |
+| networkPolicy.databaseExtraEgress | list of [networking/v1.NetworkPolicyEgressRule](https://raw.githubusercontent.com/yannh/kubernetes-json-schema/master/v1.34.3/_definitions.json#/definitions/io.k8s.api.networking/v1.NetworkPolicyEgressRule) | `[]` | Additional NetworkPolicy egress rules appended to the database NetworkPolicy. Only meaningful when database is enabled. Standard Kubernetes NetworkPolicyEgressRule format (e.g., S3 for WAL archiving). |
 | networkPolicy.enabled | bool | `true` | Enable or disable all NetworkPolicy resources for this release. |
 | networkPolicy.monitoringSelector | object | `{"namespaceSelector":{"matchLabels":{"kubernetes.io/metadata.name":"monitoring"}}}` | NetworkPolicyPeer selecting the Prometheus monitoring namespace. Traffic from this peer is allowed to reach the database metrics port (9187). |
 ### Other Values

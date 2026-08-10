@@ -1,10 +1,5 @@
 {{- if and .Values.imageUpdate .Values.imageUpdate.enabled }}
 {{- $repository := default (dict) .Values.imageUpdate.repository }}
-{{- /*
-  Create an ImageRepository + ImagePolicy pair for each component image.
-  The resource is named "<fullname>-<component>" so image update
-  annotations can target the component directly.
-*/}}
 {{- range $name, $spec := .Values.components }}
 {{- $repo := dig "image" "repository" "" $spec }}
 {{- if $repo }}
