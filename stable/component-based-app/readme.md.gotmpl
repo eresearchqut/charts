@@ -80,9 +80,10 @@ When using the database, the following prerequisites are required.
 {{- range .Sections.Sections }}
 
 {{- if eq .SectionName "Components" }}
+
 ### Components
 
-Used to create deployment-service-ingress-netpol. Designed to encapsulate a
+Used to create deployment-service-ingress-netpol combination. Designed to encapsulate a
 "component" of the application, for example the "backend" or "frontend" or even a "worker"
 
 Component keys must be valid Kubernetes DNS label names (lowercase alphanumeric + hyphens).
@@ -138,30 +139,6 @@ The cluster is named `<release>-database` by default (`database.fullnameOverride
 Components with `allowDatabaseAccess: true` reach it at `<cluster>-rw:5432` via the injected
 `DB_HOST`, `DB_PORT`, `DB_USERNAME`, `DB_PASSWORD` environment variables.
 
-#### Migrating from 0.1.x
-
-| 0.1.x key | 0.2.x key |
-|---|---|
-| `database.image.repository` + `database.image.tag` | `database.cluster.imageName` (single `repo:tag` string) |
-| `database.instances` | `database.cluster.instances` |
-| `database.storageSize` / `database.storageClass` | `database.cluster.storage.size` / `.storageClass` |
-| `database.walStorageSize` / `database.walStorageClass` | `database.cluster.walStorage.size` / `.storageClass` |
-| `database.resources` | `database.cluster.resources` |
-| `database.secretName` | `database.cluster.initdb.secret.name` (omit for auto-generated) |
-| `database.extensions` (bundled, e.g. pg_trgm) | `database.databases[]` entry with `name`, `owner`, `extensions` |
-| `database.extensions[].image` (ImageVolume) | **removed** — bake the extension into the operand image |
-| `database.backup.enabled` | `database.backups.enabled` |
-| `database.backup.secretName` | `database.backups.secret.name` |
-| `database.backup.schedule` | `database.backups.scheduledBackups[0].schedule` |
-| `database.backup.envName` / `instanceName` | `database.backups.destinationPath` (explicit `s3://eresearch-k8s-postgres-backup/<instance>-<env>-backup`) |
-| `database.extraEgress` | `networkPolicy.databaseExtraEgress` |
-
-**Existing releases (data preservation):** the Cluster is renamed `<fullname>-db` → `<release>-database`;
-upgrading in place provisions a NEW empty cluster. To keep the existing cluster, set
-`database.fullnameOverride: <old fullname>-db` and
-`database.cluster.initdb: { database: <chart name>, owner: <chart name>, secret: { name: <old secret name> } }`,
-and keep storage sizes identical.
-
 {{ template "chart.sectionTable" . }}
 
 {{- else if eq .SectionName "Network Policy"}}
@@ -184,13 +161,12 @@ Each component gets a `<fullname>-<name>` NetworkPolicy with `policyTypes:
 
 | Condition                           | Egress Rules                                       |
 |-------------------------------------|----------------------------------------------------|
-| `allowDatabaseAccess: true`              | Database access                                    |
+| `allowDatabaseAccess: true`         | Database access                                    |
 | `serviceLinks` entries              | TCP to each linked sibling component's port        |
-| Neither of the above                | **No egress rules beyond DNS** (from default-deny) |
+| Neither of the above                | **No egress rules beyond DNS** (via default-deny)  |
 | `extraEgress` entries (always)      | Appended as-is to the egress list                  |
 
-**Components without `allowDatabaseAccess` or `serviceLinks` have no egress rules
-beyond DNS.** If your component needs to reach external APIs or any other
+If your component needs to reach external APIs or any other
 outbound destination, use `extraEgress`:
 
 ```yaml

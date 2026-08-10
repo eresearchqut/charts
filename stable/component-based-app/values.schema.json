@@ -525,15 +525,213 @@
             "additionalProperties": true
         },
         "database": {
-            "description": "CloudNativePG `cluster` subchart passthrough (cloudnative-pg/charts, pinned in Chart.yaml). All keys except `enabled` are forwarded verbatim to the subchart; see https://github.com/cloudnative-pg/charts/tree/cluster-v0.8.1/charts/cluster for the full reference. This chart layers infra defaults: mirror-registry image, vsan-file storage classes, 1 instance, pod anti-affinity, PodMonitor on, barman-cloud plugin backups (S3 ap-southeast-2, existing-secret credentials, 14d retention, daily 04:00 schedule).",
+            "description": "CloudNativePG `cluster` subchart passthrough (cloudnative-pg/charts, pinned in Chart.yaml). All keys except `enabled` are forwarded verbatim to the subchart; see https://github.com/cloudnative-pg/charts/tree/cluster-v0.8.1/charts/cluster for the full reference. This chart layers infra defaults (all documented below): mirror-registry image, vsan-file storage classes, 1 instance, pod anti-affinity, PodMonitor on (PrometheusRule off), per-instance resource requests/limits, barman-cloud plugin backups (S3 ap-southeast-2, existing-secret credentials, 14d retention, daily 04:00 schedule).",
             "type": "object",
             "properties": {
                 "backups": {
+                    "description": "Backup configuration (barman-cloud plugin to S3), forwarded to the subchart's `backups` values. The keys below are this chart's layered infra defaults; any upstream key may be added.",
                     "type": "object",
+                    "properties": {
+                        "destinationPath": {
+                            "description": "S3 destination for backups. Required when enabled, e.g. s3://eresearch-k8s-postgres-backup/\u003capp\u003e-\u003cenv\u003e-backup",
+                            "type": "string"
+                        },
+                        "enabled": {
+                            "description": "Enable automated backups. Requires destinationPath and secret.name.",
+                            "type": "boolean"
+                        },
+                        "endpointURL": {
+                            "description": "Object store endpoint.",
+                            "type": "string"
+                        },
+                        "method": {
+                            "description": "Backup method; `plugin` uses the barman-cloud ObjectStore.",
+                            "type": "string"
+                        },
+                        "pluginConfiguration": {
+                            "description": "barman-cloud plugin reference.",
+                            "type": "object",
+                            "properties": {
+                                "name": {
+                                    "description": "Plugin name.",
+                                    "type": "string"
+                                }
+                            },
+                            "additionalProperties": true
+                        },
+                        "provider": {
+                            "description": "Object store provider.",
+                            "type": "string"
+                        },
+                        "retentionPolicy": {
+                            "description": "How long backups are retained.",
+                            "type": "string"
+                        },
+                        "secret": {
+                            "description": "Object store credentials.",
+                            "type": "object",
+                            "properties": {
+                                "create": {
+                                    "description": "Create the credentials Secret from values instead of referencing an existing one.",
+                                    "type": "boolean"
+                                },
+                                "name": {
+                                    "description": "Existing Secret with ACCESS_KEY_ID / ACCESS_SECRET_KEY. Required when backups are enabled.",
+                                    "type": "string"
+                                }
+                            },
+                            "additionalProperties": true
+                        },
+                        "wal": {
+                            "description": "WAL archiving.",
+                            "type": "object",
+                            "properties": {
+                                "maxParallel": {
+                                    "description": "Maximum parallel WAL archive/restore operations.",
+                                    "type": "integer"
+                                }
+                            },
+                            "additionalProperties": true
+                        }
+                    },
                     "additionalProperties": true
                 },
                 "cluster": {
+                    "description": "Configuration of the PostgreSQL cluster, forwarded to the subchart's `cluster` values. The keys below are this chart's layered infra defaults; any upstream key may be added.",
                     "type": "object",
+                    "properties": {
+                        "affinity": {
+                            "description": "Pod affinity/anti-affinity for the PostgreSQL pods.",
+                            "type": "object",
+                            "properties": {
+                                "enablePodAntiAffinity": {
+                                    "description": "Spread instances across the topology domain.",
+                                    "type": "boolean"
+                                },
+                                "topologyKey": {
+                                    "description": "Topology domain used for pod anti-affinity.",
+                                    "type": "string"
+                                }
+                            },
+                            "additionalProperties": true
+                        },
+                        "imageName": {
+                            "description": "PostgreSQL operand image (mirrored from ghcr.io/cloudnative-pg/postgresql).",
+                            "type": "string"
+                        },
+                        "initdb": {
+                            "description": "Bootstrap of a newly created cluster. CNPG additionally defaults database and owner to \"app\" and creates secret \"\u003ccluster\u003e-app\" unless overridden here.",
+                            "type": "object",
+                            "properties": {
+                                "dataChecksums": {
+                                    "description": "Enable page checksums.",
+                                    "type": "boolean"
+                                },
+                                "walSegmentSize": {
+                                    "description": "WAL segment size in MB.",
+                                    "type": "integer"
+                                }
+                            },
+                            "additionalProperties": true
+                        },
+                        "instances": {
+                            "description": "Number of PostgreSQL instances.",
+                            "type": "integer"
+                        },
+                        "monitoring": {
+                            "description": "Prometheus monitoring for the cluster (PodMonitor).",
+                            "type": "object",
+                            "properties": {
+                                "enabled": {
+                                    "description": "Enable monitoring (PodMonitor).",
+                                    "type": "boolean"
+                                },
+                                "prometheusRule": {
+                                    "description": "Default alert rules.",
+                                    "type": "object",
+                                    "properties": {
+                                        "enabled": {
+                                            "description": "Create the default PrometheusRule alerts.",
+                                            "type": "boolean"
+                                        }
+                                    },
+                                    "additionalProperties": true
+                                }
+                            },
+                            "additionalProperties": true
+                        },
+                        "resources": {
+                            "description": "Compute resources for the PostgreSQL pods.",
+                            "type": "object",
+                            "properties": {
+                                "limits": {
+                                    "description": "Resource limits.",
+                                    "type": "object",
+                                    "properties": {
+                                        "cpu": {
+                                            "description": "Maximum CPU.",
+                                            "type": "string"
+                                        },
+                                        "memory": {
+                                            "description": "Maximum memory.",
+                                            "type": "string"
+                                        }
+                                    },
+                                    "additionalProperties": true
+                                },
+                                "requests": {
+                                    "description": "Resource requests.",
+                                    "type": "object",
+                                    "properties": {
+                                        "cpu": {
+                                            "description": "Requested CPU.",
+                                            "type": "string"
+                                        },
+                                        "memory": {
+                                            "description": "Requested memory.",
+                                            "type": "string"
+                                        }
+                                    },
+                                    "additionalProperties": true
+                                }
+                            },
+                            "additionalProperties": true
+                        },
+                        "storage": {
+                            "description": "Primary data volume.",
+                            "type": "object",
+                            "properties": {
+                                "size": {
+                                    "description": "Data volume size.",
+                                    "type": "string"
+                                },
+                                "storageClass": {
+                                    "description": "Data volume StorageClass.",
+                                    "type": "string"
+                                }
+                            },
+                            "additionalProperties": true
+                        },
+                        "walStorage": {
+                            "description": "Separate WAL volume.",
+                            "type": "object",
+                            "properties": {
+                                "enabled": {
+                                    "description": "Enable a dedicated WAL volume.",
+                                    "type": "boolean"
+                                },
+                                "size": {
+                                    "description": "WAL volume size.",
+                                    "type": "string"
+                                },
+                                "storageClass": {
+                                    "description": "WAL volume StorageClass.",
+                                    "type": "string"
+                                }
+                            },
+                            "additionalProperties": true
+                        }
+                    },
                     "additionalProperties": true
                 },
                 "databases": {

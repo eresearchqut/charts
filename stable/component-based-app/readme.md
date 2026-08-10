@@ -30,9 +30,10 @@ $ helm install component-based-app eresearchqut/component-based-app
 | fullnameOverride | string | `""` | Helm release full name override. |
 | global | object | `{}` | Global values for subchart inheritance. Reserved for values shared across subcharts via Helm's global convention. |
 | nameOverride | string | `""` | Helm release name override. |
+
 ### Components
 
-Used to create deployment-service-ingress-netpol. Designed to encapsulate a
+Used to create deployment-service-ingress-netpol combination. Designed to encapsulate a
 "component" of the application, for example the "backend" or "frontend" or even a "worker"
 
 Component keys must be valid Kubernetes DNS label names (lowercase alphanumeric + hyphens).
@@ -151,33 +152,50 @@ The cluster is named `<release>-database` by default (`database.fullnameOverride
 Components with `allowDatabaseAccess: true` reach it at `<cluster>-rw:5432` via the injected
 `DB_HOST`, `DB_PORT`, `DB_USERNAME`, `DB_PASSWORD` environment variables.
 
-#### Migrating from 0.1.x
-
-| 0.1.x key | 0.2.x key |
-|---|---|
-| `database.image.repository` + `database.image.tag` | `database.cluster.imageName` (single `repo:tag` string) |
-| `database.instances` | `database.cluster.instances` |
-| `database.storageSize` / `database.storageClass` | `database.cluster.storage.size` / `.storageClass` |
-| `database.walStorageSize` / `database.walStorageClass` | `database.cluster.walStorage.size` / `.storageClass` |
-| `database.resources` | `database.cluster.resources` |
-| `database.secretName` | `database.cluster.initdb.secret.name` (omit for auto-generated) |
-| `database.extensions` (bundled, e.g. pg_trgm) | `database.databases[]` entry with `name`, `owner`, `extensions` |
-| `database.extensions[].image` (ImageVolume) | **removed** — bake the extension into the operand image |
-| `database.backup.enabled` | `database.backups.enabled` |
-| `database.backup.secretName` | `database.backups.secret.name` |
-| `database.backup.schedule` | `database.backups.scheduledBackups[0].schedule` |
-| `database.backup.envName` / `instanceName` | `database.backups.destinationPath` (explicit `s3://eresearch-k8s-postgres-backup/<instance>-<env>-backup`) |
-| `database.extraEgress` | `networkPolicy.databaseExtraEgress` |
-
-**Existing releases (data preservation):** the Cluster is renamed `<fullname>-db` → `<release>-database`;
-upgrading in place provisions a NEW empty cluster. To keep the existing cluster, set
-`database.fullnameOverride: <old fullname>-db` and
-`database.cluster.initdb: { database: <chart name>, owner: <chart name>, secret: { name: <old secret name> } }`,
-and keep storage sizes identical.
-
 | Key | Type | Default | Description |
 |-----|------|---------|-------------|
-| database | object | `{"enabled":false}` | CloudNativePG `cluster` subchart passthrough (cloudnative-pg/charts, pinned in Chart.yaml). All keys except `enabled` are forwarded verbatim to the subchart; see https://github.com/cloudnative-pg/charts/tree/cluster-v0.8.1/charts/cluster for the full reference. This chart layers infra defaults: mirror-registry image, vsan-file storage classes, 1 instance, pod anti-affinity, PodMonitor on, barman-cloud plugin backups (S3 ap-southeast-2, existing-secret credentials, 14d retention, daily 04:00 schedule). |
+| database | object | `{"backups":{"destinationPath":"","enabled":false,"endpointURL":"https://s3.ap-southeast-2.amazonaws.com/","method":"plugin","pluginConfiguration":{"name":"barman-cloud.cloudnative-pg.io"},"provider":"s3","retentionPolicy":"14d","secret":{"create":false,"name":""},"wal":{"maxParallel":32}},"cluster":{"affinity":{"enablePodAntiAffinity":true,"topologyKey":"kubernetes.io/hostname"},"imageName":"registry.eres.qut.edu.au/ghcr/cloudnative-pg/postgresql:17","initdb":{"dataChecksums":true,"walSegmentSize":32},"instances":1,"monitoring":{"enabled":true,"prometheusRule":{"enabled":false}},"resources":{"limits":{"cpu":"1","memory":"1Gi"},"requests":{"cpu":"0.5","memory":"256Mi"}},"storage":{"size":"8Gi","storageClass":"vsan-file"},"walStorage":{"enabled":true,"size":"2Gi","storageClass":"vsan-file"}},"enabled":false}` | CloudNativePG `cluster` subchart passthrough (cloudnative-pg/charts, pinned in Chart.yaml). All keys except `enabled` are forwarded verbatim to the subchart; see https://github.com/cloudnative-pg/charts/tree/cluster-v0.8.1/charts/cluster for the full reference. This chart layers infra defaults (all documented below): mirror-registry image, vsan-file storage classes, 1 instance, pod anti-affinity, PodMonitor on (PrometheusRule off), per-instance resource requests/limits, barman-cloud plugin backups (S3 ap-southeast-2, existing-secret credentials, 14d retention, daily 04:00 schedule). |
+| database.backups | object | `{"destinationPath":"","enabled":false,"endpointURL":"https://s3.ap-southeast-2.amazonaws.com/","method":"plugin","pluginConfiguration":{"name":"barman-cloud.cloudnative-pg.io"},"provider":"s3","retentionPolicy":"14d","secret":{"create":false,"name":""},"wal":{"maxParallel":32}}` | Backup configuration (barman-cloud plugin to S3), forwarded to the subchart's `backups` values. The keys below are this chart's layered infra defaults; any upstream key may be added. |
+| database.backups.destinationPath | string | `""` | S3 destination for backups. Required when enabled, e.g. s3://eresearch-k8s-postgres-backup/<app>-<env>-backup |
+| database.backups.enabled | bool | `false` | Enable automated backups. Requires destinationPath and secret.name. |
+| database.backups.endpointURL | string | `"https://s3.ap-southeast-2.amazonaws.com/"` | Object store endpoint. |
+| database.backups.method | string | `"plugin"` | Backup method; `plugin` uses the barman-cloud ObjectStore. |
+| database.backups.pluginConfiguration | object | `{"name":"barman-cloud.cloudnative-pg.io"}` | barman-cloud plugin reference. |
+| database.backups.pluginConfiguration.name | string | `"barman-cloud.cloudnative-pg.io"` | Plugin name. |
+| database.backups.provider | string | `"s3"` | Object store provider. |
+| database.backups.retentionPolicy | string | `"14d"` | How long backups are retained. |
+| database.backups.secret | object | `{"create":false,"name":""}` | Object store credentials. |
+| database.backups.secret.create | bool | `false` | Create the credentials Secret from values instead of referencing an existing one. |
+| database.backups.secret.name | string | `""` | Existing Secret with ACCESS_KEY_ID / ACCESS_SECRET_KEY. Required when backups are enabled. |
+| database.backups.wal | object | `{"maxParallel":32}` | WAL archiving. |
+| database.backups.wal.maxParallel | int | `32` | Maximum parallel WAL archive/restore operations. |
+| database.cluster | object | `{"affinity":{"enablePodAntiAffinity":true,"topologyKey":"kubernetes.io/hostname"},"imageName":"registry.eres.qut.edu.au/ghcr/cloudnative-pg/postgresql:17","initdb":{"dataChecksums":true,"walSegmentSize":32},"instances":1,"monitoring":{"enabled":true,"prometheusRule":{"enabled":false}},"resources":{"limits":{"cpu":"1","memory":"1Gi"},"requests":{"cpu":"0.5","memory":"256Mi"}},"storage":{"size":"8Gi","storageClass":"vsan-file"},"walStorage":{"enabled":true,"size":"2Gi","storageClass":"vsan-file"}}` | Configuration of the PostgreSQL cluster, forwarded to the subchart's `cluster` values. The keys below are this chart's layered infra defaults; any upstream key may be added. |
+| database.cluster.affinity | object | `{"enablePodAntiAffinity":true,"topologyKey":"kubernetes.io/hostname"}` | Pod affinity/anti-affinity for the PostgreSQL pods. |
+| database.cluster.affinity.enablePodAntiAffinity | bool | `true` | Spread instances across the topology domain. |
+| database.cluster.affinity.topologyKey | string | `"kubernetes.io/hostname"` | Topology domain used for pod anti-affinity. |
+| database.cluster.imageName | string | `"registry.eres.qut.edu.au/ghcr/cloudnative-pg/postgresql:17"` | PostgreSQL operand image (mirrored from ghcr.io/cloudnative-pg/postgresql). |
+| database.cluster.initdb | object | `{"dataChecksums":true,"walSegmentSize":32}` | Bootstrap of a newly created cluster. CNPG additionally defaults database and owner to "app" and creates secret "<cluster>-app" unless overridden here. |
+| database.cluster.initdb.dataChecksums | bool | `true` | Enable page checksums. |
+| database.cluster.initdb.walSegmentSize | int | `32` | WAL segment size in MB. |
+| database.cluster.instances | int | `1` | Number of PostgreSQL instances. |
+| database.cluster.monitoring | object | `{"enabled":true,"prometheusRule":{"enabled":false}}` | Prometheus monitoring for the cluster (PodMonitor). |
+| database.cluster.monitoring.enabled | bool | `true` | Enable monitoring (PodMonitor). |
+| database.cluster.monitoring.prometheusRule | object | `{"enabled":false}` | Default alert rules. |
+| database.cluster.monitoring.prometheusRule.enabled | bool | `false` | Create the default PrometheusRule alerts. |
+| database.cluster.resources | object | `{"limits":{"cpu":"1","memory":"1Gi"},"requests":{"cpu":"0.5","memory":"256Mi"}}` | Compute resources for the PostgreSQL pods. |
+| database.cluster.resources.limits | object | `{"cpu":"1","memory":"1Gi"}` | Resource limits. |
+| database.cluster.resources.limits.cpu | string | `"1"` | Maximum CPU. |
+| database.cluster.resources.limits.memory | string | `"1Gi"` | Maximum memory. |
+| database.cluster.resources.requests | object | `{"cpu":"0.5","memory":"256Mi"}` | Resource requests. |
+| database.cluster.resources.requests.cpu | string | `"0.5"` | Requested CPU. |
+| database.cluster.resources.requests.memory | string | `"256Mi"` | Requested memory. |
+| database.cluster.storage | object | `{"size":"8Gi","storageClass":"vsan-file"}` | Primary data volume. |
+| database.cluster.storage.size | string | `"8Gi"` | Data volume size. |
+| database.cluster.storage.storageClass | string | `"vsan-file"` | Data volume StorageClass. |
+| database.cluster.walStorage | object | `{"enabled":true,"size":"2Gi","storageClass":"vsan-file"}` | Separate WAL volume. |
+| database.cluster.walStorage.enabled | bool | `true` | Enable a dedicated WAL volume. |
+| database.cluster.walStorage.size | string | `"2Gi"` | WAL volume size. |
+| database.cluster.walStorage.storageClass | string | `"vsan-file"` | WAL volume StorageClass. |
 | database.enabled | bool | `false` | Enable or disable the CloudNativePG PostgreSQL database cluster. |
 ### Image Automation
 
@@ -226,13 +244,12 @@ Each component gets a `<fullname>-<name>` NetworkPolicy with `policyTypes:
 
 | Condition                           | Egress Rules                                       |
 |-------------------------------------|----------------------------------------------------|
-| `allowDatabaseAccess: true`              | Database access                                    |
+| `allowDatabaseAccess: true`         | Database access                                    |
 | `serviceLinks` entries              | TCP to each linked sibling component's port        |
-| Neither of the above                | **No egress rules beyond DNS** (from default-deny) |
+| Neither of the above                | **No egress rules beyond DNS** (via default-deny)  |
 | `extraEgress` entries (always)      | Appended as-is to the egress list                  |
 
-**Components without `allowDatabaseAccess` or `serviceLinks` have no egress rules
-beyond DNS.** If your component needs to reach external APIs or any other
+If your component needs to reach external APIs or any other
 outbound destination, use `extraEgress`:
 
 ```yaml
