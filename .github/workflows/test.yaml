@@ -20,11 +20,26 @@ jobs:
         run: |
           helm repo add cloudnative-pg https://cloudnative-pg.github.io/charts
           helm repo update
-      - name: install helm schema
+
+      # install & run pre-commit (vendored from precommit/action because it's deprecated and simple)
+      - name: Install pre-commit
+        shell: bash
         run: |
-          export HELM_SCHEMA_VERSION=0.23.4
-          helm plugin install https://github.com/dadav/helm-schema --version ${HELM_SCHEMA_VERSION}
-      - uses: pre-commit/action@v3.0.1
+          python -m pip install pre-commit
+          python -m pip freeze --local
+      - name: Cache pre-commit
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/pre-commit
+          key: pre-commit-3|${{ env.pythonLocation }}|${{ hashFiles('.pre-commit-config.yaml') }}
+      - name: Run pre-commit
+        shell: bash
+        run: |
+          pre-commit install
+          pre-commit install-hooks
+          pre-commit run --show-diff-on-failure --color=always
+
+      # helm chart testing
       - name: set up chart-testing
         uses: helm/chart-testing-action@v2.8.0
       - name: run chart-testing (list-changed)
