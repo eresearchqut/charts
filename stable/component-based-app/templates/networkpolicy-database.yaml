@@ -72,13 +72,22 @@ spec:
         - podSelector:
             matchLabels:
               cnpg.io/cluster: {{ include "component-based-app.databaseClusterName" . }}
-    {{- /* Kubernetes API server: required by CNPG for leader election and cluster management.
-         Restrict further via networkPolicy.databaseExtraEgress if the API server CIDR is known. */}}
+    {{- /* Kubernetes API server: required by CNPG for leader election and cluster management. */}}
     - ports:
         - port: 443
           protocol: TCP
         - port: 6443
           protocol: TCP
+    - to:
+        # wrk-non-prod & prod
+        - ipBlock:
+            cidr: 172.30.96.0/23
+        # wrk-test
+        - ipBlock:
+            cidr: 172.30.109.0/23
+        # wrk-local
+        - ipBlock:
+            cidr: 172.18.0.0/23
     {{- with .Values.networkPolicy.databaseExtraEgress }}
     {{- toYaml . | nindent 4 }}
     {{- end }}
