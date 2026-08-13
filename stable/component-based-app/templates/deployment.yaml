@@ -39,6 +39,7 @@ spec:
         {{- end }}
     spec:
       serviceAccountName: {{ include "component-based-app.serviceAccountName" $ }}
+      automountServiceAccountToken: {{ $.Values.serviceAccount.automount }}
 
       {{- with $spec.imagePullSecrets }}
       imagePullSecrets:
