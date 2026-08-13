@@ -78,7 +78,6 @@ Each component can reference secrets via `appSecretKeys`. The values are from th
 | components.*.livenessProbe.initialDelaySeconds | int | `nil` | Delay before first probe. |
 | components.*.livenessProbe.path | string | `nil` | HTTP path for the liveness probe (e.g., /healthz). |
 | components.*.livenessProbe.periodSeconds | int | `nil` | Interval between probes. |
-| components.*.livenessProbe.successThreshold | int | `nil` | Consecutive successes to mark ready. |
 | components.*.livenessProbe.terminationGracePeriodSeconds | int | `nil` | Grace period for pod shutdown after the probe fails. Falls back to the pod-level grace period when unset. |
 | components.*.livenessProbe.timeoutSeconds | int | `nil` | Probe timeout. |
 | components.*.monitoring | object | `nil` | Prometheus ServiceMonitor configuration. Requires prometheus-operator. Omit to disable. |

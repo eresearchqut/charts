@@ -272,10 +272,6 @@
                                     "description": "Interval between probes.",
                                     "type": "integer"
                                 },
-                                "successThreshold": {
-                                    "description": "Consecutive successes to mark ready.",
-                                    "type": "integer"
-                                },
                                 "terminationGracePeriodSeconds": {
                                     "description": "Grace period for pod shutdown after the probe fails. Falls back to the pod-level grace period when unset.",
                                     "type": "integer"

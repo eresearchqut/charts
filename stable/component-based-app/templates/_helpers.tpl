@@ -114,7 +114,7 @@ Context: dict "kind" <"liveness"|"readiness"|"startup"> "probe" <map>
 {{- define "component-based-app.httpProbe" -}}
 {{- $defaults := dict "initialDelaySeconds" 0 "periodSeconds" 10 "timeoutSeconds" 1 "failureThreshold" 3 "successThreshold" 1 }}
 {{- if eq .kind "startup" }}
-{{- /* Kubernetes fixes successThreshold=1 for startup probes; slow starts get a higher failureThreshold */}}
+{{- /* Accommodate slow starts by default */}}
 {{- $defaults = dict "initialDelaySeconds" 0 "periodSeconds" 10 "timeoutSeconds" 1 "failureThreshold" 30 }}
 {{- end -}}
 httpGet:
