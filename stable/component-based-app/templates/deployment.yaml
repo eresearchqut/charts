@@ -141,9 +141,9 @@ spec:
           readinessProbe:
             {{- include "component-based-app.httpProbe" (dict "kind" "readiness" "probe" .) | nindent 12 }}
           {{- end }}
-          {{- with $spec.startupProbe }}
+          {{- if and $spec.startupProbe $spec.startupProbe.path }}
           startupProbe:
-            {{- include "component-based-app.httpProbe" (dict "kind" "startup" "probe" .) | nindent 12 }}
+            {{- include "component-based-app.httpProbe" (dict "kind" "startup" "probe" $spec.startupProbe) | nindent 12 }}
           {{- end }}
 
           {{- $containerSecurityContext := $.Values.containerSecurityContext }}
