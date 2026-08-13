@@ -4,8 +4,10 @@ repos:
     hooks:
       - id: helm-schema
         name: Helm values schema json
-        entry: bash -c 'cd stable/component-based-app && helm schema'
-        language: system
+        entry: bash -c 'cd stable/component-based-app && helm-values-schema-json'
+        language: golang
+        additional_dependencies:
+          - github.com/losisin/helm-values-schema-json/v2@v2.4.0
         pass_filenames: false
         files: ^stable/component-based-app/
         require_serial: true
@@ -20,8 +22,11 @@ repos:
         require_serial: true
       - id: helm-unittest
         name: Helm unit tests
-        entry: bash -c 'for d in $(find stable -name Chart.yaml -exec dirname {} \;); do helm unittest "$d" || exit 1; done'
-        language: system
+        entry: helmunittest/helm-unittest:3.20.2-1.0.3
+        args:
+          - stable/static-website
+          - stable/component-based-app
+        language: docker_image
         pass_filenames: false
         files: ^stable/
         require_serial: true
@@ -30,7 +35,9 @@ repos:
       - id: helm-docs
         name: Helm Docs
         entry: scripts/helm-docs.sh
-        language: system
+        language: golang
+        additional_dependencies:
+          - github.com/norwoodj/helm-docs/cmd/helm-docs@v1.14.2
         pass_filenames: false
         files: ^stable/
         require_serial: true
