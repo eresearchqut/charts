@@ -41,7 +41,7 @@ spec:
             pathType: {{ .pathType | default "Prefix" }}
             backend:
               service:
-                name: {{ include "component-based-app.fullname" $ }}-{{ .targetComponent }}
+                name: {{ include "component-based-app.componentServiceName" (dict "root" $ "component" .targetComponent) }}
                 port:
                   name: {{ .portName | default "http" }}
           {{- end }}
@@ -50,7 +50,7 @@ spec:
             pathType: Prefix
             backend:
               service:
-                name: {{ include "component-based-app.fullname" . }}-{{ .Values.ingress.targetComponent }}
+                name: {{ include "component-based-app.componentServiceName" (dict "root" . "component" .Values.ingress.targetComponent) }}
                 port:
                   name: http
           {{- end }}
