@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# Runs docs against the values.example.yaml if it exists, otherwise just against the values.yaml
 set -euo pipefail
 
 find stable -name Chart.yaml -exec dirname {} \; | while IFS= read -r d; do
