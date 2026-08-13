@@ -45,7 +45,10 @@ spec:
       imagePullSecrets:
         {{- toYaml . | nindent 8 }}
       {{- end }}
-      {{- $podSecurityContext := or $spec.podSecurityContext $.Values.podSecurityContext }}
+      {{- $podSecurityContext := $.Values.podSecurityContext }}
+      {{- if hasKey $spec "podSecurityContext" }}
+      {{- $podSecurityContext = $spec.podSecurityContext }}
+      {{- end }}
       {{- with $podSecurityContext }}
       securityContext:
         {{- toYaml . | nindent 8 }}
@@ -73,7 +76,10 @@ spec:
           command:
             {{- toYaml $spec.initContainer.command | nindent 12 }}
 
-          {{- $initResources := or $spec.resources $.Values.resources }}
+          {{- $initResources := $.Values.resources }}
+          {{- if hasKey $spec "resources" }}
+          {{- $initResources = $spec.initResources }}
+          {{- end }}
           {{- with $initResources }}
           resources:
             {{- toYaml . | nindent 12 }}
@@ -139,7 +145,11 @@ spec:
           startupProbe:
             {{- include "component-based-app.httpProbe" (dict "kind" "startup" "probe" .) | nindent 12 }}
           {{- end }}
-          {{- $containerSecurityContext := or $spec.containerSecurityContext $.Values.containerSecurityContext }}
+
+          {{- $containerSecurityContext := $.Values.containerSecurityContext }}
+          {{- if hasKey $spec "containerSecurityContext" }}
+          {{- $containerSecurityContext = $spec.containerSecurityContext }}
+          {{- end }}
           {{- with $containerSecurityContext }}
           securityContext:
             {{- toYaml . | nindent 12 }}
