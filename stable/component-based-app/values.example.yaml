@@ -109,10 +109,6 @@ components:
       # @section -- Components
       # @default -- `nil`
       failureThreshold: 3
-      # -- (int) Consecutive successes to mark ready.
-      # @section -- Components
-      # @default -- `nil`
-      successThreshold: 1
       # -- (int) Grace period for pod shutdown after the probe fails. Falls back to the pod-level grace period when unset.
       # @section -- Components
       # @default -- `nil`
