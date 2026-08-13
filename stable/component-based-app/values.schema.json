@@ -133,6 +133,22 @@
                                 "additionalProperties": false
                             }
                         },
+                        "envFrom": {
+                            "description": "Additional environment variables in Kubernetes EnvFromSource format.",
+                            "type": "array",
+                            "items": {
+                                "type": "object",
+                                "properties": {
+                                    "name": {
+                                        "type": "string"
+                                    },
+                                    "value": {
+                                        "type": "string"
+                                    }
+                                },
+                                "additionalProperties": false
+                            }
+                        },
                         "extraEgress": {
                             "description": "Additional NetworkPolicy egress rules. Only meaningful when `networkPolicy` is configured.",
                             "type": "array",

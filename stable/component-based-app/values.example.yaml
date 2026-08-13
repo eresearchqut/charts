@@ -224,6 +224,13 @@ components:
     env:
       - name: "LOG_LEVEL"
         value: "info"
+    # @notationType -- list
+    # -- (k8s/core/v1.EnvFromSource) Additional environment variables in Kubernetes EnvFromSource format.
+    # @section -- Components
+    # @default -- `[]`
+    envFrom:
+      - name: "LOG_LEVEL"
+        value: "info"
     # -- Init container that runs before the main container. Uses the same image as the component.
     # @section -- Components
     # @default -- `nil`
