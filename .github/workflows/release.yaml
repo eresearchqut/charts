@@ -18,6 +18,10 @@ jobs:
         uses: azure/setup-helm@v5
         with:
           version: v3.16.1
+      - name: Add dependent Helm repos
+        run: |
+          helm repo add cloudnative-pg https://cloudnative-pg.github.io/charts
+          helm repo update
       - name: configure Git
         run: |
           git config user.name "$GITHUB_ACTOR"
@@ -27,4 +31,4 @@ jobs:
         with:
           charts_dir: stable
         env:
-          CR_TOKEN: '${{ secrets.GITHUB_TOKEN }}'
+          CR_TOKEN: "${{ secrets.GITHUB_TOKEN }}"
