@@ -208,10 +208,10 @@ tests:
           content:
             to:
               - {}
-      # Exactly 3 egress rules: DNS, intra-cluster, API server
+      # Exactly 4 egress rules: DNS, intra-cluster, API server
       - lengthEqual:
           path: spec.egress
-          count: 3
+          count: 4
 
   # --- No ingress rules for components without allowDatabaseAccess ---
   - it: no database ingress rules exist for components without allowDatabaseAccess
