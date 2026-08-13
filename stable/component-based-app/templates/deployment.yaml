@@ -3,7 +3,8 @@
 {{- if empty $tag }}
   {{- fail (printf "component '%s': image.tag must be set explicitly. Set components.%s.image.tag" $name $name) }}
 {{- end }}
-{{- $image := printf "%s:%s" (dig "image" "repository" "" $spec) $tag }}
+{{- $repository := required (printf "component '%s': image.repository must be set explicitly. Set components.%s.image.repository" $name $name) (dig "image" "repository" "" $spec) }}
+{{- $image := printf "%s:%s" $repository $tag }}
 ---
 apiVersion: apps/v1
 kind: Deployment
