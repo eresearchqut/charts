@@ -646,7 +646,7 @@ imageUpdate:
   repository:
     # -- Name of the Flux GitRepository used as ImageUpdateAutomation sourceRef.name.
     # @section -- Image Automation
-    name: flux-app-deployment
+    name: ""
     # -- Git branch checked out by ImageUpdateAutomation.
     # @section -- Image Automation
     branch: main
