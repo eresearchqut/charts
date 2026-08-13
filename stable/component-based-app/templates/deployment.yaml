@@ -31,12 +31,12 @@ spec:
         {{- end }}
       {{- end }}
       labels:
-        app.kubernetes.io/component: {{ $name }}
-        app.kubernetes.io/role: server
-        {{- include "component-based-app.labels" $ | nindent 8 }}
         {{- with $spec.podLabels }}
         {{- toYaml . | nindent 8 }}
         {{- end }}
+        app.kubernetes.io/component: {{ $name }}
+        app.kubernetes.io/role: server
+        {{- include "component-based-app.labels" $ | nindent 8 }}
     spec:
       serviceAccountName: {{ include "component-based-app.serviceAccountName" $ }}
       automountServiceAccountToken: {{ $.Values.serviceAccount.automount }}
