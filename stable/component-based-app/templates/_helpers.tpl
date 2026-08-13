@@ -106,6 +106,14 @@ CNPG auto-generated "<cluster>-app" secret.
 {{- end }}
 
 {{/*
+Component Service name: fullname + "-" + component, truncated to 63 chars.
+Usage: {{ include "component-based-app.componentServiceName" (dict "root" $ "component" $name) }}
+*/}}
+{{- define "component-based-app.componentServiceName" -}}
+{{- printf "%s-%s" (include "component-based-app.fullname" .root) .component | trunc 63 | trimSuffix "-" }}
+{{- end }}
+
+{{/*
 HTTP probe body with chart defaults. Key validation is enforced by
 values.schema.json (additionalProperties: false per probe), so unknown keys
 hard-fail at helm template time; anything the schema admits passes through.

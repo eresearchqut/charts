@@ -4,7 +4,7 @@
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
 metadata:
-  name: {{ include "component-based-app.fullname" $ }}-{{ $name }}
+  name: {{ include "component-based-app.componentServiceName" (dict "root" $ "component" $name) }}
   labels:
     app.kubernetes.io/component: {{ $name }}
     {{- include "component-based-app.labels" $ | nindent 4 }}
