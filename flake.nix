@@ -57,6 +57,7 @@
               })
               kubectl
               pre-commit
+              zizmor
               (python3.withPackages (ps: [ ps.pyyaml ]))
             ];
           };
