@@ -7,7 +7,7 @@ on:
 jobs:
   release:
     permissions:
-      contents: write
+      contents: write # required for chart-releaser to write to the branches
     runs-on: ubuntu-latest
     steps:
       - name: checkout
