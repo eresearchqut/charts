@@ -197,7 +197,7 @@ components:
     # @section -- Components
     # @default -- `nil`
     nodeIPEnvName: "NODE_IP"
-    # -- Environment variable set to `<service-name>,$(POD_IP),$(NODE_IP),<ingress.host>`. Set `nodeIPEnvName` to override the node IP variable name. The ingress host is included when configured. Requires `podIPEnvName`.
+    # -- Environment variable set to `<service-name>,$(POD_IP),$(NODE_IP),<ingress.hosts[*].host>`. Every configured ingress host is appended, comma-separated.
     # @section -- Components
     # @default -- `nil`
     allowedHostsEnvName: "ALLOWED_HOSTS"
@@ -367,57 +367,125 @@ components:
       allowPrivilegeEscalation: false
 
 ingress:
+  # -- Create the Ingress resource.
+  # @section -- Ingress
+  # @default -- `false`
+  enabled: false
   # -- Ingress class name (e.g., nginx, avi).
   # @section -- Ingress
   # @default -- `""`
   className: ""
-  # -- Ingress hostname (e.g., app.example.com).
-  # @section -- Ingress
-  # @default -- `""`
-  host: ""
-  # -- AVI HostRule TLS host for certificate selection.
-  # @section -- Ingress
-  # @default -- `""`
-  tlsHost: ""
-  # -- AVI HTTPRule health monitor name.
-  # @section -- Ingress
-  # @default -- `"System-HTTP"`
-  healthMonitor: System-HTTP
-  # -- AVI HostRule application profile name.
-  # @section -- Ingress
-  # @default -- `"System-HTTP"`
-  applicationProfile: System-HTTP
-  # -- Component key whose Service receives all inbound traffic when a single path `/` routes to one component.
-  # @section -- Ingress
-  # @default -- `""`
-  targetComponent: ""
   # @schema additionalProperties: true
   # -- Annotations to add to the Ingress resource (e.g., cert-manager.io/cluster-issuer).
   # @section -- Ingress
   # @default -- `{}`
   annotations: {}
-  # @schema itemRef: schemas/paths-item.yaml
-  # -- Multiple path rules. When set, overrides the single targetComponent path.
+  # @schema itemRef: schemas/ingress-host-item.yaml
+  # -- Hosts to route. Each entry renders one `rules` entry on the Ingress; when `avi.enabled` is true, each host also gets its own AVI HostRule/HTTPRule pair.
   # @section -- Ingress
-  # Each entry specifies path, pathType (default: Prefix), and targetComponent.
   # @default -- `[]`
-  paths:
-    - # -- URL path to match (e.g., /api or /).
+  hosts:
+    - # -- Ingress hostname (e.g., app.example.com).
       # @default -- `nil`
       # @section -- Ingress
-      path: "/api"
-      # -- Kubernetes path matching type (Prefix, Exact, or ImplementationSpecific).
+      host: "app.example.com"
+      # @schema additionalProperties: true
+      # -- Per-host overrides for this host's AVI HostRule/HTTPRule. Every field falls back to the matching `avi.hostRule`/`avi.httpRule` default when omitted. Only used when `avi.enabled` is true.
+      # @default -- `nil`
+      # @section -- Ingress
+      avi:
+        # -- AVI HostRule certificate reference name. Omit to leave the virtualhost insecure (HTTP only); has no global default.
+        # @default -- `nil`
+        # @section -- Ingress
+        sslKeyCertificate: ""
+        # -- AVI HostRule application profile name. Falls back to `avi.hostRule.applicationProfile`.
+        # @default -- `nil`
+        # @section -- Ingress
+        applicationProfile: ""
+        # -- AVI HostRule policy sets. Falls back to `avi.hostRule.policySets`.
+        # @default -- `nil`
+        # @section -- Ingress
+        policySets:
+          - geo-blocking-default
+          - ip-reputation-block-all
+          - robots-disallow-all
+        # -- AVI HTTPRule health monitors. Falls back to `avi.httpRule.healthMonitors`.
+        # @default -- `nil`
+        # @section -- Ingress
+        healthMonitors:
+          - System-HTTP
+        # -- AVI HTTPRule load balancer policy. Falls back to `avi.httpRule.loadBalancerPolicy`.
+        # @default -- `nil`
+        # @section -- Ingress
+        loadBalancerPolicy:
+          # -- AVI HTTPRule load balancer algorithm.
+          # @section -- Ingress
+          # @default -- `nil`
+          algorithm: LB_ALGORITHM_LEAST_CONNECTIONS
+      # @schema itemRef: schemas/paths-item.yaml
+      # -- Path rules for this host.
       # @section -- Ingress
       # @default -- `nil`
-      pathType: "Prefix"
-      # -- Component key whose Service receives traffic for this path.
-      # @section -- Ingress
-      # @default -- `nil`
-      targetComponent: "api"
-      # -- Name of the Service port to route to.
-      # @section -- Ingress
-      # @default -- `nil`
-      portName: "http"
+      paths:
+        - # -- URL path to match (e.g., /api or /).
+          # @default -- `nil`
+          # @section -- Ingress
+          path: "/api"
+          # -- Kubernetes path matching type (Prefix, Exact, or ImplementationSpecific).
+          # @section -- Ingress
+          # @default -- `nil`
+          pathType: "Prefix"
+          # -- Component key whose Service receives traffic for this path.
+          # @section -- Ingress
+          # @default -- `nil`
+          targetComponent: "api"
+          # -- Name of the Service port to route to.
+          # @section -- Ingress
+          # @default -- `nil`
+          portName: "http"
+  # @schema itemRef: $k8s/_definitions.json#/definitions/io.k8s.api.networking.v1.IngressTLS
+  # -- Standard Kubernetes Ingress `tls` block (secret-based). Independent of AVI's `sslKeyCertificate` reference, and only meaningful with an ingress controller that consumes it (e.g. nginx).
+  # @section -- Ingress
+  # @default -- `[]`
+  tls:
+    - hosts:
+        - "app.example.com"
+      secretName: "app-tls"
+
+avi:
+  # -- Create AVI HostRule/HTTPRule resources for each ingress host.
+  # @section -- AVI
+  # @default -- `false`
+  enabled: false
+  # @schema additionalProperties: true
+  # -- HostRule (virtualhost-level) defaults, applied to every host unless overridden per host under `ingress.hosts`.
+  # @section -- AVI
+  hostRule:
+    # -- AVI HostRule application profile name.
+    # @section -- AVI
+    # @default -- `"System-HTTP"`
+    applicationProfile: System-HTTP
+    # -- Default AVI HostRule policy sets, applied to every host unless a host sets its own `ingress.hosts[].policySets`.
+    # @section -- AVI
+    # @default -- `["geo-blocking-default", "ip-reputation-block-all", "robots-disallow-all"]`
+    policySets:
+      - geo-blocking-default
+      - ip-reputation-block-all
+      - robots-disallow-all
+  # @schema additionalProperties: true
+  # -- HTTPRule (pool-level) defaults, applied to every host.
+  # @section -- AVI
+  httpRule:
+    # -- AVI HTTPRule health monitors.
+    # @section -- AVI
+    # @default -- `["System-HTTP"]`
+    healthMonitors:
+      - System-HTTP
+    loadBalancerPolicy:
+      # -- AVI HTTPRule load balancer algorithm.
+      # @section -- AVI
+      # @default -- `"LB_ALGORITHM_LEAST_CONNECTIONS"`
+      algorithm: LB_ALGORITHM_LEAST_CONNECTIONS
 
 # @schema additionalProperties: true; required: false
 # -- CloudNativePG `cluster` subchart passthrough (cloudnative-pg/charts, pinned in Chart.yaml).

@@ -155,7 +155,12 @@ tests:
   - it: allowedHostsEnvName includes ingress host when configured
     set:
       ingress:
-        host: inquisition.dev.eres.qut.edu.au
+        enabled: true
+        hosts:
+          - host: inquisition.dev.eres.qut.edu.au
+            paths:
+              - path: /
+                targetComponent: app
       components:
         app:
           image:
@@ -176,11 +181,48 @@ tests:
             name: ALLOWED_HOSTS
             value: envtest-component-based-app-app,$(POD_IP),$(NODE_IP),inquisition.dev.eres.qut.edu.au
 
+  - it: allowedHostsEnvName includes every configured ingress host
+    set:
+      ingress:
+        enabled: true
+        hosts:
+          - host: primary.example.com
+            paths:
+              - path: /
+                targetComponent: app
+          - host: secondary.example.com
+            paths:
+              - path: /
+                targetComponent: app
+      components:
+        app:
+          image:
+            repository: "example.com/app"
+            tag: "latest"
+          port: 3000
+          command: ["node", "server.js"]
+          livenessProbe:
+            path: /health
+          podIPEnvName: POD_IP
+          allowedHostsEnvName: ALLOWED_HOSTS
+    template: deployment.yaml
+    documentIndex: 0
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: ALLOWED_HOSTS
+            value: envtest-component-based-app-app,$(POD_IP),$(NODE_IP),primary.example.com,secondary.example.com
+
   - it: ingress target component receives FQDN env var
     set:
       ingress:
-        host: inquisition.dev.eres.qut.edu.au
-        targetComponent: web
+        enabled: true
+        hosts:
+          - host: inquisition.dev.eres.qut.edu.au
+            paths:
+              - path: /
+                targetComponent: web
       components:
         api:
           image:
@@ -216,10 +258,12 @@ tests:
   - it: ingress path target component receives FQDN env var
     set:
       ingress:
-        host: inquisition.dev.eres.qut.edu.au
-        paths:
-          - path: /api
-            targetComponent: api
+        enabled: true
+        hosts:
+          - host: inquisition.dev.eres.qut.edu.au
+            paths:
+              - path: /api
+                targetComponent: api
       components:
         api:
           image:
@@ -251,7 +295,6 @@ tests:
           content:
             name: FQDN
         documentIndex: 1
-
   - it: serviceLink without path defaults to trailing slash
     set:
       components:

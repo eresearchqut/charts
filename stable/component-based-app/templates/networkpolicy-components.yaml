@@ -56,16 +56,18 @@ spec:
     {{- toYaml . | nindent 4 }}
     {{- end }}
   ingress:
-    {{- if $.Values.ingress.host }}
-    {{- if eq $name $.Values.ingress.targetComponent }}
-    {{- include "component-based-app.ingressPublicRule" $spec.port | nindent 4 }}
-    {{- else }}
-    {{- range $.Values.ingress.paths }}
+    {{- $isIngressComponent := false }}
+    {{- if $.Values.ingress.enabled }}
+    {{- range $.Values.ingress.hosts }}
+    {{- range .paths }}
     {{- if eq $name .targetComponent }}
+    {{- $isIngressComponent = true }}
+    {{- end }}
+    {{- end }}
+    {{- end }}
+    {{- end }}
+    {{- if $isIngressComponent }}
     {{- include "component-based-app.ingressPublicRule" $spec.port | nindent 4 }}
-    {{- end }}
-    {{- end }}
-    {{- end }}
     {{- end }}
     {{- range $siblingName, $siblingSpec := $.Values.components }}
     {{- range $siblingSpec.serviceLinks }}
