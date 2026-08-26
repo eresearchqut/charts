@@ -206,27 +206,28 @@ spec:
             {{- if $nodeIPEnvName }}
             {{- $allowedHosts = printf "%s,$(%s)" $allowedHosts $nodeIPEnvName }}
             {{- end }}
-            {{- if $.Values.ingress.host }}
-            {{- $allowedHosts = printf "%s,%s" $allowedHosts $.Values.ingress.host }}
+            {{- if $.Values.ingress.enabled }}
+            {{- range $.Values.ingress.hosts }}
+            {{- $allowedHosts = printf "%s,%s" $allowedHosts .host }}
+            {{- end }}
             {{- end }}
             - name: {{ $spec.allowedHostsEnvName }}
               value: {{ $allowedHosts | quote }}
             {{- end }}
-            {{- $isIngressComponent := false }}
-            {{- if $.Values.ingress.host }}
-            {{- if $.Values.ingress.paths }}
-            {{- range $.Values.ingress.paths }}
+            {{- $componentHosts := list }}
+            {{- if $.Values.ingress.enabled }}
+            {{- range $.Values.ingress.hosts }}
+            {{- $host := .host }}
+            {{- range .paths }}
             {{- if eq $name .targetComponent }}
-            {{- $isIngressComponent = true }}
+            {{- $componentHosts = append $componentHosts $host }}
             {{- end }}
             {{- end }}
-            {{- else if eq $name $.Values.ingress.targetComponent }}
-            {{- $isIngressComponent = true }}
             {{- end }}
             {{- end }}
-            {{- if $isIngressComponent }}
+            {{- if $componentHosts }}
             - name: FQDN
-              value: {{ $.Values.ingress.host | quote }}
+              value: {{ $componentHosts | uniq | join "," | quote }}
             {{- end }}
             {{- range $spec.serviceLinks }}
             {{- $targetSpec := index $.Values.components .targetName }}

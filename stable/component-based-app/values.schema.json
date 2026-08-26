@@ -6,6 +6,58 @@
             "description": "Application version. Set this to tag Deployments with a meaningful version string.",
             "type": "string"
         },
+        "avi": {
+            "type": "object",
+            "properties": {
+                "enabled": {
+                    "description": "Create AVI HostRule/HTTPRule resources for each ingress host.",
+                    "type": "boolean"
+                },
+                "hostRule": {
+                    "description": "HostRule (virtualhost-level) defaults, applied to every host unless overridden per host under `ingress.hosts`.",
+                    "type": "object",
+                    "properties": {
+                        "applicationProfile": {
+                            "description": "AVI HostRule application profile name.",
+                            "type": "string"
+                        },
+                        "policySets": {
+                            "description": "Default AVI HostRule policy sets, applied to every host unless a host sets its own `ingress.hosts[].policySets`.",
+                            "type": "array",
+                            "items": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "additionalProperties": true
+                },
+                "httpRule": {
+                    "description": "HTTPRule (pool-level) defaults, applied to every host.",
+                    "type": "object",
+                    "properties": {
+                        "healthMonitors": {
+                            "description": "AVI HTTPRule health monitors.",
+                            "type": "array",
+                            "items": {
+                                "type": "string"
+                            }
+                        },
+                        "loadBalancerPolicy": {
+                            "type": "object",
+                            "properties": {
+                                "algorithm": {
+                                    "description": "AVI HTTPRule load balancer algorithm.",
+                                    "type": "string"
+                                }
+                            },
+                            "additionalProperties": false
+                        }
+                    },
+                    "additionalProperties": true
+                }
+            },
+            "additionalProperties": false
+        },
         "components": {
             "type": "object",
             "properties": {
@@ -51,7 +103,7 @@
                             }
                         },
                         "allowedHostsEnvName": {
-                            "description": "Environment variable set to `\u003cservice-name\u003e,$(POD_IP),$(NODE_IP),\u003cingress.host\u003e`. Set `nodeIPEnvName` to override the node IP variable name. The ingress host is included when configured. Requires `podIPEnvName`.",
+                            "description": "Environment variable set to `\u003cservice-name\u003e,$(POD_IP),$(NODE_IP),\u003cingress.hosts[*].host\u003e`. Every configured ingress host is appended, comma-separated.",
                             "type": "string"
                         },
                         "appSecretKeys": {
@@ -822,56 +874,115 @@
                     "type": "object",
                     "additionalProperties": true
                 },
-                "applicationProfile": {
-                    "description": "AVI HostRule application profile name.",
-                    "type": "string"
-                },
                 "className": {
                     "description": "Ingress class name (e.g., nginx, avi).",
                     "type": "string"
                 },
-                "healthMonitor": {
-                    "description": "AVI HTTPRule health monitor name.",
-                    "type": "string"
+                "enabled": {
+                    "description": "Create the Ingress resource.",
+                    "type": "boolean"
                 },
-                "host": {
-                    "description": "Ingress hostname (e.g., app.example.com).",
-                    "type": "string"
-                },
-                "paths": {
-                    "description": "Multiple path rules. When set, overrides the single targetComponent path. Each entry specifies path, pathType (default: Prefix), and targetComponent.",
+                "hosts": {
+                    "description": "Hosts to route. Each entry renders one `rules` entry on the Ingress; when `avi.enabled` is true, each host also gets its own AVI HostRule/HTTPRule pair.",
                     "type": "array",
                     "items": {
-                        "$ref": "#/$defs/paths-item.yaml",
+                        "$ref": "#/$defs/ingress-host-item.yaml",
                         "type": "object",
                         "properties": {
-                            "path": {
-                                "description": "URL path to match (e.g., /api or /).",
+                            "avi": {
+                                "description": "Per-host overrides for this host's AVI HostRule/HTTPRule. Every field falls back to the matching `avi.hostRule`/`avi.httpRule` default when omitted. Only used when `avi.enabled` is true.",
+                                "type": "object",
+                                "properties": {
+                                    "applicationProfile": {
+                                        "description": "AVI HostRule application profile name. Falls back to `avi.hostRule.applicationProfile`.",
+                                        "type": "string"
+                                    },
+                                    "healthMonitors": {
+                                        "description": "AVI HTTPRule health monitors. Falls back to `avi.httpRule.healthMonitors`.",
+                                        "type": "array",
+                                        "items": {
+                                            "type": "string"
+                                        }
+                                    },
+                                    "loadBalancerPolicy": {
+                                        "description": "AVI HTTPRule load balancer policy. Falls back to `avi.httpRule.loadBalancerPolicy`.",
+                                        "type": "object",
+                                        "properties": {
+                                            "algorithm": {
+                                                "description": "AVI HTTPRule load balancer algorithm.",
+                                                "type": "string"
+                                            }
+                                        },
+                                        "additionalProperties": false
+                                    },
+                                    "policySets": {
+                                        "description": "AVI HostRule policy sets. Falls back to `avi.hostRule.policySets`.",
+                                        "type": "array",
+                                        "items": {
+                                            "type": "string"
+                                        }
+                                    },
+                                    "sslKeyCertificate": {
+                                        "description": "AVI HostRule certificate reference name. Omit to leave the virtualhost insecure (HTTP only); has no global default.",
+                                        "type": "string"
+                                    }
+                                },
+                                "additionalProperties": true
+                            },
+                            "host": {
+                                "description": "Ingress hostname (e.g., app.example.com).",
                                 "type": "string"
                             },
-                            "pathType": {
-                                "description": "Kubernetes path matching type (Prefix, Exact, or ImplementationSpecific).",
-                                "type": "string"
-                            },
-                            "portName": {
-                                "description": "Name of the Service port to route to.",
-                                "type": "string"
-                            },
-                            "targetComponent": {
-                                "description": "Component key whose Service receives traffic for this path.",
-                                "type": "string"
+                            "paths": {
+                                "description": "Path rules for this host.",
+                                "type": "array",
+                                "items": {
+                                    "$ref": "#/$defs/paths-item.yaml",
+                                    "type": "object",
+                                    "properties": {
+                                        "path": {
+                                            "description": "URL path to match (e.g., /api or /).",
+                                            "type": "string"
+                                        },
+                                        "pathType": {
+                                            "description": "Kubernetes path matching type (Prefix, Exact, or ImplementationSpecific).",
+                                            "type": "string"
+                                        },
+                                        "portName": {
+                                            "description": "Name of the Service port to route to.",
+                                            "type": "string"
+                                        },
+                                        "targetComponent": {
+                                            "description": "Component key whose Service receives traffic for this path.",
+                                            "type": "string"
+                                        }
+                                    },
+                                    "additionalProperties": false
+                                }
                             }
                         },
                         "additionalProperties": false
                     }
                 },
-                "targetComponent": {
-                    "description": "Component key whose Service receives all inbound traffic when a single path `/` routes to one component.",
-                    "type": "string"
-                },
-                "tlsHost": {
-                    "description": "AVI HostRule TLS host for certificate selection.",
-                    "type": "string"
+                "tls": {
+                    "description": "Standard Kubernetes Ingress `tls` block (secret-based). Independent of AVI's `sslKeyCertificate` reference, and only meaningful with an ingress controller that consumes it (e.g. nginx).",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/$defs/_definitions.json/definitions/io.k8s.api.networking.v1.IngressTLS",
+                        "type": "object",
+                        "properties": {
+                            "hosts": {
+                                "type": "array",
+                                "items": {
+                                    "type": "string"
+                                }
+                            },
+                            "secretName": {
+                                "type": "string"
+                            }
+                        },
+                        "additionalProperties": false
+                    }
                 }
             },
             "additionalProperties": false
@@ -3097,6 +3208,24 @@
                     },
                     "additionalProperties": false
                 },
+                "io.k8s.api.networking.v1.IngressTLS": {
+                    "description": "IngressTLS describes the transport layer security associated with an ingress.",
+                    "type": "object",
+                    "properties": {
+                        "hosts": {
+                            "description": "hosts is a list of hosts included in the TLS certificate. The values in this list must match the name/s used in the tlsSecret. Defaults to the wildcard host setting for the loadbalancer controller fulfilling this Ingress, if left unspecified.",
+                            "type": "array",
+                            "items": {
+                                "type": "string"
+                            }
+                        },
+                        "secretName": {
+                            "description": "secretName is the name of the secret used to terminate TLS traffic on port 443. Field is left optional to allow TLS routing based on SNI hostname alone. If the SNI host in a listener conflicts with the \"Host\" header field used by an IngressRule, the SNI host is used for termination and value of the \"Host\" header is used for routing.",
+                            "type": "string"
+                        }
+                    },
+                    "additionalProperties": false
+                },
                 "io.k8s.api.networking.v1.NetworkPolicyEgressRule": {
                     "description": "NetworkPolicyEgressRule describes a particular set of traffic that is allowed out of pods matched by a NetworkPolicySpec's podSelector. The traffic must match both ports and to. This type is beta-level in 1.8",
                     "type": "object",
@@ -3499,7 +3628,7 @@
                     }
                 },
                 "allowedHostsEnvName": {
-                    "description": "Name of the environment variable set to `\u003cservice-name\u003e,$(podIPEnvName),$(nodeIPEnvName),\u003cingress.host\u003e`. The node IP variable defaults to NODE_IP when nodeIPEnvName is omitted. The ingress host is included when configured. Requires podIPEnvName.\n",
+                    "description": "Name of the environment variable set to `\u003cservice-name\u003e,$(podIPEnvName),$(nodeIPEnvName),\u003cingress.hosts[*].host\u003e`. The node IP variable defaults to NODE_IP when nodeIPEnvName is omitted. Every configured ingress host is appended, comma-separated. Requires podIPEnvName.\n",
                     "default": "ALLOWED_HOSTS",
                     "type": "string"
                 },
@@ -3823,6 +3952,77 @@
                     "type": "array",
                     "items": {
                         "$ref": "#/$defs/_definitions.json/definitions/io.k8s.api.core.v1.Volume"
+                    }
+                }
+            },
+            "additionalProperties": false
+        },
+        "ingress-host-item.yaml": {
+            "$schema": "https://json-schema.org/draft/2020-12/schema",
+            "description": "An ingress host and its path rules. Renders one `rules` entry on the shared Ingress resource; when `avi.enabled` is true, also renders a dedicated AVI HostRule/HTTPRule pair for this host.\n",
+            "type": "object",
+            "required": [
+                "host",
+                "paths"
+            ],
+            "properties": {
+                "avi": {
+                    "title": "AVI",
+                    "description": "Per-host overrides for this host's AVI HostRule/HTTPRule. Every field falls back to the matching avi.hostRule/avi.httpRule default when omitted. Only used when avi.enabled is true.\n",
+                    "type": "object",
+                    "properties": {
+                        "applicationProfile": {
+                            "title": "Application profile",
+                            "description": "AVI HostRule application profile name. Falls back to avi.hostRule.applicationProfile.",
+                            "type": "string"
+                        },
+                        "healthMonitors": {
+                            "title": "Health monitors",
+                            "description": "AVI HTTPRule health monitors. Falls back to avi.httpRule.healthMonitors.",
+                            "type": "array",
+                            "items": {
+                                "type": "string"
+                            }
+                        },
+                        "loadBalancerPolicy": {
+                            "title": "Load balancer policy",
+                            "description": "AVI HTTPRule load balancer policy. Falls back to avi.httpRule.loadBalancerPolicy.",
+                            "type": "object",
+                            "properties": {
+                                "algorithm": {
+                                    "description": "AVI HTTPRule load balancer algorithm.",
+                                    "type": "string"
+                                }
+                            },
+                            "additionalProperties": false
+                        },
+                        "policySets": {
+                            "title": "Policy sets",
+                            "description": "AVI HostRule policy sets. Falls back to avi.hostRule.policySets.",
+                            "type": "array",
+                            "items": {
+                                "type": "string"
+                            }
+                        },
+                        "sslKeyCertificate": {
+                            "title": "SSL key certificate",
+                            "description": "AVI HostRule certificate reference name. Omit to leave the virtualhost insecure (HTTP only); has no global default.\n",
+                            "type": "string"
+                        }
+                    },
+                    "additionalProperties": false
+                },
+                "host": {
+                    "title": "Host",
+                    "description": "Ingress hostname (e.g., app.example.com).",
+                    "type": "string"
+                },
+                "paths": {
+                    "title": "Paths",
+                    "description": "Path rules for this host, each mapping a URL path to a component Service.",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/$defs/paths-item.yaml"
                     }
                 }
             },

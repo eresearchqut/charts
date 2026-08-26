@@ -1,0 +1,56 @@
+$schema: "https://json-schema.org/draft/2020-12/schema"
+type: object
+required: [host, paths]
+description: >
+  An ingress host and its path rules. Renders one `rules` entry on the shared
+  Ingress resource; when `avi.enabled` is true, also renders a dedicated AVI
+  HostRule/HTTPRule pair for this host.
+properties:
+  host:
+    type: string
+    title: Host
+    description: Ingress hostname (e.g., app.example.com).
+  avi:
+    type: object
+    title: AVI
+    description: >
+      Per-host overrides for this host's AVI HostRule/HTTPRule. Every field
+      falls back to the matching avi.hostRule/avi.httpRule default when
+      omitted. Only used when avi.enabled is true.
+    properties:
+      sslKeyCertificate:
+        type: string
+        title: SSL key certificate
+        description: >
+          AVI HostRule certificate reference name. Omit to leave the
+          virtualhost insecure (HTTP only); has no global default.
+      applicationProfile:
+        type: string
+        title: Application profile
+        description: AVI HostRule application profile name. Falls back to avi.hostRule.applicationProfile.
+      policySets:
+        type: array
+        title: Policy sets
+        description: AVI HostRule policy sets. Falls back to avi.hostRule.policySets.
+        items:
+          type: string
+      healthMonitors:
+        type: array
+        title: Health monitors
+        description: AVI HTTPRule health monitors. Falls back to avi.httpRule.healthMonitors.
+        items:
+          type: string
+      loadBalancerPolicy:
+        type: object
+        title: Load balancer policy
+        description: AVI HTTPRule load balancer policy. Falls back to avi.httpRule.loadBalancerPolicy.
+        properties:
+          algorithm:
+            type: string
+            description: AVI HTTPRule load balancer algorithm.
+  paths:
+    type: array
+    title: Paths
+    description: Path rules for this host, each mapping a URL path to a component Service.
+    items:
+      $ref: "paths-item.yaml"

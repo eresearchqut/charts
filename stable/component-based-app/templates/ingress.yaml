@@ -1,14 +1,19 @@
-{{- if .Values.ingress.host }}
-{{- if not .Values.ingress.paths }}
-{{- if not .Values.ingress.targetComponent }}
-  {{- fail "ingress.targetComponent is required when ingress.host is set without ingress.paths" }}
+{{- if .Values.ingress.enabled }}
+{{- if not .Values.ingress.hosts }}
+  {{- fail "ingress.hosts must contain at least one host when ingress.enabled is true" }}
 {{- end }}
-{{- $target := index (.Values.components | default dict) .Values.ingress.targetComponent }}
+{{- range .Values.ingress.hosts }}
+{{- if not .paths }}
+  {{- fail (printf "ingress.hosts: host '%s' must define at least one path" .host) }}
+{{- end }}
+{{- range .paths }}
+{{- $target := index ($.Values.components | default dict) .targetComponent }}
 {{- if empty $target }}
-  {{- fail (printf "ingress.targetComponent '%s' not found in .Values.components" .Values.ingress.targetComponent) }}
+  {{- fail (printf "ingress.hosts: component '%s' not found in .Values.components" .targetComponent) }}
 {{- end }}
 {{- if not $target }}
-  {{- fail (printf "ingress.targetComponent '%s' is disabled" .Values.ingress.targetComponent) }}
+  {{- fail (printf "ingress.hosts: component '%s' is disabled" .targetComponent) }}
+{{- end }}
 {{- end }}
 {{- end }}
 ---
@@ -24,19 +29,16 @@ metadata:
   {{- end }}
 spec:
   ingressClassName: {{ .Values.ingress.className | default "" }}
+  {{- with .Values.ingress.tls }}
+  tls:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
   rules:
-    - host: {{ .Values.ingress.host }}
+    {{- range .Values.ingress.hosts }}
+    - host: {{ .host }}
       http:
         paths:
-          {{- if .Values.ingress.paths }}
-          {{- range .Values.ingress.paths }}
-          {{- $pathTarget := index ($.Values.components | default dict) .targetComponent }}
-          {{- if empty $pathTarget }}
-            {{- fail (printf "ingress.paths: component '%s' not found" .targetComponent) }}
-          {{- end }}
-          {{- if not $pathTarget }}
-            {{- fail (printf "ingress.paths: component '%s' is disabled" .targetComponent) }}
-          {{- end }}
+          {{- range .paths }}
           - path: {{ .path }}
             pathType: {{ .pathType | default "Prefix" }}
             backend:
@@ -45,13 +47,5 @@ spec:
                 port:
                   name: {{ .portName | default "http" }}
           {{- end }}
-          {{- else }}
-          - path: /
-            pathType: Prefix
-            backend:
-              service:
-                name: {{ include "component-based-app.componentServiceName" (dict "root" . "component" .Values.ingress.targetComponent) }}
-                port:
-                  name: http
-          {{- end }}
+    {{- end }}
 {{- end }}

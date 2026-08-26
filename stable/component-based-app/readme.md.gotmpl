@@ -93,7 +93,7 @@ Every component requires at minimum `image.repository`, `image.tag`, `port`, and
 
 Adding extras such as liveness/readiness probes is recommended.
 
-Components targeted by `ingress.targetComponent` or `ingress.paths` receive a `FQDN` environment variable set to `ingress.host`.
+Components named by an `ingress.hosts[].paths[].targetComponent` receive a `FQDN` environment variable set to the comma-separated list of hosts that route to them.
 
 #### Application Secrets
 
@@ -217,6 +217,43 @@ label) only accept inbound PostgreSQL (5432) traffic from:
 - `networkPolicy.monitoringSelector` (metrics, port 9187) and
   `networkPolicy.cnpgOperatorSelector` (cluster management).
 - Other pods in the same CNPG cluster (replication).
+
+{{ template "chart.sectionTable" . }}
+
+{{- else if eq .SectionName "AVI" }}
+
+### AVI
+
+When `avi.enabled` is `true`, the chart renders an AVI `HostRule`/`HTTPRule` pair
+(`ako.vmware.com`) for every entry in `ingress.hosts`, so each host gets its own
+virtualhost-level configuration.
+
+`avi.hostRule` and `avi.httpRule` set the defaults applied to every host. A host
+may override any of them under its own `avi:` block:
+
+```yaml
+ingress:
+  enabled: true
+  hosts:
+    - host: app.example.com
+      avi:
+        sslKeyCertificate: app-example-com-cert   # defaults to unset (insecure) when omitted
+        applicationProfile: Custom-HTTP           # defaults to avi.hostRule.applicationProfile
+        policySets: ["internal-only"]             # defaults to avi.hostRule.policySets
+        healthMonitors: ["Custom-HTTP"]           # defaults to avi.httpRule.healthMonitors
+        loadBalancerPolicy:
+          algorithm: LB_ALGORITHM_ROUND_ROBIN      # defaults to avi.httpRule.loadBalancerPolicy.algorithm
+      paths:
+        - path: /
+          targetComponent: web
+avi:
+  enabled: true
+```
+
+Every field under a host's `avi:` block is optional and falls back to the
+matching `avi.hostRule`/`avi.httpRule` default, so most hosts need none of
+this and only unusual ones (a different certificate, a stricter policy set,
+a dedicated health monitor) set overrides.
 
 {{ template "chart.sectionTable" . }}
 

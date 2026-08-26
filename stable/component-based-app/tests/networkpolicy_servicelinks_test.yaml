@@ -36,8 +36,12 @@ set:
   database:
     enabled: true
   ingress:
-    host: api.example.com
-    targetComponent: api
+    enabled: true
+    hosts:
+      - host: api.example.com
+        paths:
+          - path: /
+            targetComponent: api
   networkPolicy: {}
 
 tests:
@@ -111,7 +115,7 @@ tests:
                 protocol: TCP
 
   # --- Ingress controller access: only on targetComponent ---
-  - it: ingress controller can reach the component named by ingress.targetComponent
+  - it: ingress controller can reach the component named by the ingress path's targetComponent
     documentIndex: 0
     asserts:
       - contains:
@@ -148,7 +152,7 @@ tests:
           livenessProbe:
             path: /health
       ingress:
-        host: ""
+        enabled: false
       networkPolicy: {}
     documentIndex: 1
     asserts:

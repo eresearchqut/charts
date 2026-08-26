@@ -21,11 +21,11 @@ tests:
           count: 0
         template: deployment.yaml
 
-  # --- Ingress conditional on host ---
-  - it: no Ingress or AVI rules when ingress.host is empty
+  # --- Ingress conditional on enabled ---
+  - it: no Ingress or AVI rules when ingress.enabled is false
     set:
       ingress:
-        host: ""
+        enabled: false
     asserts:
       - hasDocuments:
           count: 0
@@ -33,11 +33,15 @@ tests:
       - hasDocuments:
           count: 0
         template: avi-rules.yaml
-  - it: creates Ingress when ingress.host is set
+  - it: creates Ingress when ingress.enabled is true
     set:
       ingress:
-        host: app.example.com
-        targetComponent: web
+        enabled: true
+        hosts:
+          - host: app.example.com
+            paths:
+              - path: /
+                targetComponent: web
       components:
         web:
           image:
@@ -51,12 +55,79 @@ tests:
       - hasDocuments:
           count: 1
         template: ingress.yaml
+  - it: one Ingress resource carries a rule per configured host
+    set:
+      ingress:
+        enabled: true
+        hosts:
+          - host: app.example.com
+            paths:
+              - path: /
+                targetComponent: web
+          - host: admin.example.com
+            paths:
+              - path: /
+                targetComponent: web
+      components:
+        web:
+          image:
+            repository: "example.com/app"
+            tag: "latest"
+          port: 80
+          command: ["nginx"]
+          livenessProbe:
+            path: /
+    template: ingress.yaml
+    documentIndex: 0
+    asserts:
+      - hasDocuments:
+          count: 1
+      - equal:
+          path: spec.rules[0].host
+          value: app.example.com
+      - equal:
+          path: spec.rules[1].host
+          value: admin.example.com
+  - it: ingress.tls renders the standard Kubernetes TLS block
+    set:
+      ingress:
+        enabled: true
+        hosts:
+          - host: app.example.com
+            paths:
+              - path: /
+                targetComponent: web
+        tls:
+          - hosts: ["app.example.com"]
+            secretName: app-tls
+      components:
+        web:
+          image:
+            repository: "example.com/app"
+            tag: "latest"
+          port: 80
+          command: ["nginx"]
+          livenessProbe:
+            path: /
+    template: ingress.yaml
+    documentIndex: 0
+    asserts:
+      - equal:
+          path: spec.tls[0].secretName
+          value: app-tls
+      - equal:
+          path: spec.tls[0].hosts[0]
+          value: app.example.com
   - it: Ingress class name propagates to spec
     set:
       ingress:
-        host: app.example.com
+        enabled: true
         className: nginx
-        targetComponent: web
+        hosts:
+          - host: app.example.com
+            paths:
+              - path: /
+                targetComponent: web
       components:
         web:
           image:
@@ -72,12 +143,43 @@ tests:
       - equal:
           path: spec.ingressClassName
           value: nginx
-  - it: creates AVI HostRule and HTTPRule when ingress.host is set
+
+  # --- AVI conditional on avi.enabled ---
+  - it: no AVI rules when ingress.enabled is true but avi.enabled is false
     set:
       ingress:
-        host: app.example.com
-        tlsHost: "*.example.com"
-        targetComponent: web
+        enabled: true
+        hosts:
+          - host: app.example.com
+            paths:
+              - path: /
+                targetComponent: web
+      components:
+        web:
+          image:
+            repository: "example.com/app"
+            tag: "latest"
+          port: 80
+          command: ["nginx"]
+          livenessProbe:
+            path: /
+    asserts:
+      - hasDocuments:
+          count: 0
+        template: avi-rules.yaml
+  - it: creates AVI HostRule and HTTPRule when avi.enabled is true
+    set:
+      ingress:
+        enabled: true
+        hosts:
+          - host: app.example.com
+            avi:
+              sslKeyCertificate: "*.example.com"
+            paths:
+              - path: /
+                targetComponent: web
+      avi:
+        enabled: true
       components:
         web:
           image:
@@ -102,6 +204,16 @@ tests:
         documentIndex: 1
         template: avi-rules.yaml
       - equal:
+          path: spec.paths[0].loadBalancerPolicy.algorithm
+          value: LB_ALGORITHM_LEAST_CONNECTIONS
+        documentIndex: 1
+        template: avi-rules.yaml
+      - equal:
+          path: spec.virtualhost.httpPolicy.policySets[0]
+          value: geo-blocking-default
+        documentIndex: 0
+        template: avi-rules.yaml
+      - equal:
           path: spec.virtualhost.tls.sslKeyCertificate.name
           value: "*.example.com"
         documentIndex: 0
@@ -111,11 +223,65 @@ tests:
           value: edge
         documentIndex: 0
         template: avi-rules.yaml
-  - it: HostRule tls block is absent when ingress.tlsHost is not set
+  - it: renders one HostRule/HTTPRule pair per configured host
     set:
       ingress:
-        host: app.example.com
-        targetComponent: web
+        enabled: true
+        hosts:
+          - host: app.example.com
+            paths:
+              - path: /
+                targetComponent: web
+          - host: admin.example.com
+            paths:
+              - path: /
+                targetComponent: web
+      avi:
+        enabled: true
+      components:
+        web:
+          image:
+            repository: "example.com/app"
+            tag: "latest"
+          port: 80
+          command: ["nginx"]
+          livenessProbe:
+            path: /
+    asserts:
+      - hasDocuments:
+          count: 4
+        template: avi-rules.yaml
+      - equal:
+          path: spec.virtualhost.fqdn
+          value: app.example.com
+        documentIndex: 0
+        template: avi-rules.yaml
+      - equal:
+          path: spec.fqdn
+          value: app.example.com
+        documentIndex: 1
+        template: avi-rules.yaml
+      - equal:
+          path: spec.virtualhost.fqdn
+          value: admin.example.com
+        documentIndex: 2
+        template: avi-rules.yaml
+      - equal:
+          path: spec.fqdn
+          value: admin.example.com
+        documentIndex: 3
+        template: avi-rules.yaml
+  - it: HostRule tls block is absent when a host's sslKeyCertificate is not set
+    set:
+      ingress:
+        enabled: true
+        hosts:
+          - host: app.example.com
+            paths:
+              - path: /
+                targetComponent: web
+      avi:
+        enabled: true
       components:
         web:
           image:
@@ -130,13 +296,48 @@ tests:
     asserts:
       - notExists:
           path: spec.virtualhost.tls
-
-  - it: uses configured AVI health monitor
+  - it: a host's policySets override the avi.hostRule.policySets default
     set:
       ingress:
-        host: app.example.com
-        healthMonitor: Custom-HTTP
-        targetComponent: web
+        enabled: true
+        hosts:
+          - host: app.example.com
+            avi:
+              policySets: ["custom-policy-only"]
+            paths:
+              - path: /
+                targetComponent: web
+      avi:
+        enabled: true
+      components:
+        web:
+          image:
+            repository: "example.com/app"
+            tag: "latest"
+          port: 80
+          command: ["nginx"]
+          livenessProbe:
+            path: /
+    template: avi-rules.yaml
+    documentIndex: 0
+    asserts:
+      - equal:
+          path: spec.virtualhost.httpPolicy.policySets
+          value: ["custom-policy-only"]
+  - it: uses configured AVI health monitors
+    set:
+      ingress:
+        enabled: true
+        hosts:
+          - host: app.example.com
+            paths:
+              - path: /
+                targetComponent: web
+      avi:
+        enabled: true
+        httpRule:
+          healthMonitors:
+            - Custom-HTTP
       components:
         web:
           image:
@@ -155,9 +356,16 @@ tests:
   - it: uses configured AVI application profile
     set:
       ingress:
-        host: app.example.com
-        applicationProfile: Custom-HTTP
-        targetComponent: web
+        enabled: true
+        hosts:
+          - host: app.example.com
+            paths:
+              - path: /
+                targetComponent: web
+      avi:
+        enabled: true
+        hostRule:
+          applicationProfile: Custom-HTTP
       components:
         web:
           image:
@@ -173,6 +381,100 @@ tests:
       - equal:
           path: spec.virtualhost.applicationProfile
           value: Custom-HTTP
+  - it: a host's applicationProfile overrides avi.hostRule.applicationProfile
+    set:
+      ingress:
+        enabled: true
+        hosts:
+          - host: app.example.com
+            avi:
+              applicationProfile: Host-Custom-HTTP
+            paths:
+              - path: /
+                targetComponent: web
+      avi:
+        enabled: true
+        hostRule:
+          applicationProfile: Global-Custom-HTTP
+      components:
+        web:
+          image:
+            repository: "example.com/app"
+            tag: "latest"
+          port: 80
+          command: ["nginx"]
+          livenessProbe:
+            path: /
+    template: avi-rules.yaml
+    documentIndex: 0
+    asserts:
+      - equal:
+          path: spec.virtualhost.applicationProfile
+          value: Host-Custom-HTTP
+  - it: a host's healthMonitors override avi.httpRule.healthMonitors
+    set:
+      ingress:
+        enabled: true
+        hosts:
+          - host: app.example.com
+            avi:
+              healthMonitors:
+                - Host-Custom-HTTP
+            paths:
+              - path: /
+                targetComponent: web
+      avi:
+        enabled: true
+        httpRule:
+          healthMonitors:
+            - Global-Custom-HTTP
+      components:
+        web:
+          image:
+            repository: "example.com/app"
+            tag: "latest"
+          port: 80
+          command: ["nginx"]
+          livenessProbe:
+            path: /
+    template: avi-rules.yaml
+    documentIndex: 1
+    asserts:
+      - equal:
+          path: spec.paths[0].healthMonitors[0]
+          value: Host-Custom-HTTP
+  - it: a host's loadBalancerPolicy overrides avi.httpRule.loadBalancerPolicy
+    set:
+      ingress:
+        enabled: true
+        hosts:
+          - host: app.example.com
+            avi:
+              loadBalancerPolicy:
+                algorithm: LB_ALGORITHM_ROUND_ROBIN
+            paths:
+              - path: /
+                targetComponent: web
+      avi:
+        enabled: true
+        httpRule:
+          loadBalancerPolicy:
+            algorithm: LB_ALGORITHM_LEAST_CONNECTIONS
+      components:
+        web:
+          image:
+            repository: "example.com/app"
+            tag: "latest"
+          port: 80
+          command: ["nginx"]
+          livenessProbe:
+            path: /
+    template: avi-rules.yaml
+    documentIndex: 1
+    asserts:
+      - equal:
+          path: spec.paths[0].loadBalancerPolicy.algorithm
+          value: LB_ALGORITHM_ROUND_ROBIN
 
   # --- Readiness probe conditional ---
   - it: readinessProbe is absent when not configured

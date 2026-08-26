@@ -1,25 +1,28 @@
-{{- if .Values.ingress.host }}
+{{- if and .Values.ingress.enabled .Values.avi.enabled }}
+{{- $root := . }}
+{{- range .Values.ingress.hosts }}
+{{- $host := . }}
+{{- $avi := $host.avi | default dict }}
+{{- $name := printf "%s-%s" (include "component-based-app.fullname" $root) ($host.host | replace "." "-") | trunc 63 | trimSuffix "-" }}
 ---
 apiVersion: ako.vmware.com/v1alpha1
 kind: HostRule
 metadata:
-  name: {{ include "component-based-app.fullname" . }}
+  name: {{ $name }}
   labels:
-    {{- include "component-based-app.labels" . | nindent 4 }}
+    {{- include "component-based-app.labels" $root | nindent 4 }}
 spec:
   virtualhost:
-    fqdn: {{ .Values.ingress.host }}
+    fqdn: {{ $host.host }}
     analyticsProfile: System-Analytics-Profile
-    applicationProfile: {{ .Values.ingress.applicationProfile | default "System-HTTP" }}
+    applicationProfile: {{ $avi.applicationProfile | default $root.Values.avi.hostRule.applicationProfile | default "System-HTTP" }}
     enableVirtualHost: true
     errorPageProfile: qut-error-pages
     fqdnType: Exact
     httpPolicy:
       policySets:
-        - geo-blocking-default
-        - ip-reputation-block-all
-        - robots-disallow-all
-    {{- with .Values.ingress.tlsHost }}
+        {{- ($avi.policySets | default $root.Values.avi.hostRule.policySets) | toYaml | nindent 8 }}
+    {{- with $avi.sslKeyCertificate }}
     tls:
       sslKeyCertificate:
         name: {{ . | quote }}
@@ -30,15 +33,16 @@ spec:
 apiVersion: ako.vmware.com/v1alpha1
 kind: HTTPRule
 metadata:
-  name: {{ include "component-based-app.fullname" . }}
+  name: {{ $name }}
   labels:
-    {{- include "component-based-app.labels" . | nindent 4 }}
+    {{- include "component-based-app.labels" $root | nindent 4 }}
 spec:
-  fqdn: {{ .Values.ingress.host }}
+  fqdn: {{ $host.host }}
   paths:
     - target: /
       healthMonitors:
-        - {{ .Values.ingress.healthMonitor | default "System-HTTP" }}
+        {{- ($avi.healthMonitors | default $root.Values.avi.httpRule.healthMonitors) | toYaml | nindent 8 }}
       loadBalancerPolicy:
-        algorithm: LB_ALGORITHM_LEAST_CONNECTIONS
+        algorithm: {{ ($avi.loadBalancerPolicy).algorithm | default $root.Values.avi.httpRule.loadBalancerPolicy.algorithm }}
+{{- end }}
 {{- end }}

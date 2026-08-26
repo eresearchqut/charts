@@ -153,9 +153,9 @@ properties:
     type: string
     default: ALLOWED_HOSTS
     description: >
-      Name of the environment variable set to `<service-name>,$(podIPEnvName),$(nodeIPEnvName),<ingress.host>`.
+      Name of the environment variable set to `<service-name>,$(podIPEnvName),$(nodeIPEnvName),<ingress.hosts[*].host>`.
       The node IP variable defaults to NODE_IP when nodeIPEnvName is omitted.
-      The ingress host is included when configured.
+      Every configured ingress host is appended, comma-separated.
       Requires podIPEnvName.
   serviceLinks:
     type: array

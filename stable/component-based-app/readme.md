@@ -1,6 +1,6 @@
 # component-based-app
 
-![Version: 0.2.0](https://img.shields.io/badge/Version-0.2.0-informational?style=flat-square) ![Type: application](https://img.shields.io/badge/Type-application-informational?style=flat-square)
+![Version: 0.3.0](https://img.shields.io/badge/Version-0.3.0-informational?style=flat-square) ![Type: application](https://img.shields.io/badge/Type-application-informational?style=flat-square)
 
 Generic library chart for a research application deployment.
 
@@ -31,6 +31,49 @@ $ helm install component-based-app eresearchqut/component-based-app
 | global | object | `{}` | Global values for subchart inheritance. Reserved for values shared across subcharts via Helm's global convention. |
 | nameOverride | string | `""` | Helm release name override. |
 
+### AVI
+
+When `avi.enabled` is `true`, the chart renders an AVI `HostRule`/`HTTPRule` pair
+(`ako.vmware.com`) for every entry in `ingress.hosts`, so each host gets its own
+virtualhost-level configuration.
+
+`avi.hostRule` and `avi.httpRule` set the defaults applied to every host. A host
+may override any of them under its own `avi:` block:
+
+```yaml
+ingress:
+  enabled: true
+  hosts:
+    - host: app.example.com
+      avi:
+        sslKeyCertificate: app-example-com-cert   # defaults to unset (insecure) when omitted
+        applicationProfile: Custom-HTTP           # defaults to avi.hostRule.applicationProfile
+        policySets: ["internal-only"]             # defaults to avi.hostRule.policySets
+        healthMonitors: ["Custom-HTTP"]           # defaults to avi.httpRule.healthMonitors
+        loadBalancerPolicy:
+          algorithm: LB_ALGORITHM_ROUND_ROBIN      # defaults to avi.httpRule.loadBalancerPolicy.algorithm
+      paths:
+        - path: /
+          targetComponent: web
+avi:
+  enabled: true
+```
+
+Every field under a host's `avi:` block is optional and falls back to the
+matching `avi.hostRule`/`avi.httpRule` default, so most hosts need none of
+this and only unusual ones (a different certificate, a stricter policy set,
+a dedicated health monitor) set overrides.
+
+| Key | Type | Default | Description |
+|-----|------|---------|-------------|
+| avi.enabled | bool | `false` | Create AVI HostRule/HTTPRule resources for each ingress host. |
+| avi.hostRule | object | `{"applicationProfile":"System-HTTP","policySets":["geo-blocking-default","ip-reputation-block-all","robots-disallow-all"]}` | HostRule (virtualhost-level) defaults, applied to every host unless overridden per host under `ingress.hosts`. |
+| avi.hostRule.applicationProfile | string | `"System-HTTP"` | AVI HostRule application profile name. |
+| avi.hostRule.policySets | list | `["geo-blocking-default", "ip-reputation-block-all", "robots-disallow-all"]` | Default AVI HostRule policy sets, applied to every host unless a host sets its own `ingress.hosts[].policySets`. |
+| avi.httpRule | object | `{"healthMonitors":["System-HTTP"],"loadBalancerPolicy":{"algorithm":"LB_ALGORITHM_LEAST_CONNECTIONS"}}` | HTTPRule (pool-level) defaults, applied to every host. |
+| avi.httpRule.healthMonitors | list | `["System-HTTP"]` | AVI HTTPRule health monitors. |
+| avi.httpRule.loadBalancerPolicy.algorithm | string | `"LB_ALGORITHM_LEAST_CONNECTIONS"` | AVI HTTPRule load balancer algorithm. |
+
 ### Components
 
 Used to create deployment-service-ingress-netpol combination. Designed to encapsulate a
@@ -43,7 +86,7 @@ Every component requires at minimum `image.repository`, `image.tag`, `port`, and
 
 Adding extras such as liveness/readiness probes is recommended.
 
-Components targeted by `ingress.targetComponent` or `ingress.paths` receive a `FQDN` environment variable set to `ingress.host`.
+Components named by an `ingress.hosts[].paths[].targetComponent` receive a `FQDN` environment variable set to the comma-separated list of hosts that route to them.
 
 #### Application Secrets
 
@@ -55,7 +98,7 @@ Each component can reference secrets via `appSecretKeys`. The values are from th
 | components.*.affinity | [core/v1.Affinity](https://raw.githubusercontent.com/yannh/kubernetes-json-schema/master/v1.34.3/_definitions.json#/definitions/io.k8s.api.core/v1.Affinity) | `nil` | Affinity and anti-affinity rules for pod scheduling. |
 | components.*.allowDatabaseAccess | bool | `nil` | When true, injects `DB_USERNAME`, `DB_PASSWORD`, `DB_HOST`, and `DB_PORT` from the database secret. |
 | components.*.allowedFQDNs | list | `[]` | Allow egress to external destinations by FQDN instead of IP address. Renders an Antrea-native NetworkPolicy (crd.antrea.io) whose Allow rules take precedence over the IP-based Kubernetes NetworkPolicies. Requires the Antrea CNI. Only meaningful when `networkPolicy` is enabled. |
-| components.*.allowedHostsEnvName | string | `nil` | Environment variable set to `<service-name>,$(POD_IP),$(NODE_IP),<ingress.host>`. Set `nodeIPEnvName` to override the node IP variable name. The ingress host is included when configured. Requires `podIPEnvName`. |
+| components.*.allowedHostsEnvName | string | `nil` | Environment variable set to `<service-name>,$(POD_IP),$(NODE_IP),<ingress.hosts[*].host>`. Every configured ingress host is appended, comma-separated. |
 | components.*.appSecretKeys | list | `nil` | Environment variables sourced from a Kubernetes Secret. |
 | components.*.appSecretKeys[0].envName | string | `nil` | Name of the environment variable exposed to the container. |
 | components.*.appSecretKeys[0].secretKey | string | `nil` | Key within the referenced Kubernetes Secret. |
@@ -216,17 +259,23 @@ Components with `allowDatabaseAccess: true` reach it at `<cluster>-rw:5432` via 
 | Key | Type | Default | Description |
 |-----|------|---------|-------------|
 | ingress.annotations | object | `{}` | Annotations to add to the Ingress resource (e.g., cert-manager.io/cluster-issuer). |
-| ingress.applicationProfile | string | `"System-HTTP"` | AVI HostRule application profile name. |
 | ingress.className | string | `""` | Ingress class name (e.g., nginx, avi). |
-| ingress.healthMonitor | string | `"System-HTTP"` | AVI HTTPRule health monitor name. |
-| ingress.host | string | `""` | Ingress hostname (e.g., app.example.com). |
-| ingress.paths | list | `[]` | Multiple path rules. When set, overrides the single targetComponent path. Each entry specifies path, pathType (default: Prefix), and targetComponent. |
-| ingress.paths[0].path | string | `nil` | URL path to match (e.g., /api or /). |
-| ingress.paths[0].pathType | string | `nil` | Kubernetes path matching type (Prefix, Exact, or ImplementationSpecific). |
-| ingress.paths[0].portName | string | `nil` | Name of the Service port to route to. |
-| ingress.paths[0].targetComponent | string | `nil` | Component key whose Service receives traffic for this path. |
-| ingress.targetComponent | string | `""` | Component key whose Service receives all inbound traffic when a single path `/` routes to one component. |
-| ingress.tlsHost | string | `""` | AVI HostRule TLS host for certificate selection. |
+| ingress.enabled | bool | `false` | Create the Ingress resource. |
+| ingress.hosts | list | `[]` | Hosts to route. Each entry renders one `rules` entry on the Ingress; when `avi.enabled` is true, each host also gets its own AVI HostRule/HTTPRule pair. |
+| ingress.hosts[0].avi | object | `nil` | Per-host overrides for this host's AVI HostRule/HTTPRule. Every field falls back to the matching `avi.hostRule`/`avi.httpRule` default when omitted. Only used when `avi.enabled` is true. |
+| ingress.hosts[0].avi.applicationProfile | string | `nil` | AVI HostRule application profile name. Falls back to `avi.hostRule.applicationProfile`. |
+| ingress.hosts[0].avi.healthMonitors | list | `nil` | AVI HTTPRule health monitors. Falls back to `avi.httpRule.healthMonitors`. |
+| ingress.hosts[0].avi.loadBalancerPolicy | object | `nil` | AVI HTTPRule load balancer policy. Falls back to `avi.httpRule.loadBalancerPolicy`. |
+| ingress.hosts[0].avi.loadBalancerPolicy.algorithm | string | `nil` | AVI HTTPRule load balancer algorithm. |
+| ingress.hosts[0].avi.policySets | list | `nil` | AVI HostRule policy sets. Falls back to `avi.hostRule.policySets`. |
+| ingress.hosts[0].avi.sslKeyCertificate | string | `nil` | AVI HostRule certificate reference name. Omit to leave the virtualhost insecure (HTTP only); has no global default. |
+| ingress.hosts[0].host | string | `nil` | Ingress hostname (e.g., app.example.com). |
+| ingress.hosts[0].paths | list | `nil` | Path rules for this host. |
+| ingress.hosts[0].paths[0].path | string | `nil` | URL path to match (e.g., /api or /). |
+| ingress.hosts[0].paths[0].pathType | string | `nil` | Kubernetes path matching type (Prefix, Exact, or ImplementationSpecific). |
+| ingress.hosts[0].paths[0].portName | string | `nil` | Name of the Service port to route to. |
+| ingress.hosts[0].paths[0].targetComponent | string | `nil` | Component key whose Service receives traffic for this path. |
+| ingress.tls | list | `[]` | Standard Kubernetes Ingress `tls` block (secret-based). Independent of AVI's `sslKeyCertificate` reference, and only meaningful with an ingress controller that consumes it (e.g. nginx). |
 
 ### Network Policy
 

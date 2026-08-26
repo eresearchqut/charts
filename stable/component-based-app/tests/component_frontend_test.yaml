@@ -27,8 +27,12 @@ set:
         - envName: API_KEY
           secretKey: api-key
   ingress:
-    host: app.example.com
-    targetComponent: frontend
+    enabled: true
+    hosts:
+      - host: app.example.com
+        paths:
+          - path: /
+            targetComponent: frontend
 
 tests:
   - it: ingress points to the component's service

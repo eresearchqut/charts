@@ -17,10 +17,25 @@ resources: {}
 components: {}
 
 ingress:
-  healthMonitor: System-HTTP
-  applicationProfile: System-HTTP
+  enabled: false
+  className: ""
   annotations: {}
-  paths: []
+  hosts: []
+  tls: []
+
+avi:
+  enabled: false
+  hostRule:
+    applicationProfile: System-HTTP
+    policySets:
+      - geo-blocking-default
+      - ip-reputation-block-all
+      - robots-disallow-all
+  httpRule:
+    healthMonitors:
+      - System-HTTP
+    loadBalancerPolicy:
+      algorithm: LB_ALGORITHM_LEAST_CONNECTIONS
 
 # CloudNativePG cluster subchart (cloudnative-pg/charts, chart "cluster", aliased "database").
 # Every key except `enabled` is passed through to the subchart; see upstream docs:
