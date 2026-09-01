@@ -124,6 +124,10 @@
                                 "additionalProperties": false
                             }
                         },
+                        "automountServiceAccountToken": {
+                            "description": "Overrides serviceAccount.automount for this component's pods.",
+                            "type": "boolean"
+                        },
                         "command": {
                             "description": "Command and arguments passed to the container (overrides image ENTRYPOINT).",
                             "type": "array",
@@ -496,6 +500,10 @@
                         },
                         "secretName": {
                             "description": "Name of the Kubernetes Secret that backs `appSecretKeys` entries. Defaults to `\u003cfullname\u003e-secrets` when empty.",
+                            "type": "string"
+                        },
+                        "serviceAccountName": {
+                            "description": "ServiceAccount used by this component's pods. Falls back to the release-level serviceAccount name (\"default\" when serviceAccount.enabled is false).",
                             "type": "string"
                         },
                         "serviceLinks": {
@@ -3639,6 +3647,10 @@
                         "$ref": "#/$defs/app-secret-item.yaml"
                     }
                 },
+                "automountServiceAccountToken": {
+                    "description": "Overrides serviceAccount.automount for this component's pods.",
+                    "type": "boolean"
+                },
                 "command": {
                     "description": "Command and arguments passed to the container (overrides image ENTRYPOINT).",
                     "type": "array",
@@ -3887,6 +3899,11 @@
                 },
                 "secretName": {
                     "description": "Name of the Kubernetes Secret that backs appSecretKeys entries. Defaults to `\u003cfullname\u003e-secrets` when empty.\n",
+                    "default": "",
+                    "type": "string"
+                },
+                "serviceAccountName": {
+                    "description": "ServiceAccount used by this component's pods. Falls back to the release-level serviceAccount name (\"default\" when serviceAccount.enabled is false).\n",
                     "default": "",
                     "type": "string"
                 },
