@@ -38,8 +38,12 @@ spec:
         app.kubernetes.io/role: server
         {{- include "component-based-app.labels" $ | nindent 8 }}
     spec:
-      serviceAccountName: {{ include "component-based-app.serviceAccountName" $ }}
-      automountServiceAccountToken: {{ $.Values.serviceAccount.automount }}
+      serviceAccountName: {{ $spec.serviceAccountName | default (include "component-based-app.serviceAccountName" $) }}
+      {{- $automount := $.Values.serviceAccount.automount }}
+      {{- if hasKey $spec "automountServiceAccountToken" }}
+      {{- $automount = $spec.automountServiceAccountToken }}
+      {{- end }}
+      automountServiceAccountToken: {{ $automount }}
 
       {{- with $spec.imagePullSecrets }}
       imagePullSecrets:

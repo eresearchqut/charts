@@ -102,6 +102,7 @@ Each component can reference secrets via `appSecretKeys`. The values are from th
 | components.*.appSecretKeys | list | `nil` | Environment variables sourced from a Kubernetes Secret. |
 | components.*.appSecretKeys[0].envName | string | `nil` | Name of the environment variable exposed to the container. |
 | components.*.appSecretKeys[0].secretKey | string | `nil` | Key within the referenced Kubernetes Secret. |
+| components.*.automountServiceAccountToken | bool | `nil` | Overrides serviceAccount.automount for this component's pods. |
 | components.*.command | list | `[]` | Command and arguments passed to the container (overrides image ENTRYPOINT). |
 | components.*.configMaps | object | `nil` | ConfigMaps rendered for this component, keyed by ConfigMap name; each value is a data map of file name to content. A checksum/config Pod annotation is derived from these so config changes trigger a rollout. |
 | components.*.containerSecurityContext | [core/v1.SecurityContext](https://raw.githubusercontent.com/yannh/kubernetes-json-schema/master/v1.34.3/_definitions.json#/definitions/io.k8s.api.core/v1.SecurityContext) | `nil` | Per-component container security context. Overrides the global `containerSecurityContext`. Set to `{}` to opt out. |
@@ -146,6 +147,7 @@ Each component can reference secrets via `appSecretKeys`. The values are from th
 | components.*.replicas | int | `nil` | Number of replicas. |
 | components.*.resources | [core/v1.ResourceRequirements](https://raw.githubusercontent.com/yannh/kubernetes-json-schema/master/v1.34.3/_definitions.json#/definitions/io.k8s.api.core/v1.ResourceRequirements) | `nil` | Per-component resource requests and limits. Falls back to top-level `resources` when not set. |
 | components.*.secretName | string | `nil` | Name of the Kubernetes Secret that backs `appSecretKeys` entries. Defaults to `<fullname>-secrets` when empty. |
+| components.*.serviceAccountName | string | `nil` | ServiceAccount used by this component's pods. Falls back to the release-level serviceAccount name ("default" when serviceAccount.enabled is false). |
 | components.*.serviceLinks | list | `nil` | Injects HTTP URLs pointing to sibling component Services as environment variables. |
 | components.*.serviceLinks[0].envName | string | `nil` | Name of the environment variable that receives the URL. |
 | components.*.serviceLinks[0].path | string | `nil` | URL path appended to the service URL. |

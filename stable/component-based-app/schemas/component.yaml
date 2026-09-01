@@ -126,6 +126,15 @@ properties:
     description: >
       When true, injects DB_USERNAME, DB_PASSWORD, DB_HOST, and DB_PORT
       environment variables from the database secret.
+  serviceAccountName:
+    type: string
+    default: ""
+    description: >
+      ServiceAccount used by this component's pods. Falls back to the release-level
+      serviceAccount name ("default" when serviceAccount.enabled is false).
+  automountServiceAccountToken:
+    type: boolean
+    description: Overrides serviceAccount.automount for this component's pods.
   secretName:
     type: string
     default: ""

@@ -173,6 +173,14 @@ components:
     # @section -- Components
     # @default -- `nil`
     allowDatabaseAccess: false
+    # -- ServiceAccount used by this component's pods. Falls back to the release-level serviceAccount name ("default" when serviceAccount.enabled is false).
+    # @section -- Components
+    # @default -- `nil`
+    serviceAccountName: ""
+    # -- Overrides serviceAccount.automount for this component's pods.
+    # @section -- Components
+    # @default -- `nil`
+    automountServiceAccountToken: false
     # -- Name of the Kubernetes Secret that backs `appSecretKeys` entries. Defaults to `<fullname>-secrets` when empty.
     # @section -- Components
     # @default -- `nil`
