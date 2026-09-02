@@ -420,6 +420,15 @@
                             "description": "Per-component pod security context. Overrides the global `podSecurityContext`. Set to `{}` to opt out.",
                             "type": "object",
                             "properties": {
+                                "fsGroup": {
+                                    "type": "integer"
+                                },
+                                "runAsGroup": {
+                                    "type": "integer"
+                                },
+                                "runAsUser": {
+                                    "type": "integer"
+                                },
                                 "seccompProfile": {
                                     "$ref": "#/$defs/_definitions.json/definitions/io.k8s.api.core.v1.SeccompProfile",
                                     "type": "object",
@@ -1034,6 +1043,18 @@
             "$ref": "#/$defs/_definitions.json/definitions/io.k8s.api.core.v1.PodSecurityContext",
             "type": "object",
             "properties": {
+                "fsGroup": {
+                    "type": "integer"
+                },
+                "fsGroupChangePolicy": {
+                    "type": "string"
+                },
+                "runAsGroup": {
+                    "type": "integer"
+                },
+                "runAsUser": {
+                    "type": "integer"
+                },
                 "seccompProfile": {
                     "$ref": "#/$defs/_definitions.json/definitions/io.k8s.api.core.v1.SeccompProfile",
                     "type": "object",

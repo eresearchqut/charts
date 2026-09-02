@@ -34,7 +34,6 @@ set:
           readOnly: true
 
 tests:
-  # --- podSecurityContext goes to Pod spec, NOT container ---
   - it: podSecurityContext propagates to pod spec level
     set:
       podSecurityContext:
@@ -305,3 +304,44 @@ tests:
       - equal:
           path: spec.template.spec.containers[0].securityContext.runAsNonRoot
           value: true
+
+  # --- chart defaults (no overrides set) ---
+  - it: pod securityContext defaults to seccompProfile RuntimeDefault when unset
+    template: deployment.yaml
+    documentIndex: 0
+    asserts:
+      - equal:
+          path: spec.template.spec.securityContext
+          value:
+            runAsUser: 1000
+            runAsGroup: 1000
+            fsGroup: 1000
+            fsGroupChangePolicy: Always
+            seccompProfile:
+              type: RuntimeDefault
+
+  - it: main container securityContext defaults to hardened baseline when unset
+    template: deployment.yaml
+    documentIndex: 0
+    asserts:
+      - equal:
+          path: spec.template.spec.containers[0].securityContext
+          value:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            runAsNonRoot: true
+            capabilities:
+              drop: [ALL]
+
+  - it: init container securityContext defaults to hardened baseline when unset
+    template: deployment.yaml
+    documentIndex: 0
+    asserts:
+      - equal:
+          path: spec.template.spec.initContainers[0].securityContext
+          value:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            runAsNonRoot: true
+            capabilities:
+              drop: [ALL]
