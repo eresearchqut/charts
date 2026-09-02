@@ -259,12 +259,10 @@ components:
         capabilities:
           drop:
             - "ALL"
-          add:
-            - "CHOWN"
         readOnlyRootFilesystem: true
         runAsNonRoot: false
-        runAsUser: 0
-        runAsGroup: 0
+        runAsUser: 1000
+        runAsGroup: 1000
         allowPrivilegeEscalation: false
     # @notationType -- list
     # -- (k8s/networking/v1.NetworkPolicyEgressRule) Additional NetworkPolicy egress rules. Only meaningful when `networkPolicy` is configured.
@@ -358,6 +356,9 @@ components:
     # @section -- Components
     # @default -- `nil`
     podSecurityContext:
+      runAsUser: 1000
+      runAsGroup: 1000
+      fsGroup: 1000
       # @schema $ref: $k8s/_definitions.json#/definitions/io.k8s.api.core.v1.SeccompProfile; skipProperties: true; additionalProperties: true
       seccompProfile:
         type: "RuntimeDefault"
@@ -693,6 +694,10 @@ serviceAccount:
 # @schema $ref: $k8s/_definitions.json#/definitions/io.k8s.api.core.v1.PodSecurityContext; additionalProperties: true
 # -- (k8s/core/v1.PodSecurityContext) Default pod security context, individual components can override with their own podSecurityContext block.
 podSecurityContext:
+  runAsUser: 1000
+  runAsGroup: 1000
+  fsGroup: 1000
+  fsGroupChangePolicy: Always
   # @schema $ref: $k8s/_definitions.json#/definitions/io.k8s.api.core.v1.SeccompProfile; skipProperties: true; additionalProperties: true
   seccompProfile:
     type: RuntimeDefault
