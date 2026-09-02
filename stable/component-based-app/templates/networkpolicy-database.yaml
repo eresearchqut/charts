@@ -57,11 +57,19 @@ spec:
     {{- if .Values.networkPolicy.cnpgOperatorSelector }}
     - from:
 {{- toYaml (list .Values.networkPolicy.cnpgOperatorSelector) | nindent 8 }}
+      ports:
+        - port: 8000
+          protocol: TCP
+        - port: 5432
+          protocol: TCP
     {{- end }}
     - from:
         - podSelector:
             matchLabels:
               cnpg.io/cluster: {{ include "component-based-app.databaseClusterName" . }}
+      ports:
+        - port: 5432
+          protocol: TCP
   egress:
     - ports:
         - port: 53
@@ -72,13 +80,16 @@ spec:
         - podSelector:
             matchLabels:
               cnpg.io/cluster: {{ include "component-based-app.databaseClusterName" . }}
+      ports:
+        - port: 5432
+          protocol: TCP
     {{- /* Kubernetes API server: required by CNPG for leader election and cluster management. */}}
     - ports:
         - port: 443
           protocol: TCP
         - port: 6443
           protocol: TCP
-    - to:
+      to:
         # wrk-non-prod & prod
         - ipBlock:
             cidr: 172.30.96.0/23

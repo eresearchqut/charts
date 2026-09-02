@@ -6,42 +6,34 @@ release:
   name: myapp
   namespace: prod
 
+set:
+  networkPolicy: {}
+  database:
+    enabled: true
+
 tests:
   # --- Conditional creation ---
   - it: creates database policy when database and networkPolicy are both enabled
-    set:
-      networkPolicy: {}
-      database:
-        enabled: true
     asserts:
       - hasDocuments:
           count: 2
-
   - it: no database policy when database is disabled
     set:
-      networkPolicy: {}
       database:
         enabled: false
     asserts:
       - hasDocuments:
           count: 0
-
   - it: no database policy when networkPolicy is disabled
     set:
       networkPolicy:
         enabled: false
-      database:
-        enabled: true
     asserts:
       - hasDocuments:
           count: 0
 
   # --- podSelector targets the CNPG cluster ---
   - it: podSelector targets the CNPG cluster pods
-    set:
-      networkPolicy: {}
-      database:
-        enabled: true
     documentIndex: 0
     asserts:
       - equal:
@@ -51,9 +43,6 @@ tests:
   # --- Ingress: components with allowDatabaseAccess ---
   - it: ingress allows PostgreSQL from components that allow database access
     set:
-      networkPolicy: {}
-      database:
-        enabled: true
       components:
         api:
           image:
@@ -98,10 +87,6 @@ tests:
 
   # --- Ingress: monitoring ---
   - it: ingress allows metrics scraping from monitoring namespace
-    set:
-      networkPolicy: {}
-      database:
-        enabled: true
     documentIndex: 0
     asserts:
       - contains:
@@ -117,10 +102,6 @@ tests:
 
   # --- Ingress: CNPG operator ---
   - it: ingress allows the CNPG operator to manage the cluster
-    set:
-      networkPolicy: {}
-      database:
-        enabled: true
     documentIndex: 0
     asserts:
       - contains:
@@ -130,13 +111,14 @@ tests:
               - namespaceSelector:
                   matchLabels:
                     kubernetes.io/metadata.name: cnpg-system
+            ports:
+              - port: 8000
+                protocol: TCP
+              - port: 5432
+                protocol: TCP
 
   # --- Ingress: intra-cluster replication ---
   - it: ingress allows intra-cluster pod-to-pod traffic for replication
-    set:
-      networkPolicy: {}
-      database:
-        enabled: true
     documentIndex: 0
     asserts:
       - contains:
@@ -146,13 +128,12 @@ tests:
               - podSelector:
                   matchLabels:
                     cnpg.io/cluster: myapp-database
+            ports:
+              - port: 5432
+                protocol: TCP
 
   # --- Ingress: upstream cnpg chart's own ping-test Helm hook ---
   - it: ingress allows the upstream cnpg cluster chart's ping-test hook pod
-    set:
-      networkPolicy: {}
-      database:
-        enabled: true
     documentIndex: 0
     asserts:
       - contains:
@@ -167,11 +148,7 @@ tests:
                 protocol: TCP
 
   # --- Egress: ONLY DNS, intra-cluster, and API server ---
-  - it: egress contains DNS and nothing unrestricted beyond cluster and API server
-    set:
-      networkPolicy: {}
-      database:
-        enabled: true
+  - it: egress contains DNS, application access and operator access
     documentIndex: 0
     asserts:
       # DNS
@@ -187,11 +164,16 @@ tests:
       - contains:
           path: spec.egress
           content:
+            ports:
+              - port: 5432
+                protocol: TCP
             to:
               - podSelector:
                   matchLabels:
                     cnpg.io/cluster: myapp-database
-      # Kubernetes API server
+      # Kubernetes API server: ports AND destination CIDRs MUST be on the
+      # same rule, otherwise ports-only expands to egress-to-anywhere and
+      # the CIDR-only half expands to all-ports-to-those-CIDRs.
       - contains:
           path: spec.egress
           content:
@@ -200,6 +182,13 @@ tests:
                 protocol: TCP
               - port: 6443
                 protocol: TCP
+            to:
+              - ipBlock:
+                  cidr: 172.30.96.0/23
+              - ipBlock:
+                  cidr: 172.30.109.0/23
+              - ipBlock:
+                  cidr: 172.18.0.0/23
       # No unrestricted egress (no to: {} with empty podSelector/namespaceSelector)
       # any:true deliberately omitted: {} is a subset of every object and
       # would match legitimate egress peers (e.g. the intra-cluster rule).
@@ -208,17 +197,14 @@ tests:
           content:
             to:
               - {}
-      # Exactly 4 egress rules: DNS, intra-cluster, API server
+      # Exactly 3 egress rules: DNS, intra-cluster, API server (ports+to combined)
       - lengthEqual:
           path: spec.egress
-          count: 4
+          count: 3
 
   # --- No ingress rules for components without allowDatabaseAccess ---
   - it: no database ingress rules exist for components without allowDatabaseAccess
     set:
-      networkPolicy: {}
-      database:
-        enabled: true
       components:
         web:
           image:
