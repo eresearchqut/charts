@@ -414,7 +414,7 @@
                                     "type": "string"
                                 }
                             },
-                            "additionalProperties": false
+                            "additionalProperties": true
                         },
                         "podSecurityContext": {
                             "description": "Per-component pod security context. Overrides the global `podSecurityContext`. Set to `{}` to opt out.",

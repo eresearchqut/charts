@@ -295,6 +295,7 @@ components:
     # @default -- `nil`
     podAnnotations:
       "prometheus.io/scrape": "true"
+    # @schema additionalProperties: true
     # -- Labels added to the component's Pod.
     # @section -- Components
     # @default -- `nil`
