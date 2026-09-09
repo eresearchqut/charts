@@ -744,7 +744,7 @@ imageUpdate:
   # -- Commit message template for image update automation.
   # @section -- Image Automation
   messageTemplate: |
-    Automated image update
+    Automated image update: {{- range $index, $change := .Changed.Changes }}{{ if $index }},{{ end }} {{ $change.Setter | splitList ":" | last }}:{{$change.OldValue}}->{{$change.NewValue}}{{- end}}
 
     Automation name: {{ .AutomationObject }}
 
