@@ -137,7 +137,7 @@ imageUpdate:
     namespace: flux-system
   updatePath: "."
   messageTemplate: |
-    Automated image update
+    Automated image update: {{- range $index, $change := .Changed.Changes }}{{ if $index }},{{ end }} {{ $change.Setter | splitList ":" | last }}:{{$change.OldValue}}->{{$change.NewValue}}{{- end}}
 
     Automation name: {{ .AutomationObject }}
 
