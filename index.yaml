@@ -4,6 +4,29 @@ entries:
   - annotations:
       category: Research
     apiVersion: v2
+    created: "2026-09-09T02:41:15.362445115Z"
+    dependencies:
+    - alias: database
+      condition: database.enabled
+      name: cluster
+      repository: https://cloudnative-pg.github.io/charts
+      version: 0.8.1
+    description: 'Generic library chart for a research application deployment. '
+    digest: d5a33ded2b227d55d375ffe3e943751be8585237f1c5d218fda8ad24b673b159
+    kubeVersion: '>=1.34.7'
+    maintainers:
+    - email: eresearch@qut.edu.au
+      name: eResearch QUT
+    name: component-based-app
+    sources:
+    - https://github.com/eresearchqut/charts
+    type: application
+    urls:
+    - https://github.com/eresearchqut/charts/releases/download/component-based-app-0.3.2/component-based-app-0.3.2.tgz
+    version: 0.3.2
+  - annotations:
+      category: Research
+    apiVersion: v2
     created: "2026-09-02T05:04:35.196505816Z"
     dependencies:
     - alias: database
@@ -111,4 +134,4 @@ entries:
     urls:
     - https://github.com/eresearchqut/charts/releases/download/static-website-0.1.0/static-website-0.1.0.tgz
     version: 0.1.0
-generated: "2026-09-02T05:04:35.196529391Z"
+generated: "2026-09-09T02:41:15.362473427Z"
