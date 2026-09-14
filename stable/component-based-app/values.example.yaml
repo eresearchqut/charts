@@ -399,6 +399,10 @@ ingress:
       # @default -- `nil`
       # @section -- Ingress
       host: "app.example.com"
+      # -- Per-host Ingress class override. Falls back to `ingress.className` when omitted. Hosts resolving to different class names are split across separate Ingress resources; hosts resolving to the same class name share one Ingress resource.
+      # @default -- `nil`
+      # @section -- Ingress
+      className: "public-nginx"
       # @schema additionalProperties: true
       # -- Per-host overrides for this host's AVI HostRule/HTTPRule. Every field falls back to the matching `avi.hostRule`/`avi.httpRule` default when omitted. Only used when `avi.enabled` is true.
       # @default -- `nil`

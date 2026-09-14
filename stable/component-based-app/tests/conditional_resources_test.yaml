@@ -144,6 +144,106 @@ tests:
           path: spec.ingressClassName
           value: nginx
 
+  - it: different per-host classNames render as separate Ingress resources
+    set:
+      ingress:
+        enabled: true
+        hosts:
+          - host: app.example.com
+            className: public-nginx
+            paths:
+              - path: /
+                targetComponent: web
+          - host: internal.example.com
+            className: private-nginx
+            paths:
+              - path: /
+                targetComponent: web
+      components:
+        web:
+          image:
+            repository: "example.com/app"
+            tag: "latest"
+          port: 80
+          command: ["nginx"]
+          livenessProbe:
+            path: /
+    template: ingress.yaml
+    asserts:
+      - hasDocuments:
+          count: 2
+  - it: per-host className overrides the chart-level ingress.className
+    set:
+      ingress:
+        enabled: true
+        className: public-nginx
+        hosts:
+          - host: internal.example.com
+            className: private-nginx
+            paths:
+              - path: /
+                targetComponent: web
+      components:
+        web:
+          image:
+            repository: "example.com/app"
+            tag: "latest"
+          port: 80
+          command: ["nginx"]
+          livenessProbe:
+            path: /
+    template: ingress.yaml
+    documentIndex: 0
+    asserts:
+      - hasDocuments:
+          count: 1
+      - equal:
+          path: spec.ingressClassName
+          value: private-nginx
+      - equal:
+          path: metadata.name
+          value: cond-component-based-app
+  - it: hosts sharing the same explicit className stay in one Ingress resource
+    set:
+      ingress:
+        enabled: true
+        hosts:
+          - host: app.example.com
+            className: public-nginx
+            paths:
+              - path: /
+                targetComponent: web
+          - host: admin.example.com
+            className: public-nginx
+            paths:
+              - path: /
+                targetComponent: web
+      components:
+        web:
+          image:
+            repository: "example.com/app"
+            tag: "latest"
+          port: 80
+          command: ["nginx"]
+          livenessProbe:
+            path: /
+    template: ingress.yaml
+    asserts:
+      - hasDocuments:
+          count: 1
+      - equal:
+          documentIndex: 0
+          path: metadata.name
+          value: cond-component-based-app
+      - equal:
+          documentIndex: 0
+          path: spec.rules[0].host
+          value: app.example.com
+      - equal:
+          documentIndex: 0
+          path: spec.rules[1].host
+          value: admin.example.com
+
   # --- AVI conditional on avi.enabled ---
   - it: no AVI rules when ingress.enabled is true but avi.enabled is false
     set:

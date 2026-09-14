@@ -2,14 +2,23 @@ $schema: "https://json-schema.org/draft/2020-12/schema"
 type: object
 required: [host, paths]
 description: >
-  An ingress host and its path rules. Renders one `rules` entry on the shared
-  Ingress resource; when `avi.enabled` is true, also renders a dedicated AVI
-  HostRule/HTTPRule pair for this host.
+  An ingress host and its path rules. Renders one `rules` entry on the
+  Ingress resource matching this host's resolved class name
+  when `avi.enabled` is true, also renders a dedicated AVI HostRule/HTTPRule
+  pair for this host.
 properties:
   host:
     type: string
     title: Host
     description: Ingress hostname (e.g., app.example.com).
+  className:
+    type: string
+    title: Ingress class name
+    description: >
+      Per-host Ingress class override. Falls back to `ingress.className`
+      when omitted. Hosts resolving to different class names are split
+      across separate Ingress resources; hosts resolving to the same
+      class name share one Ingress resource.
   avi:
     type: object
     title: AVI
@@ -27,23 +36,31 @@ properties:
       applicationProfile:
         type: string
         title: Application profile
-        description: AVI HostRule application profile name. Falls back to avi.hostRule.applicationProfile.
+        description: >
+          AVI HostRule application profile name.
+          Falls back to avi.hostRule.applicationProfile.
       policySets:
         type: array
         title: Policy sets
-        description: AVI HostRule policy sets. Falls back to avi.hostRule.policySets.
+        description: >
+          AVI HostRule policy sets.
+          Falls back to avi.hostRule.policySets.
         items:
           type: string
       healthMonitors:
         type: array
         title: Health monitors
-        description: AVI HTTPRule health monitors. Falls back to avi.httpRule.healthMonitors.
+        description: >
+          AVI HTTPRule health monitors.
+          Falls back to avi.httpRule.healthMonitors.
         items:
           type: string
       loadBalancerPolicy:
         type: object
         title: Load balancer policy
-        description: AVI HTTPRule load balancer policy. Falls back to avi.httpRule.loadBalancerPolicy.
+        description: >
+          AVI HTTPRule load balancer policy.
+          Falls back to avi.httpRule.loadBalancerPolicy.
         properties:
           algorithm:
             type: string
@@ -51,6 +68,7 @@ properties:
   paths:
     type: array
     title: Paths
-    description: Path rules for this host, each mapping a URL path to a component Service.
+    description: >
+      Path rules for this host, each mapping a URL path to a component Service.
     items:
       $ref: "paths-item.yaml"
