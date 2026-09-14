@@ -1,6 +1,6 @@
 # component-based-app
 
-![Version: 0.3.2](https://img.shields.io/badge/Version-0.3.2-informational?style=flat-square) ![Type: application](https://img.shields.io/badge/Type-application-informational?style=flat-square)
+![Version: 0.3.3](https://img.shields.io/badge/Version-0.3.3-informational?style=flat-square) ![Type: application](https://img.shields.io/badge/Type-application-informational?style=flat-square)
 
 Generic library chart for a research application deployment.
 
@@ -271,6 +271,7 @@ Components with `allowDatabaseAccess: true` reach it at `<cluster>-rw:5432` via 
 | ingress.hosts[0].avi.loadBalancerPolicy.algorithm | string | `nil` | AVI HTTPRule load balancer algorithm. |
 | ingress.hosts[0].avi.policySets | list | `nil` | AVI HostRule policy sets. Falls back to `avi.hostRule.policySets`. |
 | ingress.hosts[0].avi.sslKeyCertificate | string | `nil` | AVI HostRule certificate reference name. Omit to leave the virtualhost insecure (HTTP only); has no global default. |
+| ingress.hosts[0].className | string | `nil` | Per-host Ingress class override. Falls back to `ingress.className` when omitted. Hosts resolving to different class names are split across separate Ingress resources; hosts resolving to the same class name share one Ingress resource. |
 | ingress.hosts[0].host | string | `nil` | Ingress hostname (e.g., app.example.com). |
 | ingress.hosts[0].paths | list | `nil` | Path rules for this host. |
 | ingress.hosts[0].paths[0].path | string | `nil` | URL path to match (e.g., /api or /). |

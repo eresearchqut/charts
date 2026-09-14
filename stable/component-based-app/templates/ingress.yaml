@@ -16,25 +16,41 @@
 {{- end }}
 {{- end }}
 {{- end }}
+{{- $root := $ }}
+{{- $classNames := list }}
+{{- $hostsByClass := dict }}
+{{- range .Values.ingress.hosts }}
+{{- $class := .className | default $root.Values.ingress.className | default "" }}
+{{- if not (has $class $classNames) }}
+{{- $classNames = append $classNames $class }}
+{{- end }}
+{{- $existing := get $hostsByClass $class | default list }}
+{{- $_ := set $hostsByClass $class (append $existing .) }}
+{{- end }}
+{{- $multi := gt (len $classNames) 1 }}
+{{- range $classNames }}
+{{- $class := . }}
+{{- $classHosts := get $hostsByClass $class }}
+{{- $name := ternary (printf "%s-%s" (include "component-based-app.fullname" $root) ($class | default "default" | replace "." "-") | trunc 63 | trimSuffix "-") (include "component-based-app.fullname" $root) $multi }}
 ---
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
-  name: {{ include "component-based-app.fullname" . }}
+  name: {{ $name }}
   labels:
-    {{- include "component-based-app.labels" . | nindent 4 }}
-  {{- with .Values.ingress.annotations }}
+    {{- include "component-based-app.labels" $root | nindent 4 }}
+  {{- with $root.Values.ingress.annotations }}
   annotations:
     {{- toYaml . | nindent 4 }}
   {{- end }}
 spec:
-  ingressClassName: {{ .Values.ingress.className | default "" }}
-  {{- with .Values.ingress.tls }}
+  ingressClassName: {{ $class }}
+  {{- with $root.Values.ingress.tls }}
   tls:
     {{- toYaml . | nindent 4 }}
   {{- end }}
   rules:
-    {{- range .Values.ingress.hosts }}
+    {{- range $classHosts }}
     - host: {{ .host }}
       http:
         paths:
@@ -43,9 +59,10 @@ spec:
             pathType: {{ .pathType | default "Prefix" }}
             backend:
               service:
-                name: {{ include "component-based-app.componentServiceName" (dict "root" $ "component" .targetComponent) }}
+                name: {{ include "component-based-app.componentServiceName" (dict "root" $root "component" .targetComponent) }}
                 port:
                   name: {{ .portName | default "http" }}
           {{- end }}
     {{- end }}
+{{- end }}
 {{- end }}
