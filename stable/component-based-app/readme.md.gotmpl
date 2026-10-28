@@ -95,6 +95,9 @@ Adding extras such as liveness/readiness probes is recommended.
 
 Components named by an `ingress.hosts[].paths[].targetComponent` receive a `FQDN` environment variable set to the comma-separated list of hosts that route to them.
 
+Every component's application and init containers also receive `<COMPONENT>_FQDN`
+for each component targeted by an enabled ingress.
+
 #### Application Secrets
 
 Each component can reference secrets via `appSecretKeys`. The values are from the secret in `components.*.secretName`. Each `appSecretKeys` entry maps a secret key to an environment variable:

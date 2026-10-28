@@ -1,6 +1,6 @@
 # component-based-app
 
-![Version: 0.3.3](https://img.shields.io/badge/Version-0.3.3-informational?style=flat-square) ![Type: application](https://img.shields.io/badge/Type-application-informational?style=flat-square)
+![Version: 0.3.4](https://img.shields.io/badge/Version-0.3.4-informational?style=flat-square) ![Type: application](https://img.shields.io/badge/Type-application-informational?style=flat-square)
 
 Generic library chart for a research application deployment.
 
@@ -87,6 +87,9 @@ Every component requires at minimum `image.repository`, `image.tag`, `port`, and
 Adding extras such as liveness/readiness probes is recommended.
 
 Components named by an `ingress.hosts[].paths[].targetComponent` receive a `FQDN` environment variable set to the comma-separated list of hosts that route to them.
+
+Every component's application and init containers also receive `<COMPONENT>_FQDN`
+for each component targeted by an enabled ingress.
 
 #### Application Secrets
 
