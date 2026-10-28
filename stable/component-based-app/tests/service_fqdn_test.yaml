@@ -1,0 +1,74 @@
+suite: Service FQDN environments
+templates:
+  - deployment.yaml
+
+tests:
+  - it: exposes deduplicated ingress hosts to sibling application and init containers
+    set:
+      ingress:
+        enabled: true
+        hosts:
+          - host: first.example.com
+            paths:
+              - path: /
+                targetComponent: api-server
+              - path: /again
+                targetComponent: api-server
+          - host: second.example.com
+            paths:
+              - path: /
+                targetComponent: api-server
+      components:
+        api-server:
+          image:
+            repository: example.com/api
+            tag: latest
+          command: [serve]
+          port: 8080
+        worker:
+          image:
+            repository: example.com/worker
+            tag: latest
+          command: [work]
+          port: 8080
+          initContainer:
+            command: [prepare]
+    documentIndex: 1
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: API_SERVER_FQDN
+            value: first.example.com,second.example.com
+      - contains:
+          path: spec.template.spec.initContainers[0].env
+          content:
+            name: API_SERVER_FQDN
+            value: first.example.com,second.example.com
+
+  - it: does not expose hostnames from disabled ingress
+    set:
+      ingress:
+        enabled: false
+        hosts:
+          - host: disabled.example.com
+            paths:
+              - path: /
+                targetComponent: api
+      components:
+        api:
+          image:
+            repository: example.com/api
+            tag: latest
+          command: [serve]
+          port: 8080
+          initContainer:
+            command: [prepare]
+    asserts:
+      - notContains:
+          any: true
+          path: spec.template.spec.containers[0].env
+          content:
+            name: API_FQDN
+      - notExists:
+          path: spec.template.spec.initContainers[0].env

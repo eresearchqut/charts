@@ -1,3 +1,18 @@
+{{- $componentHosts := dict }}
+{{- if .Values.ingress.enabled }}
+{{- range .Values.ingress.hosts }}
+{{- $host := .host }}
+{{- range .paths }}
+{{- $hosts := get $componentHosts .targetComponent | default list }}
+{{- $_ := set $componentHosts .targetComponent (append $hosts $host | uniq) }}
+{{- end }}
+{{- end }}
+{{- end }}
+{{- $serviceFqdnEnv := list }}
+{{- range $component, $hosts := $componentHosts }}
+{{- $envName := printf "%s_FQDN" ($component | upper | replace "-" "_") }}
+{{- $serviceFqdnEnv = append $serviceFqdnEnv (dict "name" $envName "value" (join "," $hosts)) }}
+{{- end }}
 {{- range $name, $spec := .Values.components }}
 {{- $tag := dig "image" "tag" "" $spec }}
 {{- if empty $tag }}
@@ -97,7 +112,7 @@ spec:
           volumeMounts:
             {{- toYaml . | nindent 12 }}
           {{- end }}
-          {{- if or $spec.allowDatabaseAccess $spec.appSecretKeys }}
+          {{- if or $spec.allowDatabaseAccess $spec.appSecretKeys $serviceFqdnEnv }}
           env:
             {{- if $spec.allowDatabaseAccess }}
             - name: DB_USERNAME
@@ -121,6 +136,9 @@ spec:
                 secretKeyRef:
                   name: {{ $spec.secretName | default (printf "%s-secrets" (include "component-based-app.fullname" $)) }}
                   key: {{ .secretKey }}
+            {{- end }}
+            {{- with $serviceFqdnEnv }}
+            {{- toYaml . | nindent 12 }}
             {{- end }}
           {{- end }}
       {{- end }}
@@ -218,20 +236,12 @@ spec:
             - name: {{ $spec.allowedHostsEnvName }}
               value: {{ $allowedHosts | quote }}
             {{- end }}
-            {{- $componentHosts := list }}
-            {{- if $.Values.ingress.enabled }}
-            {{- range $.Values.ingress.hosts }}
-            {{- $host := .host }}
-            {{- range .paths }}
-            {{- if eq $name .targetComponent }}
-            {{- $componentHosts = append $componentHosts $host }}
+            {{- with $serviceFqdnEnv }}
+            {{- toYaml . | nindent 12 }}
             {{- end }}
-            {{- end }}
-            {{- end }}
-            {{- end }}
-            {{- if $componentHosts }}
+            {{- with index $componentHosts $name }}
             - name: FQDN
-              value: {{ $componentHosts | uniq | join "," | quote }}
+              value: {{ join "," . | quote }}
             {{- end }}
             {{- range $spec.serviceLinks }}
             {{- $targetSpec := index $.Values.components .targetName }}
